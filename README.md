@@ -3,6 +3,11 @@
 Minimal development foundation for the PitchValue Python and PostgreSQL codebase.
 Product features and football-domain data are intentionally outside this bootstrap.
 
+The canonical schema and its integrity policy are documented in
+[`docs/database.md`](docs/database.md).
+The football-data.co.uk raw and staging foundation is documented in
+[`docs/ingestion-football-data-uk.md`](docs/ingestion-football-data-uk.md).
+
 ## Prerequisites
 
 - Python 3.12, 3.13, or 3.14
@@ -64,4 +69,3 @@ python -m mypy
 ```
 
 To apply formatting, run `python -m ruff format .`.
-

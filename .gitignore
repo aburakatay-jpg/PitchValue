@@ -10,4 +10,7 @@ build/
 dist/
 .coverage
 htmlcov/
-
+data/raw/football_data_uk/*
+!data/raw/football_data_uk/.gitkeep
+data/manual/football_data_uk/*
+!data/manual/football_data_uk/.gitkeep
