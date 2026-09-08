@@ -10,6 +10,13 @@ build/
 dist/
 .coverage
 htmlcov/
+node_modules/
+.expo/
+mobile/.env*
+!mobile/.env.example
+mobile/web-build/
+mobile/dist/
+mobile/.cache/
 data/raw/football_data_uk/*
 !data/raw/football_data_uk/.gitkeep
 data/manual/football_data_uk/*
