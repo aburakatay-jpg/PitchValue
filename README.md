@@ -7,6 +7,8 @@ The canonical schema and its integrity policy are documented in
 [`docs/database.md`](docs/database.md).
 The football-data.co.uk raw and staging foundation is documented in
 [`docs/ingestion-football-data-uk.md`](docs/ingestion-football-data-uk.md).
+The HTTP service foundation and local mobile-to-API setup are documented in
+[`docs/api.md`](docs/api.md).
 
 ## Prerequisites
 

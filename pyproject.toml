@@ -10,16 +10,20 @@ readme = "README.md"
 requires-python = ">=3.12,<3.15"
 dependencies = [
     "alembic>=1.14,<2",
+    "fastapi>=0.141,<0.142",
     "httpx>=0.28,<1",
     "psycopg[binary]>=3.2,<4",
     "SQLAlchemy>=2.0,<3",
+    "uvicorn>=0.52,<0.53",
 ]
 
 [project.scripts]
 pitchvalue-ingest = "pitchvalue.ingestion.football_data_uk.cli:main"
+pitchvalue-api = "pitchvalue.api.cli:main"
 
 [project.optional-dependencies]
 dev = [
+    "httpx2>=2.12,<3",
     "mypy>=1.14,<2",
     "pytest>=8.3,<10",
     "ruff>=0.9,<1",
