@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
@@ -19,6 +20,10 @@ class FeatureProfile(StrEnum):
 class MissingValuePolicy(StrEnum):
     PRESERVE_MISSING = "PRESERVE_MISSING"
     REJECT_ROW = "REJECT_ROW"
+
+
+class PreprocessingPolicy(StrEnum):
+    TRAIN_MEAN_STANDARDIZE_WITH_INDICATOR = "TRAIN_MEAN_STANDARDIZE_WITH_INDICATOR"
 
 
 def _identifier(value: str, name: str) -> None:
@@ -77,4 +82,55 @@ class DatasetBuilderConfig:
             "feature_schema": self.feature_schema.to_dict(),
             "feature_profile": self.feature_profile.value,
             "missing_value_policy": self.missing_value_policy.value,
+        }
+
+
+@dataclass(frozen=True)
+class MLTrainingConfig:
+    """Deterministic engineering defaults for the first probabilistic ML baseline."""
+
+    model_version: str = "multinomial_logistic_v1"
+    feature_profile: FeatureProfile = FeatureProfile.FOOTBALL_PERFORMANCE_ONLY
+    preprocessing_policy: PreprocessingPolicy = (
+        PreprocessingPolicy.TRAIN_MEAN_STANDARDIZE_WITH_INDICATOR
+    )
+    minimum_training_samples: int = 500
+    minimum_class_samples: int = 1
+    epochs: int = 60
+    learning_rate: Decimal = Decimal("0.05")
+    l2_strength: Decimal = Decimal("0.001")
+    random_seed: int = 16
+
+    def __post_init__(self) -> None:
+        _identifier(self.model_version, "model_version")
+        if self.feature_profile is not FeatureProfile.FOOTBALL_PERFORMANCE_ONLY:
+            raise MLDatasetValidationError("TASK 16 baseline requires FOOTBALL_PERFORMANCE_ONLY")
+        if not isinstance(self.preprocessing_policy, PreprocessingPolicy):
+            raise MLDatasetValidationError("preprocessing_policy must use PreprocessingPolicy")
+        for name in ("minimum_training_samples", "minimum_class_samples", "epochs"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                raise MLDatasetValidationError(f"{name} must be at least 1")
+        for name in ("learning_rate", "l2_strength"):
+            value = getattr(self, name)
+            if not isinstance(value, Decimal) or not value.is_finite():
+                raise MLDatasetValidationError(f"{name} must be a finite Decimal")
+        if self.learning_rate <= 0:
+            raise MLDatasetValidationError("learning_rate must be positive")
+        if self.l2_strength < 0:
+            raise MLDatasetValidationError("l2_strength cannot be negative")
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
+            raise MLDatasetValidationError("random_seed must be an integer")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "model_version": self.model_version,
+            "feature_profile": self.feature_profile.value,
+            "preprocessing_policy": self.preprocessing_policy.value,
+            "minimum_training_samples": self.minimum_training_samples,
+            "minimum_class_samples": self.minimum_class_samples,
+            "epochs": self.epochs,
+            "learning_rate": str(self.learning_rate),
+            "l2_strength": str(self.l2_strength),
+            "random_seed": self.random_seed,
         }

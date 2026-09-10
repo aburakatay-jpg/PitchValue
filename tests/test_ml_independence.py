@@ -3,15 +3,25 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 ML = ROOT / "src" / "pitchvalue" / "ml"
+TASK15_FILES = (
+    "config.py",
+    "contracts.py",
+    "dataset.py",
+    "features.py",
+    "provenance.py",
+    "targets.py",
+    "validation.py",
+)
 
 
 def _source() -> str:
-    return "\n".join(path.read_text(encoding="utf-8") for path in sorted(ML.glob("*.py")))
+    return "\n".join((ML / name).read_text(encoding="utf-8") for name in TASK15_FILES)
 
 
 def _imports() -> set[str]:
     names: set[str] = set()
-    for path in ML.glob("*.py"):
+    for name in TASK15_FILES:
+        path = ML / name
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):

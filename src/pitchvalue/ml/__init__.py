@@ -1,4 +1,4 @@
-"""Leakage-safe ML feature, target, and dataset contracts; no model training."""
+"""Leakage-safe ML datasets and the uncalibrated TASK 16 baseline."""
 
 from pitchvalue.ml.config import (
     DatasetBuilderConfig,
@@ -6,6 +6,8 @@ from pitchvalue.ml.config import (
     FeatureSchema,
     MissingValuePolicy,
     MLDatasetValidationError,
+    MLTrainingConfig,
+    PreprocessingPolicy,
 )
 from pitchvalue.ml.contracts import (
     DatasetDiagnostic,
@@ -25,7 +27,18 @@ from pitchvalue.ml.contracts import (
     TrainingRow,
 )
 from pitchvalue.ml.dataset import build_dataset
+from pitchvalue.ml.evaluation import MLEvaluationResult, evaluate_walk_forward_ml
 from pitchvalue.ml.features import order_features
+from pitchvalue.ml.model import (
+    ML_CLASS_ORDER,
+    FittedMultinomialLogistic,
+    MLClassProbability,
+    MLModelStatus,
+    MLPrediction,
+    fit_multinomial_logistic,
+    predict_multinomial_logistic,
+)
+from pitchvalue.ml.preprocessing import FittedPreprocessor, fit_preprocessor, transform_rows
 from pitchvalue.ml.provenance import (
     DatasetRowProvenance,
     FeatureProvenance,
@@ -45,11 +58,20 @@ __all__ = [
     "FeatureProvenance",
     "FeatureRecord",
     "FeatureSchema",
+    "FittedMultinomialLogistic",
+    "FittedPreprocessor",
     "MarketFeatureSemantics",
     "MLDataset",
     "MLDatasetValidationError",
+    "MLEvaluationResult",
+    "MLTrainingConfig",
+    "MLClassProbability",
+    "MLModelStatus",
+    "MLPrediction",
+    "ML_CLASS_ORDER",
     "MissingReason",
     "MissingValuePolicy",
+    "PreprocessingPolicy",
     "RejectedTrainingRow",
     "ResolvedMatchOutcome",
     "RowStatus",
@@ -61,6 +83,11 @@ __all__ = [
     "TrainingRow",
     "build_dataset",
     "derive_target",
+    "evaluate_walk_forward_ml",
+    "fit_multinomial_logistic",
+    "fit_preprocessor",
     "order_features",
+    "predict_multinomial_logistic",
+    "transform_rows",
     "validate_candidate",
 ]
