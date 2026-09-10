@@ -43,6 +43,7 @@ class MLPrediction:
     prediction_as_of: datetime
     class_order: tuple[Selection, ...]
     probabilities: tuple[MLClassProbability, ...]
+    logits: tuple[float, ...]
     status: MLModelStatus
     diagnostics: tuple[str, ...]
     feature_schema_version: str
@@ -57,6 +58,8 @@ class MLPrediction:
                 raise MLDatasetValidationError("ML probabilities must be within [0,1]")
             if sum(values, Decimal(0)) != Decimal(1):
                 raise MLDatasetValidationError("ML probabilities must sum to one")
+            if len(self.logits) != 3 or any(not isfinite(value) for value in self.logits):
+                raise MLDatasetValidationError("ML logits must contain three finite values")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -68,6 +71,7 @@ class MLPrediction:
             "prediction_as_of": self.prediction_as_of.isoformat(),
             "class_order": [item.value for item in self.class_order],
             "probabilities": [item.to_dict() for item in self.probabilities],
+            "logits": list(self.logits),
             "probability_semantics": "UNCALIBRATED ML PROBABILITY",
             "status": self.status.value,
             "diagnostics": list(self.diagnostics),
@@ -156,12 +160,11 @@ def predict_multinomial_logistic(
     predictions: list[MLPrediction] = []
     for row, values in zip(rows, matrix, strict=True):
         augmented = (1.0,) + values
-        raw = _softmax(
-            [
-                sum(weight * value for weight, value in zip(class_weights, augmented, strict=True))
-                for class_weights in model.weights
-            ]
+        logits = tuple(
+            sum(weight * value for weight, value in zip(class_weights, augmented, strict=True))
+            for class_weights in model.weights
         )
+        raw = _softmax(list(logits))
         probabilities = _decimal_probabilities(raw)
         predictions.append(
             MLPrediction(
@@ -176,6 +179,7 @@ def predict_multinomial_logistic(
                     MLClassProbability(selection, probability)
                     for selection, probability in zip(ML_CLASS_ORDER, probabilities, strict=True)
                 ),
+                logits,
                 MLModelStatus.READY,
                 (),
                 row.feature_schema_version,

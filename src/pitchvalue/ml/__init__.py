@@ -1,5 +1,23 @@
 """Leakage-safe ML datasets and the uncalibrated TASK 16 baseline."""
 
+from pitchvalue.ml.calibration import (
+    CalibratedMLPrediction,
+    CalibrationFitExample,
+    CalibrationStatus,
+    FittedTemperatureCalibrator,
+    TemperatureScalingConfig,
+    apply_temperature_scaling,
+    fit_temperature_scaling,
+)
+from pitchvalue.ml.calibration_evaluation import (
+    CalibrationCandidateDecision,
+    CalibrationEvaluationResult,
+    ClassCalibrationComparison,
+    FoldCalibrationResult,
+    NestedCalibrationConfig,
+    SliceCalibrationResult,
+    evaluate_nested_temperature_scaling,
+)
 from pitchvalue.ml.config import (
     DatasetBuilderConfig,
     FeatureProfile,
@@ -48,6 +66,12 @@ from pitchvalue.ml.targets import TargetDerivation, derive_target
 from pitchvalue.ml.validation import validate_candidate
 
 __all__ = [
+    "CalibratedMLPrediction",
+    "CalibrationCandidateDecision",
+    "CalibrationEvaluationResult",
+    "CalibrationFitExample",
+    "CalibrationStatus",
+    "ClassCalibrationComparison",
     "DatasetBuilderConfig",
     "DatasetDiagnostic",
     "DatasetRowProvenance",
@@ -60,6 +84,8 @@ __all__ = [
     "FeatureSchema",
     "FittedMultinomialLogistic",
     "FittedPreprocessor",
+    "FittedTemperatureCalibrator",
+    "FoldCalibrationResult",
     "MarketFeatureSemantics",
     "MLDataset",
     "MLDatasetValidationError",
@@ -71,21 +97,27 @@ __all__ = [
     "ML_CLASS_ORDER",
     "MissingReason",
     "MissingValuePolicy",
+    "NestedCalibrationConfig",
     "PreprocessingPolicy",
     "RejectedTrainingRow",
     "ResolvedMatchOutcome",
     "RowStatus",
     "SourceMatchReference",
+    "SliceCalibrationResult",
     "TargetDefinition",
     "TargetDerivation",
     "TargetMode",
     "TrainingCandidate",
     "TrainingRow",
+    "TemperatureScalingConfig",
+    "apply_temperature_scaling",
     "build_dataset",
     "derive_target",
     "evaluate_walk_forward_ml",
+    "evaluate_nested_temperature_scaling",
     "fit_multinomial_logistic",
     "fit_preprocessor",
+    "fit_temperature_scaling",
     "order_features",
     "predict_multinomial_logistic",
     "transform_rows",
