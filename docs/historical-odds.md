@@ -84,15 +84,20 @@ football-data Pinnacle policy marks observations on or after 2025-07-23 suspect;
 synthetic tests but is not exercised by the current Bet365-only real mapping. Raw staging values
 are never deleted or changed.
 
-Every observation links to its exact staging row and source field. Staging already links to import
-batch, raw identity, and registered source. Versions are fixed identifiers:
+Every observation keeps its exact staging row and source field as ingestion-event lineage. It also
+references the canonical `match_provider_refs` record used across replay imports. That record is
+scoped by provider, source URL, and the SHA-256 hash of the complete raw source row; the hash is
+computed from deterministic, key-sorted JSON. No raw payload, source URL, or hash is copied into
+the odds table. Versions are fixed identifiers:
 
 - `football_data_mapping_v1`
 - `historical_odds_normalization_v1`
 - `football_data_quality_v1`
 
-The DB partial unique identity combines staging row, source field, and all three versions. Inserts
-use atomic conflict handling, so rerunning the same interpretation reuses existing observations.
+The DB partial unique identity combines the replay-stable provider source-record reference, source
+field, and all three versions. The staging row remains a representative audit link but is not the
+uniqueness anchor. Inserts use atomic conflict handling, so the same verified row imported into a
+different staging event reuses the existing observation.
 
 ## Responsibility boundaries
 

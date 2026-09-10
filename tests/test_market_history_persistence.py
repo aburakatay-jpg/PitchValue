@@ -105,7 +105,7 @@ def _source_context(db: Connection) -> int:
         '{"B365H":"2.10","B365D":"3.20","B365A":"3.40",'
         '"B365CH":"2.00","B365CD":"3.30","B365CA":"3.60"}'
     )
-    for suffix in ("first", "replay"):
+    for _ in ("first", "replay"):
         batch_id = _id(
             db,
             """
@@ -116,7 +116,7 @@ def _source_context(db: Connection) -> int:
             {
                 "provider": provider_id,
                 "started": datetime(2099, 1, 3, tzinfo=UTC),
-                "source": f"history-{suffix}.csv",
+                "source": "history.csv",
             },
         )
         staging_id = _id(
@@ -140,6 +140,16 @@ def _source_context(db: Connection) -> int:
             ),
             {"staging": staging_id, "match": match_id},
         )
+    db.execute(
+        text(
+            """
+            INSERT INTO match_provider_refs (
+                match_id,provider_id,source_url,source_record_hash
+            ) VALUES (:match,:provider,'history.csv',repeat('b',64))
+            """
+        ),
+        {"match": match_id, "provider": provider_id},
+    )
     return match_id
 
 

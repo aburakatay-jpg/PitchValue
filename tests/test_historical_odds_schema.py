@@ -125,10 +125,22 @@ def _context(db: Connection) -> dict[str, int]:
         """,
         {"batch_id": batch_id},
     )
+    source_match_provider_ref_id = _id(
+        db,
+        """
+        INSERT INTO match_provider_refs (
+            match_id, provider_id, source_url, source_record_hash
+        ) VALUES (
+            :match_id, :provider_id, 'historical-odds-schema.csv', repeat('a', 64)
+        ) RETURNING match_provider_ref_id
+        """,
+        {"match_id": match_id, "provider_id": provider_id},
+    )
     return {
         "provider_id": provider_id,
         "match_id": match_id,
         "source_staging_row_id": staging_row_id,
+        "source_match_provider_ref_id": source_match_provider_ref_id,
     }
 
 
@@ -137,13 +149,13 @@ HISTORICAL_INSERT = """
         match_id, provider_id, bookmaker, market, selection, decimal_odds,
         observation_role, observation_origin, observation_source_kind,
         timing_semantics, quality_status, quality_reasons,
-        source_staging_row_id, source_field, mapping_version,
+        source_staging_row_id, source_match_provider_ref_id, source_field, mapping_version,
         normalization_version, quality_policy_version, observed_at
     ) VALUES (
         :match_id, :provider_id, :bookmaker, 'match_result', 'home', :decimal_odds,
         :observation_role, :observation_origin, :observation_source_kind,
         :timing_semantics, :quality_status, :quality_reasons,
-        :source_staging_row_id, :source_field, :mapping_version,
+        :source_staging_row_id, :source_match_provider_ref_id, :source_field, :mapping_version,
         :normalization_version, :quality_policy_version, :observed_at
     ) RETURNING odds_snapshot_id
 """
@@ -262,6 +274,7 @@ def test_exact_timing_requires_observed_at(db: Connection) -> None:
     "missing_field",
     [
         "source_staging_row_id",
+        "source_match_provider_ref_id",
         "source_field",
         "mapping_version",
         "normalization_version",
@@ -298,6 +311,7 @@ def test_live_source_does_not_require_football_data_lineage(db: Connection) -> N
         timing_semantics="exact",
         observed_at=datetime(2099, 1, 1, tzinfo=UTC),
         source_staging_row_id=None,
+        source_match_provider_ref_id=None,
         source_field=None,
         mapping_version=None,
         normalization_version=None,
@@ -398,4 +412,6 @@ def test_historical_unique_index_is_partial(db: Connection) -> None:
         )
     ).scalar_one()
     assert "UNIQUE INDEX" in definition
+    assert "source_match_provider_ref_id" in definition
+    assert "source_staging_row_id" not in definition
     assert "WHERE (observation_origin = 'historical_source'::text)" in definition
