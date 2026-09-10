@@ -284,7 +284,7 @@ def test_provider_market_id_without_provider_is_rejected(db: Connection) -> None
         """
         INSERT INTO odds_snapshots (
             match_id, bookmaker, market, selection, decimal_odds,
-            snapshot_type, provider_market_id
+            observation_role, provider_market_id
         ) VALUES (
             :match_id, 'Test Book', 'match_result', 'home', 2.0,
             'opening', 'market-1'
@@ -314,7 +314,7 @@ def test_provider_market_id_with_provider_is_accepted(db: Connection) -> None:
         """
         INSERT INTO odds_snapshots (
             match_id, provider_id, bookmaker, market, selection, decimal_odds,
-            snapshot_type, provider_market_id
+            observation_role, provider_market_id
         ) VALUES (
             :match_id, :provider_id, 'Test Book', 'match_result', 'home', 2.0,
             'opening', 'market-1'
@@ -343,7 +343,7 @@ def test_null_provider_market_and_provider_are_accepted(db: Connection) -> None:
         db,
         """
         INSERT INTO odds_snapshots (
-            match_id, bookmaker, market, selection, decimal_odds, snapshot_type
+            match_id, bookmaker, market, selection, decimal_odds, observation_role
         ) VALUES (
             :match_id, 'Test Book', 'match_result', 'home', 2.0, 'opening'
         ) RETURNING odds_snapshot_id
@@ -395,7 +395,7 @@ def _external_id_statement(
         """
         INSERT INTO odds_snapshots (
             match_id, provider_id, bookmaker, market, selection, decimal_odds,
-            snapshot_type, provider_market_id
+            observation_role, provider_market_id
         ) VALUES (
             :match_id, :provider_id, 'Test Book', 'match_result', 'home', 2.0,
             'opening', :external_id

@@ -146,7 +146,7 @@ def _insert_odds(
         db,
         """
         INSERT INTO odds_snapshots (
-            match_id, bookmaker, market, selection, line, decimal_odds, snapshot_type
+            match_id, bookmaker, market, selection, line, decimal_odds, observation_role
         ) VALUES (
             :match_id, 'Test Book', 'match_result', 'home', :line, :decimal_odds, 'opening'
         )
@@ -213,7 +213,7 @@ def test_odds_not_greater_than_one_are_rejected(db: Connection, decimal_odds: De
         db,
         """
         INSERT INTO odds_snapshots (
-            match_id, bookmaker, market, selection, decimal_odds, snapshot_type
+            match_id, bookmaker, market, selection, decimal_odds, observation_role
         ) VALUES (
             :match_id, 'Test Book', 'match_result', 'home', :decimal_odds, 'opening'
         )
@@ -403,7 +403,7 @@ def test_orphan_odds_are_rejected(db: Connection) -> None:
         db,
         """
         INSERT INTO odds_snapshots (
-            match_id, bookmaker, market, selection, decimal_odds, snapshot_type
+            match_id, bookmaker, market, selection, decimal_odds, observation_role
         ) VALUES (
             9223372036854770000, 'Test Book', 'match_result', 'home', 2.0, 'opening'
         )
