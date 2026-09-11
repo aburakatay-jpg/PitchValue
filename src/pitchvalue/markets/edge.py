@@ -211,6 +211,7 @@ class MarketEdgeResult:
     comparison_status: MarketComparisonStatus
     no_vig_method: NoVigMethod
     no_vig_version: str
+    mapping_version: str
     normalization_version: str
     quality_policy_version: str
     edges: tuple[SelectionEdge, ...]
@@ -301,9 +302,10 @@ def calculate_market_edges(model: RawMLProbability, market: MarketProbability) -
         key=lambda item: (item.probability, -ML_CLASS_ORDER.index(item.selection)),
     )
     best = max(edges, key=lambda item: (item.edge, -ML_CLASS_ORDER.index(item.selection)))
+    mapping_versions = {item.price.mapping_version for item in market.selections}
     versions = {item.price.normalization_version for item in market.selections}
     quality_versions = {item.price.quality_policy_version for item in market.selections}
-    if len(versions) != 1 or len(quality_versions) != 1:
+    if len(mapping_versions) != 1 or len(versions) != 1 or len(quality_versions) != 1:
         raise MarketEdgeError("market group mixes semantic versions")
     return MarketEdgeResult(
         model.row_id,
@@ -320,6 +322,7 @@ def calculate_market_edges(model: RawMLProbability, market: MarketProbability) -
         market.status,
         market.no_vig_method,
         market.no_vig_version,
+        next(iter(mapping_versions)),
         next(iter(versions)),
         next(iter(quality_versions)),
         edges,
