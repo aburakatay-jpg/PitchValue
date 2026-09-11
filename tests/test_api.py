@@ -328,10 +328,10 @@ def test_v1_router_exposes_only_version_metadata() -> None:
     assert response.json() == {"version": "v1"}
 
 
-def test_no_football_business_routes_exist() -> None:
+def test_only_approved_prediction_business_routes_exist() -> None:
     application = create_app(api_settings(), lambda _: FakeDatabase())
-    paths = {path for route in application.routes if (path := getattr(route, "path", None))}
+    paths = set(application.openapi()["paths"])
 
-    assert not paths.intersection(
-        {"/api/v1/matches", "/api/v1/predictions", "/api/v1/odds", "/api/v1/subscriptions"}
-    )
+    assert "/api/v1/predictions" in paths
+    assert "/api/v1/matches/{match_id}/predictions" in paths
+    assert not paths.intersection({"/api/v1/odds", "/api/v1/subscriptions"})

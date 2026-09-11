@@ -164,17 +164,58 @@ def current_predictions(
     """Return cached current rows for fixtures without invoking engine logic."""
     if not match_ids:
         return ()
-    publication = "AND publication_eligible = true" if publication_only else ""
+    publication = "WHERE publication_eligible = true" if publication_only else ""
     statement = text(
         f"""
-        SELECT DISTINCT ON (match_id, market, selection) {_READ_COLUMNS}
-        FROM prediction_snapshots
-        WHERE match_id IN :match_ids AND record_status = 'active' {publication}
-        ORDER BY match_id, market, selection, prediction_as_of DESC,
-                 generated_at DESC, prediction_snapshot_id DESC
+        SELECT * FROM (
+            SELECT DISTINCT ON (match_id, market, selection) {_READ_COLUMNS}
+            FROM prediction_snapshots
+            WHERE match_id IN :match_ids AND record_status = 'active'
+            ORDER BY match_id, market, selection, prediction_as_of DESC,
+                     generated_at DESC, prediction_snapshot_id DESC
+        ) AS current_predictions
+        {publication}
+        ORDER BY match_id, market, selection
         """
     ).bindparams(bindparam("match_ids", expanding=True))
     rows = connection.execute(statement, {"match_ids": list(match_ids)}).mappings()
+    return tuple(_record(row) for row in rows)
+
+
+def published_predictions(
+    connection: Connection,
+    *,
+    match_ids: Sequence[int] | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> tuple[PersistedPrediction, ...]:
+    """Return a bounded current publication cache, optionally for a fixture set."""
+    if limit < 1 or limit > 100 or offset < 0:
+        raise ValueError("published prediction bounds are invalid")
+    if match_ids is not None and not match_ids:
+        return ()
+    fixture_filter = "AND match_id IN :match_ids" if match_ids is not None else ""
+    statement = text(
+        f"""
+        SELECT * FROM (
+            SELECT DISTINCT ON (match_id, market, selection) {_READ_COLUMNS}
+            FROM prediction_snapshots
+            WHERE record_status = 'active'
+              {fixture_filter}
+            ORDER BY match_id, market, selection, prediction_as_of DESC,
+                     generated_at DESC, prediction_snapshot_id DESC
+        ) AS current_predictions
+        WHERE publication_eligible = true
+        ORDER BY match_id, market, selection
+        LIMIT :limit OFFSET :offset
+        """
+    )
+    if match_ids is not None:
+        statement = statement.bindparams(bindparam("match_ids", expanding=True))
+    parameters: dict[str, object] = {"limit": limit, "offset": offset}
+    if match_ids is not None:
+        parameters["match_ids"] = list(match_ids)
+    rows = connection.execute(statement, parameters).mappings()
     return tuple(_record(row) for row in rows)
 
 

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from typing import Protocol
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Connection, Engine, create_engine, text
 
 from pitchvalue.config import Settings
 
@@ -18,6 +19,8 @@ class DatabaseResourceProtocol(Protocol):
     def start(self) -> None: ...
 
     def check(self) -> None: ...
+
+    def connect(self) -> AbstractContextManager[Connection]: ...
 
     def dispose(self) -> None: ...
 
@@ -47,6 +50,14 @@ class DatabaseResource:
             raise RuntimeError("database resource is not initialized")
         with self._engine.connect() as connection:
             connection.execute(text("SELECT 1")).scalar_one()
+
+    @contextmanager
+    def connect(self) -> Iterator[Connection]:
+        """Provide one read transaction boundary for an API request."""
+        if self._engine is None:
+            raise RuntimeError("database resource is not initialized")
+        with self._engine.connect() as connection:
+            yield connection
 
     def dispose(self) -> None:
         if self._engine is not None:
