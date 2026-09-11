@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
@@ -20,6 +21,8 @@ from pitchvalue.prediction.persistence import (
     payload_hash,
     selection_payload,
 )
+
+logger = logging.getLogger(__name__)
 
 _IDENTITY_COLUMNS = """
 match_id, prediction_as_of, market, selection, probability_source, model_version, feature_profile,
@@ -107,22 +110,29 @@ def persist_match_prediction(
     created = 0
     unchanged = 0
     identifiers: list[int] = []
-    with connection.begin_nested():
-        for selection in request.decision.selection_decisions:
-            payload = selection_payload(selection, request)
-            parameters = _parameters(payload, request.generated_at)
-            inserted = connection.execute(_INSERT, parameters).scalar_one_or_none()
-            if inserted is not None:
-                created += 1
-                identifiers.append(inserted)
-                continue
-            existing = connection.execute(_FIND_IDENTITY, parameters).one()
-            if existing.payload_hash != parameters["payload_hash"]:
-                raise PredictionPersistenceError(
-                    "semantic prediction identity already has a different payload"
-                )
-            unchanged += 1
-            identifiers.append(existing.prediction_snapshot_id)
+    try:
+        with connection.begin_nested():
+            for selection in request.decision.selection_decisions:
+                payload = selection_payload(selection, request)
+                parameters = _parameters(payload, request.generated_at)
+                inserted = connection.execute(_INSERT, parameters).scalar_one_or_none()
+                if inserted is not None:
+                    created += 1
+                    identifiers.append(inserted)
+                    continue
+                existing = connection.execute(_FIND_IDENTITY, parameters).one()
+                if existing.payload_hash != parameters["payload_hash"]:
+                    raise PredictionPersistenceError(
+                        "semantic prediction identity already has a different payload"
+                    )
+                unchanged += 1
+                identifiers.append(existing.prediction_snapshot_id)
+    except Exception:
+        logger.error(
+            "prediction persistence failed",
+            extra={"match_id": request.decision.match_id},
+        )
+        raise
     status = PredictionWriteStatus.CREATED if created else PredictionWriteStatus.UNCHANGED
     return PredictionWriteResult(status, created, unchanged, tuple(identifiers))
 
@@ -268,4 +278,10 @@ def invalidate_prediction(
             "prediction_snapshot_id": prediction_snapshot_id,
         },
     )
-    return result.rowcount == 1
+    changed = result.rowcount == 1
+    if changed:
+        logger.info(
+            "prediction snapshot invalidated",
+            extra={"prediction_snapshot_id": prediction_snapshot_id, "record_status": status},
+        )
+    return changed

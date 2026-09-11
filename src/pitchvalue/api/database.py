@@ -11,6 +11,7 @@ from sqlalchemy import Connection, Engine, create_engine, text
 from pitchvalue.config import Settings
 
 EngineFactory = Callable[..., Engine]
+EXPECTED_ALEMBIC_REVISION = "20260911_0008"
 
 
 class DatabaseResourceProtocol(Protocol):
@@ -49,7 +50,17 @@ class DatabaseResource:
         if self._engine is None:
             raise RuntimeError("database resource is not initialized")
         with self._engine.connect() as connection:
-            connection.execute(text("SELECT 1")).scalar_one()
+            revision = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one()
+            if revision != EXPECTED_ALEMBIC_REVISION:
+                raise RuntimeError("database schema revision is not ready")
+            table = connection.execute(
+                text("SELECT to_regclass('public.prediction_snapshots')")
+            ).scalar_one()
+            if table is None:
+                raise RuntimeError("prediction persistence schema is unavailable")
+            connection.execute(text("SELECT 1 FROM prediction_snapshots LIMIT 1"))
 
     @contextmanager
     def connect(self) -> Iterator[Connection]:
