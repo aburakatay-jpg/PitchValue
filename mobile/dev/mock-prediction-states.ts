@@ -29,7 +29,7 @@ const states: PredictionViewState[] = [
 // Contract fixtures only: no provider data and no client-side prediction math.
 export const mockPredictionStates: PredictionStateContract[] = states.map(
   (state, index) => ({
-  surface: surfaces[index % surfaces.length]!,
+    surface: surfaces[index % surfaces.length]!,
     state,
     modelReadinessGate: state === 'PICK' ? 'PASS' : 'PENDING',
     publicDecision:
