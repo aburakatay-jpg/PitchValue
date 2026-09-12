@@ -7,7 +7,9 @@ from math import isfinite, sqrt
 from typing import Any
 
 from pitchvalue.ml.config import FeatureProfile, MLDatasetValidationError
-from pitchvalue.ml.contracts import FeatureKind, TrainingRow
+from pitchvalue.ml.contracts import FeatureKind, PredictionFeatureRow, TrainingRow
+
+type FeatureMatrixRow = TrainingRow | PredictionFeatureRow
 
 
 @dataclass(frozen=True)
@@ -58,7 +60,7 @@ def fit_preprocessor(rows: tuple[TrainingRow, ...]) -> FittedPreprocessor:
 
 
 def transform_rows(
-    preprocessor: FittedPreprocessor, rows: tuple[TrainingRow, ...]
+    preprocessor: FittedPreprocessor, rows: tuple[FeatureMatrixRow, ...]
 ) -> tuple[tuple[float, ...], ...]:
     ordered = _validated_rows(rows, preserve_input_order=True)
     matrix: list[tuple[float, ...]] = []
@@ -92,8 +94,8 @@ def _scale(values: list[float], mean: float) -> float:
 
 
 def _validated_rows(
-    rows: tuple[TrainingRow, ...], *, preserve_input_order: bool = False
-) -> tuple[TrainingRow, ...]:
+    rows: tuple[FeatureMatrixRow, ...], *, preserve_input_order: bool = False
+) -> tuple[FeatureMatrixRow, ...]:
     for row in rows:
         if row.feature_profile is not FeatureProfile.FOOTBALL_PERFORMANCE_ONLY:
             raise MLDatasetValidationError("baseline preprocessing rejects odds-inclusive rows")

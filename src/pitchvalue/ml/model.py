@@ -12,7 +12,12 @@ from typing import Any
 
 from pitchvalue.ml.config import MLDatasetValidationError, MLTrainingConfig
 from pitchvalue.ml.contracts import TrainingRow
-from pitchvalue.ml.preprocessing import FittedPreprocessor, fit_preprocessor, transform_rows
+from pitchvalue.ml.preprocessing import (
+    FeatureMatrixRow,
+    FittedPreprocessor,
+    fit_preprocessor,
+    transform_rows,
+)
 from pitchvalue.prediction.contracts import Selection
 
 ML_CLASS_ORDER = (Selection.HOME, Selection.DRAW, Selection.AWAY)
@@ -154,7 +159,7 @@ def fit_multinomial_logistic(
 
 
 def predict_multinomial_logistic(
-    model: FittedMultinomialLogistic, rows: tuple[TrainingRow, ...]
+    model: FittedMultinomialLogistic, rows: tuple[FeatureMatrixRow, ...]
 ) -> tuple[MLPrediction, ...]:
     matrix = transform_rows(model.preprocessor, rows)
     predictions: list[MLPrediction] = []

@@ -4,19 +4,27 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import Connection, text
 
 from pitchvalue.features import compute_match_features
-from pitchvalue.features.contracts import HistoricalMatch, MatchStatus, TargetFixture, TeamForm
+from pitchvalue.features.config import FeatureConfig, SeasonHistoryScope
+from pitchvalue.features.contracts import (
+    HistoricalMatch,
+    MatchFeatures,
+    MatchStatus,
+    TargetFixture,
+    TeamForm,
+)
 from pitchvalue.ml.config import DatasetBuilderConfig, FeatureProfile, FeatureSchema
 from pitchvalue.ml.contracts import (
     FeatureKind,
     FeatureRecord,
     MissingReason,
     MLDataset,
+    PredictionFeatureRow,
     ResolvedMatchOutcome,
     TargetDefinition,
     TargetMode,
@@ -25,6 +33,7 @@ from pitchvalue.ml.contracts import (
 from pitchvalue.ml.dataset import build_dataset
 from pitchvalue.ml.provenance import DatasetRowProvenance, FeatureProvenance, SourceMatchReference
 from pitchvalue.models.elo import target_elo_snapshot
+from pitchvalue.models.elo.contracts import EloSnapshot
 from pitchvalue.prediction.contracts import MarketFamily, Selection
 
 REAL_FEATURE_SCHEMA_VERSION = "football_performance_match_result_v1"
@@ -94,6 +103,88 @@ class RealDatasetBuild:
     unavailable_count: int
     competition_labels: tuple[tuple[str, str], ...]
     season_labels: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class LivePredictionEvidence:
+    """Outcome-free feature/model evidence for one authenticated future fixture."""
+
+    row: PredictionFeatureRow
+    features: MatchFeatures
+    elo: EloSnapshot
+    history_rows: int
+    latest_source_kickoff: datetime | None
+
+
+def build_live_prediction_evidence(
+    connection: Connection,
+    target: TargetFixture,
+    *,
+    previous_season_id: str,
+) -> LivePredictionEvidence:
+    """Build future fixture features from current/previous season history only."""
+    if target.as_of is None:
+        raise ValueError("live prediction target requires an explicit prediction as_of")
+    history, competition_seasons, _, _ = _load_history(connection)
+    config = FeatureConfig(
+        season_history_scope=SeasonHistoryScope.CURRENT_AND_PREVIOUS_SEASON,
+        previous_season_id=previous_season_id,
+    )
+    features = compute_match_features(target, history, config)
+    order = competition_seasons.get(target.competition_id)
+    if order is None or previous_season_id not in order:
+        raise ValueError("previous season is unavailable for target competition")
+    season_order = (*order, target.season_id)
+    elo = target_elo_snapshot(target, history, season_order=season_order)
+    eligible_sources = tuple(
+        item
+        for item in history
+        if item.competition_id == target.competition_id
+        and item.season_id == previous_season_id
+        and item.kickoff < target.as_of
+        and item.status is MatchStatus.FINISHED
+    )
+    source_matches = tuple(
+        SourceMatchReference(item.match_id, item.kickoff) for item in eligible_sources
+    )
+    provenance = FeatureProvenance(
+        "task06-task07-live-v1",
+        "pitchvalue.features+pitchvalue.models.elo",
+        REAL_SOURCE_VERSION,
+        "football-performance-match-result-live-v1",
+        source_matches,
+    )
+    values = _feature_values(features, elo)
+    records = tuple(
+        FeatureRecord(
+            name,
+            values[name],
+            target.as_of,
+            REAL_FEATURE_SCHEMA_VERSION,
+            provenance,
+            FeatureKind.FOOTBALL_PERFORMANCE,
+            MissingReason.INSUFFICIENT_HISTORY if values[name] is None else None,
+        )
+        for name in BASELINE_FEATURE_NAMES
+    )
+    row = PredictionFeatureRow(
+        f"live:{target.match_id}:{target.as_of.isoformat()}",
+        target.match_id,
+        target.competition_id,
+        target.season_id,
+        target.kickoff,
+        target.as_of,
+        REAL_FEATURE_SCHEMA_VERSION,
+        FeatureProfile.FOOTBALL_PERFORMANCE_ONLY,
+        records,
+    )
+    return LivePredictionEvidence(
+        row,
+        features,
+        elo,
+        len(eligible_sources),
+        max((item.kickoff for item in eligible_sources), default=None),
+    )
 
 
 def load_real_match_result_dataset(connection: Connection) -> RealDatasetBuild:

@@ -10,6 +10,17 @@ from pitchvalue.providers.five_dfa.capabilities import PROVIDER_NAME, SUPPORTED_
 
 MAPPING_VERSION = "five_dfa_free_mapping_v1"
 
+COMPETITION_NAME_MAP = {
+    "Premier League": "Premier League",
+    "England Premier League": "Premier League",
+    "Ligue 1": "Ligue 1",
+    "France Ligue 1": "Ligue 1",
+    "Bundesliga": "Bundesliga",
+    "Germany Bundesliga I": "Bundesliga",
+    "La Liga": "La Liga",
+    "Spain La Liga": "La Liga",
+}
+
 
 class MappingStatus(StrEnum):
     RESOLVED = "RESOLVED"
@@ -42,7 +53,9 @@ def map_competition(provider_competition_id: object, provider_name: object) -> C
     """Map documented names while retaining the provider ID as an opaque source reference."""
     external_id = _source_id(provider_competition_id, "provider competition id")
     name = _text(provider_name, "provider competition name")
-    canonical = name if name in SUPPORTED_COMPETITIONS else None
+    canonical = COMPETITION_NAME_MAP.get(name)
+    if canonical not in SUPPORTED_COMPETITIONS:
+        canonical = None
     return CompetitionReference(
         PROVIDER_NAME,
         external_id,

@@ -229,6 +229,32 @@ class TrainingRow:
 
 
 @dataclass(frozen=True)
+class PredictionFeatureRow:
+    """Outcome-free feature row accepted only by model inference."""
+
+    row_id: str
+    match_id: str
+    competition_id: str
+    season_id: str
+    kickoff: datetime
+    prediction_as_of: datetime
+    feature_schema_version: str
+    feature_profile: FeatureProfile
+    features: tuple[FeatureRecord, ...]
+
+    def __post_init__(self) -> None:
+        for name in ("row_id", "match_id", "competition_id", "season_id"):
+            _identifier(getattr(self, name), name)
+        require_aware(self.kickoff, "kickoff")
+        require_aware(self.prediction_as_of, "prediction_as_of")
+        if self.prediction_as_of >= self.kickoff:
+            raise MLDatasetValidationError("prediction_as_of must be strictly before kickoff")
+
+    def to_dict(self) -> dict[str, Any]:
+        return _primitive(self)  # type: ignore[return-value]
+
+
+@dataclass(frozen=True)
 class RejectedTrainingRow:
     row_identity: str
     status: RowStatus

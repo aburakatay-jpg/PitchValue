@@ -3,7 +3,11 @@
 from pitchvalue.providers.five_dfa.adapter import FiveDfaFreeAdapter
 from pitchvalue.providers.five_dfa.capabilities import FREE_CAPABILITIES
 from pitchvalue.providers.five_dfa.client import FiveDfaClient
-from pitchvalue.providers.five_dfa.config import FiveDfaConfig, load_five_dfa_config
+from pitchvalue.providers.five_dfa.config import (
+    FiveDfaConfig,
+    load_five_dfa_config,
+    load_five_dfa_project_config,
+)
 
 __all__ = [
     "FREE_CAPABILITIES",
@@ -11,4 +15,5 @@ __all__ = [
     "FiveDfaConfig",
     "FiveDfaFreeAdapter",
     "load_five_dfa_config",
+    "load_five_dfa_project_config",
 ]

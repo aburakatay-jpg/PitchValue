@@ -10,6 +10,8 @@ from pitchvalue.providers.five_dfa.mapping import (
     CompetitionReference,
     MappingStatus,
     TeamReference,
+    map_competition,
+    map_team,
 )
 
 
@@ -102,6 +104,38 @@ class CurrentSeasonSyncPlan:
     finished: int
     unchanged: int
     quarantined: int
+
+
+def parse_runtime_fixture(
+    payload: object,
+    *,
+    explicit_team_mappings: dict[str, int],
+    provenance: str = "five_dfa_authenticated_fixture_v1",
+) -> ProviderFixture:
+    """Parse the runtime ``league``/``teams`` envelope without fuzzy matching."""
+    if not isinstance(payload, dict):
+        raise ValueError("fixture payload must be an object")
+    league = payload.get("league")
+    teams = payload.get("teams")
+    if not isinstance(league, dict) or not isinstance(teams, dict):
+        raise ValueError("runtime fixture requires league and teams objects")
+    home = teams.get("home")
+    away = teams.get("away")
+    if not isinstance(home, dict) or not isinstance(away, dict):
+        raise ValueError("runtime fixture requires home and away team objects")
+    competition = map_competition(league.get("id"), league.get("name"))
+    home_team = map_team(
+        home.get("id"), home.get("name"), explicit_team_mappings, provenance=provenance
+    )
+    away_team = map_team(
+        away.get("id"), away.get("name"), explicit_team_mappings, provenance=provenance
+    )
+    return parse_fixture(
+        payload,
+        competition=competition,
+        home_team=home_team,
+        away_team=away_team,
+    )
 
 
 def parse_fixture(
