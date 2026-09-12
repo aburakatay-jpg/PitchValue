@@ -129,6 +129,18 @@ def test_duplicate_provider_row_is_quarantined_locally() -> None:
     assert plan.quarantined == 1
 
 
+def test_valid_empty_schedule_is_a_successful_empty_plan() -> None:
+    plan = build_sync_plan((), ())
+    assert plan.refreshes == ()
+    assert (plan.added, plan.changed_kickoff, plan.finished, plan.unchanged, plan.quarantined) == (
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
+
+
 def test_new_provider_id_reconciles_only_on_exact_existing_identity() -> None:
     exact = build_sync_plan((_fixture(fixture_id=200),), (_existing(),))
     assert exact.refreshes[0].action is RefreshAction.UNCHANGED

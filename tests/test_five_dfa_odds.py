@@ -38,6 +38,7 @@ def _payload(goal_line: object = None) -> dict[str, Any]:
 
 def test_1x2_and_btts_are_decimal_role_only_nonpublication_observations() -> None:
     result = normalize_bet365_snapshot(_payload())
+    assert result == normalize_bet365_snapshot(_payload())
     match_result = [
         item for item in result.observations if item.market is MarketFamily.MATCH_RESULT
     ]
