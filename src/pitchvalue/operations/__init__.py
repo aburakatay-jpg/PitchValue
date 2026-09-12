@@ -8,6 +8,7 @@ from pitchvalue.operations.contracts import (
     QuarantineStatus,
     RunStatus,
     RunType,
+    transition_run,
 )
 from pitchvalue.operations.schedule import RUN_SCHEDULE, fixture_horizon, includes_kickoff
 
@@ -22,4 +23,5 @@ __all__ = [
     "RunType",
     "fixture_horizon",
     "includes_kickoff",
+    "transition_run",
 ]

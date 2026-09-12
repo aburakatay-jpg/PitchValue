@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from enum import StrEnum
 from types import MappingProxyType
@@ -115,6 +115,25 @@ class EngineRun:
             and self.finished_at < self.started_at
         ):
             raise ValueError("finished_at cannot precede started_at")
+
+
+def transition_run(run: EngineRun, status: RunStatus, occurred_at: datetime) -> EngineRun:
+    """Apply the provider-neutral lifecycle; retries use a new explicit run identity."""
+    _aware(occurred_at, "occurred_at")
+    allowed = {
+        RunStatus.SCHEDULED: frozenset({RunStatus.RUNNING}),
+        RunStatus.RUNNING: frozenset(
+            {RunStatus.SUCCEEDED, RunStatus.FAILED, RunStatus.PARTIAL_WITH_QUARANTINES}
+        ),
+        RunStatus.SUCCEEDED: frozenset(),
+        RunStatus.FAILED: frozenset(),
+        RunStatus.PARTIAL_WITH_QUARANTINES: frozenset(),
+    }
+    if status not in allowed[run.status]:
+        raise ValueError("invalid run status transition")
+    if status is RunStatus.RUNNING:
+        return replace(run, status=status, started_at=occurred_at)
+    return replace(run, status=status, finished_at=occurred_at)
 
 
 @dataclass(frozen=True)

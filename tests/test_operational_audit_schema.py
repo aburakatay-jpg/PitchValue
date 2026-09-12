@@ -9,9 +9,7 @@ from alembic.script import ScriptDirectory
 def test_operational_audit_is_next_provider_neutral_migration() -> None:
     root = Path(__file__).resolve().parents[1]
     scripts = ScriptDirectory.from_config(Config(root / "alembic.ini"))
-    head_id = scripts.get_current_head()
-    assert head_id is not None
-    head = scripts.get_revision(head_id)
+    head = scripts.get_revision("20260912_0009")
     assert head.revision == "20260912_0009"
     assert head.down_revision == "20260911_0008"
 

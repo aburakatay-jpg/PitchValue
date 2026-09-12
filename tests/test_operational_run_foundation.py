@@ -14,6 +14,7 @@ from pitchvalue.operations import (
     RunType,
     fixture_horizon,
     includes_kickoff,
+    transition_run,
 )
 from pitchvalue.operations.schedule import next_configured_run
 
@@ -110,3 +111,13 @@ def test_naive_run_and_invalid_schedule_are_rejected() -> None:
         replace(_run(), scheduled_for=datetime(2026, 9, 15, 8))
     with pytest.raises(ValueError, match="configured run"):
         fixture_horizon(datetime(2026, 9, 16, 8, tzinfo=UTC), "Europe/Istanbul")
+
+
+def test_run_lifecycle_is_explicit_and_terminal_runs_do_not_restart() -> None:
+    started = transition_run(_run(), RunStatus.RUNNING, datetime(2026, 9, 15, 8, 1, tzinfo=UTC))
+    finished = transition_run(
+        started, RunStatus.PARTIAL_WITH_QUARANTINES, datetime(2026, 9, 15, 8, 2, tzinfo=UTC)
+    )
+    assert finished.finished_at is not None
+    with pytest.raises(ValueError, match="invalid run status transition"):
+        transition_run(finished, RunStatus.RUNNING, datetime(2026, 9, 15, 8, 3, tzinfo=UTC))

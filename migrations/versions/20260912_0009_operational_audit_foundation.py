@@ -68,7 +68,20 @@ def upgrade() -> None:
 
         CREATE TABLE operational_events (
             event_id varchar(64) PRIMARY KEY CHECK (event_id ~ '^[0-9a-f]{64}$'),
-            event_type text NOT NULL CHECK (length(btrim(event_type)) > 0),
+            event_type text NOT NULL CHECK (event_type IN (
+                'RUN_SCHEDULED', 'RUN_STARTED',
+                'CURRENT_SEASON_SYNC_STARTED', 'CURRENT_SEASON_SYNC_SUCCEEDED',
+                'CURRENT_SEASON_SYNC_FAILED', 'FIXTURE_REFRESH_STARTED',
+                'FIXTURE_REFRESH_SUCCEEDED', 'FIXTURE_REFRESH_FAILED',
+                'DATA_GATE_STARTED', 'DATA_GATE_SUCCEEDED', 'DATA_GATE_FAILED',
+                'FIXTURE_QUARANTINED', 'FULL_ENGINE_STARTED',
+                'MATCH_ANALYSIS_STARTED', 'MATCH_ANALYSIS_COMPLETED',
+                'MATCH_ANALYSIS_FAILED', 'PERSISTENCE_STARTED',
+                'PERSISTENCE_SUCCEEDED', 'PERSISTENCE_FAILED',
+                'REPORT_GENERATION_STARTED', 'REPORT_GENERATION_SUCCEEDED',
+                'REPORT_ARCHIVE_FAILED', 'RUN_SUCCEEDED', 'RUN_FAILED',
+                'READINESS_FAILED', 'PROVIDER_FAILED', 'ABNORMAL_DATA_COVERAGE'
+            )),
             event_version text NOT NULL CHECK (length(btrim(event_version)) > 0),
             occurred_at timestamptz NOT NULL,
             severity text NOT NULL CHECK (severity IN ('INFO', 'WARNING', 'ERROR', 'CRITICAL')),
@@ -77,7 +90,14 @@ def upgrade() -> None:
             market_family text,
             provider_domain text,
             correlation_id text NOT NULL CHECK (length(btrim(correlation_id)) > 0),
-            reason_code text,
+            reason_code text CHECK (reason_code IS NULL OR reason_code IN (
+                'DB_UNAVAILABLE', 'MIGRATION_MISMATCH', 'CURRENT_SEASON_STALE',
+                'PROVIDER_UNAVAILABLE', 'PROVIDER_TIMEOUT', 'PROVIDER_SCHEMA_INVALID',
+                'ABNORMAL_COVERAGE_DROP', 'FIXTURE_MAPPING_UNRESOLVED', 'FIXTURE_INVALID',
+                'MARKET_FAMILY_INCOMPLETE', 'MARKET_EVIDENCE_UNAVAILABLE', 'ODDS_STALE',
+                'PERSISTENCE_CONFLICT', 'PERSISTENCE_FAILED', 'REPORT_ARCHIVE_FAILED',
+                'CONFIG_VERSION_MISMATCH', 'MODEL_ARTIFACT_INVALID', 'LEAKAGE_VIOLATION'
+            )),
             source_component text NOT NULL CHECK (length(btrim(source_component)) > 0),
             metadata jsonb NOT NULL CHECK (jsonb_typeof(metadata) = 'object'),
             delivery_visibility text NOT NULL CHECK (

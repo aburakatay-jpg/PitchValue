@@ -7,7 +7,7 @@ from alembic.script import ScriptDirectory
 def test_task21_is_single_new_migration_head() -> None:
     root = Path(__file__).resolve().parents[1]
     scripts = ScriptDirectory.from_config(Config(root / "alembic.ini"))
-    head = scripts.get_revision(scripts.get_current_head())
+    head = scripts.get_revision("20260911_0008")
     assert head.revision == "20260911_0008"
     assert head.down_revision == "20260910_0007"
 

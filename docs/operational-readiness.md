@@ -9,7 +9,7 @@ model, market, scoring, or publication-policy semantics:
 ## Runtime dependencies and startup
 
 The API requires a valid external `DATABASE_URL`, reachable PostgreSQL, Alembic revision
-`20260911_0008`, and a readable `prediction_snapshots` table. Configuration fails clearly when
+`20260912_0010`, and a readable `prediction_snapshots` table. Configuration fails clearly when
 the database URL is missing or unsupported. Secrets remain outside source control and settings
 representations redact the URL. Runtime request handlers never run migrations automatically.
 
@@ -86,7 +86,7 @@ production operation is active.
 
 The technical release gate requires all of the following:
 
-- PostgreSQL reachable and Alembic exactly at `20260911_0008`.
+- PostgreSQL reachable and Alembic exactly at `20260912_0010`.
 - Historical Data Gate PASS and canonical historical counts unchanged.
 - Prediction persistence schema readable; real operational validation performs no writes.
 - Full automated, focused regression, formatting, lint, typing, and mobile checks pass.
