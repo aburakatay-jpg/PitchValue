@@ -77,12 +77,7 @@ def _decisions(
     for result in results:
         row: RawMLOOSRow = oos_by_id[result.row_id]
         evidence = evidence_by_id[result.row_id]
-        signals = (
-            _probability_signal(evidence.poisson, ModelFamily.POISSON, result.match_id),
-            evidence.elo,
-            evidence.form,
-            _raw_ml_signal(row),
-        )
+        signals = build_real_model_signals(row, evidence)
         agreements = evaluate_match_result_agreement(signals, match_id=result.match_id)
         score, diagnostics = quality.get(
             result.match_id, (None, ("DATA_QUALITY_RECORD_UNAVAILABLE",))
@@ -99,6 +94,35 @@ def _decisions(
             )
         )
     return tuple(output)
+
+
+def orchestrate_real_market_results(
+    connection: Connection,
+    results: tuple[MarketEdgeResult, ...],
+    oos_rows: tuple[RawMLOOSRow, ...],
+    evidence: tuple[EnsembleModelEvidence, ...],
+) -> tuple[MatchDecision, ...]:
+    """Run the existing orchestrator for aligned real-data evidence without writes."""
+    return _decisions(
+        results,
+        {item.model.row_id: item for item in oos_rows},
+        {item.row_id: item for item in evidence},
+        _data_quality(connection),
+    )
+
+
+def build_real_model_signals(
+    row: RawMLOOSRow, evidence: EnsembleModelEvidence
+) -> tuple[ModelSignal, ...]:
+    """Adapt aligned RAW ML and independent model evidence to TASK 10 signals."""
+    if row.model.row_id != evidence.row_id or row.model.match_id != evidence.match_id:
+        raise ValueError("model evidence must align by row and match identity")
+    return (
+        _probability_signal(evidence.poisson, ModelFamily.POISSON, row.model.match_id),
+        evidence.elo,
+        evidence.form,
+        _raw_ml_signal(row),
+    )
 
 
 def _raw_ml_signal(row: RawMLOOSRow) -> ModelSignal:

@@ -24,13 +24,18 @@ from pitchvalue.prediction.contracts import MarketFamily
 
 
 def load_real_ensemble_evidence(
-    connection: Connection, dataset: MLDataset
+    connection: Connection,
+    dataset: MLDataset,
+    *,
+    row_ids: frozenset[str] | None = None,
 ) -> tuple[EnsembleModelEvidence, ...]:
     """Recompute only pre-match model evidence; never query odds or mutate the database."""
     history, season_order, _, _ = _load_history(connection)
     matches = {match.match_id: match for match in history}
     result: list[EnsembleModelEvidence] = []
     for row in dataset.rows:
+        if row_ids is not None and row.row_id not in row_ids:
+            continue
         match = matches[row.match_id]
         target = TargetFixture(
             match.match_id,
