@@ -1,8 +1,9 @@
 # V1 market direct code audit
 
 This audit inspects the repository at the provider-independent checkpoint. `PARTIAL` means real
-code exists for some layers but the complete probability-to-publication path does not. Mathematical
-derivability is not treated as production readiness. No missing market is implemented here.
+code exists for some layers but the complete probability-to-publication path does not.
+Mathematical derivability is not treated as production readiness. No missing market is implemented
+here.
 
 ## Shared evidence
 

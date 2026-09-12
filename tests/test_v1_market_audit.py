@@ -4,9 +4,7 @@ from pathlib import Path
 
 
 def test_v1_audit_names_every_required_market_and_does_not_claim_readiness() -> None:
-    document = (
-        Path(__file__).resolve().parents[1] / "docs/v1-market-code-audit.md"
-    ).read_text()
+    document = (Path(__file__).resolve().parents[1] / "docs/v1-market-code-audit.md").read_text()
     required = (
         "MATCH_RESULT / 1X2",
         "OVER_UNDER_1_5",
@@ -24,8 +22,6 @@ def test_v1_audit_names_every_required_market_and_does_not_claim_readiness() -> 
 
 
 def test_recommendation_keeps_double_chance_nonexclusive_and_does_not_implement_markets() -> None:
-    document = (
-        Path(__file__).resolve().parents[1] / "docs/v1-market-code-audit.md"
-    ).read_text()
+    document = (Path(__file__).resolve().parents[1] / "docs/v1-market-code-audit.md").read_text()
     assert "overlapping selections are not a mutually exclusive book" in document
     assert "It is not a frozen product roadmap" in document
