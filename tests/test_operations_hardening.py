@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy import Engine, create_engine, text
 
 from pitchvalue.config import load_settings
+from pitchvalue.operations import persisted_shadow_run
 from pitchvalue.operations.events import EventType, ReasonCode
 from pitchvalue.operations.hardening import (
     FailureClass,
@@ -39,6 +40,7 @@ from pitchvalue.providers.five_dfa.client import (
 
 NOW = datetime(2026, 9, 13, 12, tzinfo=UTC)
 TEST_RUN = "operations-hardening-stale-test"
+EVENT_FAILURE_RUN = "operations-hardening-event-failure-test"
 
 
 @pytest.fixture(scope="session")
@@ -124,12 +126,35 @@ def test_postgres_run_lock_rejects_collision_allows_independent_and_releases(
             pass
 
 
-def _delete_test_run(engine: Engine) -> None:
+def _delete_test_run(engine: Engine, run_id: str = TEST_RUN) -> None:
     with engine.begin() as connection:
         connection.execute(
-            text("DELETE FROM operational_events WHERE run_id=:run"), {"run": TEST_RUN}
+            text("DELETE FROM operational_events WHERE run_id=:run"), {"run": run_id}
         )
-        connection.execute(text("DELETE FROM engine_runs WHERE run_id=:run"), {"run": TEST_RUN})
+        connection.execute(text("DELETE FROM engine_runs WHERE run_id=:run"), {"run": run_id})
+
+
+def _insert_running_test_run(engine: Engine, run_id: str) -> None:
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """INSERT INTO engine_runs(
+                run_id,run_type,scheduled_for,started_at,status,schedule_version,
+                fixture_horizon,model_version,feature_profile,orchestrator_version,
+                policy_version,dq_version,market_stability_version,
+                calibration_confidence_version,no_vig_version,provider_contract_version)
+                SELECT :run,'SHADOW',:scheduled,:started,'RUNNING',schedule_version,
+                fixture_horizon,model_version,feature_profile,orchestrator_version,
+                policy_version,dq_version,market_stability_version,
+                calibration_confidence_version,no_vig_version,provider_contract_version
+                FROM engine_runs ORDER BY persisted_at LIMIT 1"""
+            ),
+            {
+                "run": run_id,
+                "scheduled": NOW - timedelta(hours=4),
+                "started": NOW - timedelta(hours=3),
+            },
+        )
 
 
 @pytest.mark.integration
@@ -138,26 +163,7 @@ def test_stale_run_recovery_is_explicit_audited_and_idempotent(
 ) -> None:
     _delete_test_run(hardening_engine)
     try:
-        with hardening_engine.begin() as connection:
-            connection.execute(
-                text(
-                    """INSERT INTO engine_runs(
-                    run_id,run_type,scheduled_for,started_at,status,schedule_version,
-                    fixture_horizon,model_version,feature_profile,orchestrator_version,
-                    policy_version,dq_version,market_stability_version,
-                    calibration_confidence_version,no_vig_version,provider_contract_version)
-                    SELECT :run,'SHADOW',:scheduled,:started,'RUNNING',schedule_version,
-                    fixture_horizon,model_version,feature_profile,orchestrator_version,
-                    policy_version,dq_version,market_stability_version,
-                    calibration_confidence_version,no_vig_version,provider_contract_version
-                    FROM engine_runs ORDER BY persisted_at LIMIT 1"""
-                ),
-                {
-                    "run": TEST_RUN,
-                    "scheduled": NOW - timedelta(hours=4),
-                    "started": NOW - timedelta(hours=3),
-                },
-            )
+        _insert_running_test_run(hardening_engine, TEST_RUN)
         with hardening_engine.begin() as connection:
             candidates = stale_runs(connection, now=NOW, older_than=timedelta(hours=2))
             assert any(item.run_id == TEST_RUN and not item.lock_active for item in candidates)
@@ -181,6 +187,30 @@ def test_stale_run_recovery_is_explicit_audited_and_idempotent(
             )
     finally:
         _delete_test_run(hardening_engine)
+
+
+@pytest.mark.integration
+def test_event_persistence_failure_cannot_strand_started_run(
+    hardening_engine: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _delete_test_run(hardening_engine, EVENT_FAILURE_RUN)
+    _insert_running_test_run(hardening_engine, EVENT_FAILURE_RUN)
+
+    def fail_event_write(*args: object, **kwargs: object) -> None:
+        del args, kwargs
+        raise RuntimeError("injected event persistence failure")
+
+    monkeypatch.setattr(persisted_shadow_run, "_fail_run", fail_event_write)
+    try:
+        persisted_shadow_run._mark_started_run_failed(hardening_engine, EVENT_FAILURE_RUN, NOW)
+        with hardening_engine.connect() as connection:
+            status = connection.execute(
+                text("SELECT status FROM engine_runs WHERE run_id=:run"),
+                {"run": EVENT_FAILURE_RUN},
+            ).scalar_one()
+        assert status == "FAILED"
+    finally:
+        _delete_test_run(hardening_engine, EVENT_FAILURE_RUN)
 
 
 @pytest.mark.integration

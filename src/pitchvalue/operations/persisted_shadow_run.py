@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Connection, create_engine, text
+from sqlalchemy import Connection, Engine, create_engine, text
 
 from pitchvalue.config import load_settings
 from pitchvalue.operations.contracts import RunStatus
@@ -276,15 +276,7 @@ def _persist_materialized_shadow(
         )
     except BaseException:
         if sync is not None:
-            try:
-                with engine.begin() as connection:
-                    _fail_run(connection, sync.run_id, prediction_as_of)
-            except Exception:
-                # Event persistence must not strand an already-started run in RUNNING.
-                with engine.begin() as connection:
-                    _set_terminal_status(
-                        connection, sync.run_id, RunStatus.FAILED, prediction_as_of
-                    )
+            _mark_started_run_failed(engine, sync.run_id, prediction_as_of)
         raise
     finally:
         if lock_acquired:
@@ -292,6 +284,16 @@ def _persist_materialized_shadow(
         if lock_connection is not None:
             lock_connection.close()
         engine.dispose()
+
+
+def _mark_started_run_failed(engine: Engine, run_id: str, occurred_at: datetime) -> None:
+    try:
+        with engine.begin() as connection:
+            _fail_run(connection, run_id, occurred_at)
+    except Exception:
+        # Event persistence must not strand an already-started run in RUNNING.
+        with engine.begin() as connection:
+            _set_terminal_status(connection, run_id, RunStatus.FAILED, occurred_at)
 
 
 def _finish_run(
