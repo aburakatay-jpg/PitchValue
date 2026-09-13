@@ -78,7 +78,10 @@ def _rate_limit(headers: Mapping[str, str]) -> RateLimitState:
 
 
 def _error_kind(status: int, code: str) -> ProviderErrorKind:
-    if status == 401 or code in {"missing_api_key", "invalid_api_key"}:
+    if (status in {401, 403} and code != "insufficient_plan") or code in {
+        "missing_api_key",
+        "invalid_api_key",
+    }:
         return ProviderErrorKind.AUTHENTICATION
     if status == 429 or code == "too_many_requests":
         return ProviderErrorKind.RATE_LIMIT
@@ -133,9 +136,13 @@ class FiveDfaClient:
                 )
             except httpx.TimeoutException as error:
                 if attempt + 1 < attempts:
+                    self._sleep(_backoff_seconds(attempt))
                     continue
                 raise FiveDfaError(ProviderErrorKind.TIMEOUT, "provider_timeout") from error
             except httpx.HTTPError as error:
+                if attempt + 1 < attempts:
+                    self._sleep(_backoff_seconds(attempt))
+                    continue
                 raise FiveDfaError(ProviderErrorKind.UNAVAILABLE, "provider_unavailable") from error
             limits = _rate_limit(response.headers)
             try:
@@ -158,12 +165,9 @@ class FiveDfaClient:
                 request_id = raw_error.get("request_id")
                 request_id = str(request_id) if request_id is not None else None
                 kind = _error_kind(response.status_code, code)
-                if (
-                    kind is ProviderErrorKind.RATE_LIMIT
-                    and attempt + 1 < attempts
-                    and limits.retry_after_seconds is not None
-                ):
-                    self._sleep(float(limits.retry_after_seconds))
+                retry_delay = _retry_delay(kind, limits, attempt)
+                if attempt + 1 < attempts and retry_delay is not None:
+                    self._sleep(retry_delay)
                     continue
                 raise FiveDfaError(
                     kind,
@@ -206,3 +210,19 @@ class FiveDfaClient:
 
 def _integer(value: object) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _backoff_seconds(attempt: int) -> float:
+    """Deterministic bounded backoff; jitter is intentionally absent for replayable tests."""
+    return float(min(2**attempt, 10))
+
+
+def _retry_delay(kind: ProviderErrorKind, limits: RateLimitState, attempt: int) -> float | None:
+    if kind is ProviderErrorKind.RATE_LIMIT:
+        retry_after = limits.retry_after_seconds
+        if retry_after is None or retry_after < 0 or retry_after > 10:
+            return None
+        return float(retry_after)
+    if kind is ProviderErrorKind.UNAVAILABLE:
+        return _backoff_seconds(attempt)
+    return None

@@ -136,3 +136,61 @@ def test_malformed_envelope_and_host_injection_are_rejected() -> None:
         _client(transport).get("/fixtures")
     with pytest.raises(ValueError, match="host-relative"):
         _client(transport).get("https://evil.example/fixtures")
+
+
+def test_timeout_connection_and_server_failures_retry_with_bounded_backoff() -> None:
+    for first in (
+        httpx.ReadTimeout("timeout"),
+        httpx.ConnectError("connection"),
+        httpx.Response(
+            503,
+            json={"success": 0, "error": {"code": "internal_error"}},
+        ),
+    ):
+        calls = 0
+        sleeps: list[float] = []
+
+        def handler(request: httpx.Request, first=first) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                if isinstance(first, BaseException):
+                    raise first
+                return first
+            return httpx.Response(200, json={"success": 1, "data": []})
+
+        assert (
+            _client(httpx.MockTransport(handler), retries=1, sleeps=sleeps).get("/fixtures").data
+            == []
+        )
+        assert calls == 2
+        assert sleeps == [1.0]
+
+
+def test_auth_permanent_error_and_long_retry_after_are_not_retried() -> None:
+    for status, code, headers in (
+        (403, "forbidden", {}),
+        (400, "invalid_market", {}),
+        (429, "too_many_requests", {"Retry-After": "30"}),
+    ):
+        calls = 0
+        sleeps: list[float] = []
+
+        def handler(
+            request: httpx.Request,
+            status=status,
+            code=code,
+            headers=headers,
+        ) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            return httpx.Response(
+                status,
+                json={"success": 0, "error": {"code": code}},
+                headers=headers,
+            )
+
+        with pytest.raises(FiveDfaError):
+            _client(httpx.MockTransport(handler), retries=1, sleeps=sleeps).get("/fixtures")
+        assert calls == 1
+        assert sleeps == []
