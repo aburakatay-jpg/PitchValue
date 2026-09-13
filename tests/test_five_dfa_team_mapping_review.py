@@ -16,6 +16,7 @@ from pitchvalue.operations.current_season import (
     deterministic_run_id,
     persist_current_season_payloads,
 )
+from pitchvalue.providers.five_dfa.client import RateLimitState
 from pitchvalue.providers.five_dfa.team_mapping_review import (
     REVIEWED_TEAM_MAPPINGS,
     TEAM_MAPPING_REVIEW_VERSION,
@@ -266,9 +267,11 @@ def test_multi_window_replay_fetches_fixture_payload_only_once(
     class Adapter:
         requests = 0
 
-        def fixture_payloads(self, **_: object) -> tuple[tuple[dict[str, object], ...], tuple[str]]:
+        def fixture_payloads(
+            self, **_: object
+        ) -> tuple[tuple[dict[str, object], ...], tuple[RateLimitState, ...]]:
             self.requests += 1
-            return ({"id": 1},), ("rate-state",)
+            return ({"id": 1},), (RateLimitState(60, 59, None, None),)
 
     observed: list[object] = []
 

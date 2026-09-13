@@ -27,6 +27,14 @@ from pitchvalue.operations.events import (
     ReasonCode,
     severity_for,
 )
+from pitchvalue.operations.hardening import (
+    ensure_provider_quota,
+    evaluate_readiness,
+    load_activation_gates,
+    run_lock,
+    validate_manual_window,
+    validate_report_root,
+)
 from pitchvalue.operations.manual_shadow_run import (
     AuthenticatedShadowRunReport,
     GateStatus,
@@ -101,8 +109,10 @@ def run_persisted_shadow(
     max_fixtures: int | None = None,
 ) -> PersistedShadowResult:
     """Persist authentic source evidence and never-public shadow analysis replay-safely."""
+    validate_manual_window(start_time, end_time, max_fixtures)
     payloads, rate_states = adapter.fixture_payloads(start_time=start_time, end_time=end_time)
     materialized = _bounded_payloads(payloads, max_fixtures)
+    ensure_provider_quota(rate_states, expected_additional_calls=len(materialized))
     replay = _ReplayAdapter(materialized, rate_states, adapter)
     return _persist_materialized_shadow(
         database_url,
@@ -125,8 +135,11 @@ def run_persisted_shadow_with_replay(
     max_fixtures: int | None = None,
 ) -> PersistedShadowReplayResult:
     """Fetch once, then prove deterministic persistence replay without another network call."""
+    validate_manual_window(start_time, end_time, max_fixtures)
     payloads, rate_states = adapter.fixture_payloads(start_time=start_time, end_time=end_time)
-    replay = _ReplayAdapter(_bounded_payloads(payloads, max_fixtures), rate_states, adapter)
+    materialized = _bounded_payloads(payloads, max_fixtures)
+    ensure_provider_quota(rate_states, expected_additional_calls=len(materialized))
+    replay = _ReplayAdapter(materialized, rate_states, adapter)
     first = _persist_materialized_shadow(
         database_url,
         replay,
@@ -158,8 +171,15 @@ def _persist_materialized_shadow(
     materialized = replay.payloads
     run_id = deterministic_run_id(materialized, prediction_as_of)
     engine = create_engine(database_url, pool_pre_ping=True)
+    lock_connection: Connection | None = None
+    lock_context: Any = None
+    lock_acquired = False
     sync: CurrentSeasonPersistenceResult | None = None
     try:
+        lock_connection = engine.connect()
+        lock_context = run_lock(lock_connection, run_id)
+        lock_context.__enter__()
+        lock_acquired = True
         with engine.begin() as connection:
             sync = persist_current_season_payloads(
                 connection,
@@ -256,10 +276,21 @@ def _persist_materialized_shadow(
         )
     except BaseException:
         if sync is not None:
-            with engine.begin() as connection:
-                _fail_run(connection, sync.run_id, prediction_as_of)
+            try:
+                with engine.begin() as connection:
+                    _fail_run(connection, sync.run_id, prediction_as_of)
+            except Exception:
+                # Event persistence must not strand an already-started run in RUNNING.
+                with engine.begin() as connection:
+                    _set_terminal_status(
+                        connection, sync.run_id, RunStatus.FAILED, prediction_as_of
+                    )
         raise
     finally:
+        if lock_acquired:
+            lock_context.__exit__(None, None, None)
+        if lock_connection is not None:
+            lock_connection.close()
         engine.dispose()
 
 
@@ -466,14 +497,23 @@ def main() -> int:
     parser.add_argument("--as-of", required=True, type=_aware)
     parser.add_argument("--report-directory", required=True, type=Path)
     parser.add_argument("--verify-replay", action="store_true")
-    parser.add_argument("--max-fixtures", type=int)
+    parser.add_argument("--max-fixtures", type=int, default=8)
     args = parser.parse_args()
+    settings = load_settings()
     config = load_five_dfa_project_config(os.environ)
+    readiness_values = dict(os.environ)
+    readiness_values["FIVEDFA_API_KEY"] = config.api_key
+    readiness = evaluate_readiness(settings, readiness_values, provider_required=True)
+    if not readiness.ready:
+        raise RuntimeError("manual engine readiness failed")
+    if not load_activation_gates(os.environ).safe_for_shadow:
+        raise RuntimeError("manual shadow requires all production activation gates disabled")
+    validate_report_root(args.report_directory)
     with FiveDfaClient(config) as client:
         adapter = FiveDfaFreeAdapter(client)
         if args.verify_replay:
             pair = run_persisted_shadow_with_replay(
-                load_settings().database_url,
+                settings.database_url,
                 adapter,
                 start_time=args.start_date,
                 end_time=args.end_date + timedelta(days=1),
@@ -490,7 +530,7 @@ def main() -> int:
             )
             return 0
         result = run_persisted_shadow(
-            load_settings().database_url,
+            settings.database_url,
             adapter,
             start_time=args.start_date,
             end_time=args.end_date + timedelta(days=1),
