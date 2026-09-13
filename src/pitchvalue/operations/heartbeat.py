@@ -9,6 +9,7 @@ from enum import StrEnum
 from sqlalchemy import Connection, text
 
 from pitchvalue.operations.hardening import HealthState
+from pitchvalue.operations.metadata import load_fixture_refresh_metadata
 from pitchvalue.operations.schedule import previous_configured_run
 
 HEARTBEAT_VERSION = "provider_neutral_scheduler_heartbeat_v1"
@@ -172,19 +173,19 @@ def load_heartbeat(
         text(
             """SELECT event_type,max(occurred_at) FROM operational_events
             WHERE event_type IN (
-                'CURRENT_SEASON_SYNC_SUCCEEDED','FIXTURE_REFRESH_SUCCEEDED',
-                'REPORT_ARCHIVE_FAILED')
+                'CURRENT_SEASON_SYNC_SUCCEEDED','REPORT_ARCHIVE_FAILED')
             GROUP BY event_type"""
         )
     ):
         if occurred_at is not None:
             event_times[str(event_type)] = occurred_at
+    refresh = load_fixture_refresh_metadata(connection, now=now)
     return evaluate_heartbeat(
         now=now,
         scheduler_enabled=scheduler_enabled,
         evidence=evidence,
         latest_sync=event_times.get("CURRENT_SEASON_SYNC_SUCCEEDED"),
-        latest_fixture_refresh=event_times.get("FIXTURE_REFRESH_SUCCEEDED"),
+        latest_fixture_refresh=refresh.last_success_at,
         latest_report_failure=event_times.get("REPORT_ARCHIVE_FAILED"),
     )
 

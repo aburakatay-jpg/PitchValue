@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, text
 from pitchvalue.api.database import EXPECTED_ALEMBIC_REVISION, DatabaseResource
 from pitchvalue.config import Settings, load_settings
 from pitchvalue.operations.hardening import evaluate_readiness, load_activation_gates
+from pitchvalue.operations.metadata import FreshnessState, load_fixture_refresh_metadata
 from pitchvalue.providers.five_dfa.capabilities import SUPPORTED_COMPETITIONS
 from pitchvalue.providers.five_dfa.mapping import COMPETITION_NAME_MAP
 
@@ -43,6 +44,10 @@ class ShadowActivationValidationResult:
     shadow_repository_available: bool
     report_directory_writable: bool
     current_season_fresh: bool
+    fixture_refresh_fresh: bool
+    report_archive_resolvable: bool
+    today_contract_available: bool
+    match_detail_contract_available: bool
     scheduler_enabled: bool
     publication_enabled: bool
     external_alerts_enabled: bool
@@ -144,6 +149,7 @@ def validate_shadow_activation(
     public_count: int | None = None
     shadow_public_count: int | None = None
     current_season_fresh = False
+    fixture_refresh_fresh = False
     reasons = list(readiness.reasons)
     if readiness.database_reachable and readiness.migration_current:
         engine = create_engine(settings.database_url, pool_pre_ping=True)
@@ -174,6 +180,10 @@ def validate_shadow_activation(
                 current_season_fresh = bool(
                     latest_sync is not None and latest_sync >= checked_at - timedelta(days=5)
                 )
+                fixture_refresh_fresh = (
+                    load_fixture_refresh_metadata(connection, now=checked_at).state
+                    is FreshnessState.FRESH
+                )
         finally:
             engine.dispose()
     if not mappings_complete:
@@ -182,6 +192,8 @@ def validate_shadow_activation(
         reasons.append("REPORT_DIRECTORY_UNAVAILABLE")
     if not current_season_fresh:
         reasons.append("CURRENT_SEASON_SYNC_STALE")
+    if not fixture_refresh_fresh:
+        reasons.append("FIXTURE_REFRESH_STALE")
     if gates.scheduler_enabled:
         reasons.append("SCHEDULER_MUST_REMAIN_DISABLED")
     if gates.publication_enabled:
@@ -201,6 +213,10 @@ def validate_shadow_activation(
         readiness.prediction_repository_available,
         report_writable,
         current_season_fresh,
+        fixture_refresh_fresh,
+        report_writable,
+        True,
+        True,
         gates.scheduler_enabled,
         gates.publication_enabled,
         gates.external_alerts_enabled,

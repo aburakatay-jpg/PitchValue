@@ -274,7 +274,11 @@ def persist_current_season_payloads(
         for source_ref, reason in pending_quarantines
     )
     events = 0
-    for event_type in (EventType.RUN_STARTED, EventType.CURRENT_SEASON_SYNC_SUCCEEDED):
+    for event_type in (
+        EventType.RUN_STARTED,
+        EventType.CURRENT_SEASON_SYNC_SUCCEEDED,
+        EventType.FIXTURE_REFRESH_SUCCEEDED,
+    ):
         event = OperationalEvent(
             OperationalEvent.deterministic_id(
                 event_type, run_id, "current_season", event_type.value

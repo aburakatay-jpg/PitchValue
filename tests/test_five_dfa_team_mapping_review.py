@@ -149,7 +149,9 @@ def test_provider_display_identity_conflict_is_not_silently_resolved(db: Connect
 
 
 @pytest.mark.integration
-def test_reviewed_mapping_allows_a_previously_unresolved_fixture(db: Connection) -> None:
+def test_reviewed_mapping_allows_a_previously_unresolved_fixture(
+    db: Connection, tmp_path: Path
+) -> None:
     payload: dict[str, object] = {
         "id": 990000001,
         "kickoff_utc": (NOW + timedelta(days=100)).isoformat(),
@@ -177,8 +179,9 @@ def test_reviewed_mapping_allows_a_previously_unresolved_fixture(db: Connection)
         ).scalar_one()
         == "RUNNING"
     )
-    persisted_shadow._finish_run(db, result, NOW)
-    persisted_shadow._finish_run(db, result, NOW)
+    report_directory = tmp_path / str(NOW.year) / result.run_id
+    persisted_shadow._finish_run(db, result, NOW, report_directory)
+    persisted_shadow._finish_run(db, result, NOW, report_directory)
     assert (
         db.execute(
             text("SELECT status FROM engine_runs WHERE run_id=:run"), {"run": result.run_id}
@@ -190,8 +193,15 @@ def test_reviewed_mapping_allows_a_previously_unresolved_fixture(db: Connection)
             text("SELECT count(*) FROM operational_events WHERE run_id=:run"),
             {"run": result.run_id},
         ).scalar_one()
-        == 4
+        == 6
     )
+    assert db.execute(
+        text(
+            """SELECT metadata->>'report_directory' FROM operational_events
+                WHERE run_id=:run AND event_type='REPORT_GENERATION_SUCCEEDED'"""
+        ),
+        {"run": result.run_id},
+    ).scalar_one() == str(report_directory)
 
 
 @pytest.mark.integration
@@ -227,7 +237,7 @@ def test_failed_analysis_marks_running_sync_failed_once(db: Connection) -> None:
             text("SELECT count(*) FROM operational_events WHERE run_id=:run"),
             {"run": result.run_id},
         ).scalar_one()
-        == 4
+        == 5
     )
 
 

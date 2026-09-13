@@ -263,7 +263,7 @@ def _persist_materialized_shadow(
         )
         directory = write_local_reports(report, report_root)
         with engine.begin() as connection:
-            _finish_run(connection, sync, prediction_as_of)
+            _finish_run(connection, sync, prediction_as_of, directory)
         return PersistedShadowResult(
             report,
             sync,
@@ -297,11 +297,28 @@ def _mark_started_run_failed(engine: Engine, run_id: str, occurred_at: datetime)
 
 
 def _finish_run(
-    connection: Connection, sync: CurrentSeasonPersistenceResult, occurred_at: datetime
+    connection: Connection,
+    sync: CurrentSeasonPersistenceResult,
+    occurred_at: datetime,
+    report_directory: Path | None = None,
 ) -> None:
     _set_terminal_status(connection, sync.run_id, sync.terminal_status, occurred_at)
-    for event_type in (EventType.PERSISTENCE_SUCCEEDED, EventType.RUN_SUCCEEDED):
-        persist_event(connection, _lifecycle_event(event_type, sync.run_id, occurred_at))
+    events = [
+        _lifecycle_event(EventType.PERSISTENCE_SUCCEEDED, sync.run_id, occurred_at),
+        _lifecycle_event(EventType.RUN_SUCCEEDED, sync.run_id, occurred_at),
+    ]
+    if report_directory is not None:
+        events.insert(
+            1,
+            _lifecycle_event(
+                EventType.REPORT_GENERATION_SUCCEEDED,
+                sync.run_id,
+                occurred_at,
+                metadata={"report_directory": str(report_directory)},
+            ),
+        )
+    for event in events:
+        persist_event(connection, event)
 
 
 def _fail_run(connection: Connection, run_id: str, occurred_at: datetime) -> None:
@@ -332,7 +349,12 @@ def _set_terminal_status(
 
 
 def _lifecycle_event(
-    event_type: EventType, run_id: str, occurred_at: datetime, *, failed: bool = False
+    event_type: EventType,
+    run_id: str,
+    occurred_at: datetime,
+    *,
+    failed: bool = False,
+    metadata: Mapping[str, str] | None = None,
 ) -> OperationalEvent:
     return OperationalEvent(
         OperationalEvent.deterministic_id(event_type, run_id, "persisted_shadow", event_type.value),
@@ -342,7 +364,7 @@ def _lifecycle_event(
         severity_for(event_type),
         run_id,
         "persisted_shadow",
-        {"outcome": "failed" if failed else "succeeded"},
+        metadata or {"outcome": "failed" if failed else "succeeded"},
         DeliveryVisibility.INTERNAL,
         run_id=run_id,
         provider_domain="fixtures",

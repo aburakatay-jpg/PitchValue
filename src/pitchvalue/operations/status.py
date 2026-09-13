@@ -6,6 +6,7 @@ import argparse
 import os
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from sqlalchemy import create_engine, text
 
@@ -20,6 +21,7 @@ from pitchvalue.operations.hardening import (
     stale_runs,
 )
 from pitchvalue.operations.heartbeat import load_heartbeat
+from pitchvalue.operations.metadata import load_fixture_refresh_metadata, resolve_report_location
 from pitchvalue.providers.five_dfa.config import load_five_dfa_project_config
 
 
@@ -45,6 +47,7 @@ def system_status(*, stale_after: timedelta = timedelta(hours=2)) -> dict[str, o
         "state": "UNHEALTHY",
         "code": "DATABASE_UNAVAILABLE",
     }
+    fixture_refresh: dict[str, object] = {"state": "UNAVAILABLE"}
     if health.database_reachable and health.migration_current:
         engine = create_engine(settings.database_url, pool_pre_ping=True)
         try:
@@ -94,6 +97,9 @@ def system_status(*, stale_after: timedelta = timedelta(hours=2)) -> dict[str, o
                     now=datetime.now(UTC),
                     scheduler_enabled=gates.scheduler_enabled,
                 ).to_dict()
+                fixture_refresh = load_fixture_refresh_metadata(
+                    connection, now=datetime.now(UTC)
+                ).to_dict()
         finally:
             engine.dispose()
     return {
@@ -113,6 +119,12 @@ def system_status(*, stale_after: timedelta = timedelta(hours=2)) -> dict[str, o
             "external_alerts": gates.external_alerts_enabled,
         },
         "heartbeat": heartbeat,
+        "fixture_refresh": fixture_refresh,
+        "public_contracts": {
+            "today": "AVAILABLE",
+            "match_detail": "AVAILABLE",
+            "explore": "AVAILABLE",
+        },
         "stuck_runs": [asdict(item) for item in stuck],
         "recent_runs": runs,
         "recent_critical_events": critical,
@@ -162,6 +174,12 @@ def inspect_run(run_id: str) -> dict[str, object]:
                     {"run_id": run_id},
                 ).scalar_one()
             )
+            configured = os.environ.get("PITCHVALUE_REPORT_DIRECTORY", "").strip()
+            report_location = resolve_report_location(
+                connection,
+                run_id,
+                configured_root=Path(configured) if configured else None,
+            )
             coverage = dict(
                 connection.execute(
                     text(
@@ -186,7 +204,7 @@ def inspect_run(run_id: str) -> dict[str, object]:
             "shadow_analyses": shadow_count,
             "model_coverage": coverage,
             "events": [dict(item) for item in events],
-            "report_location": "NOT_PERSISTED_IN_DATABASE",
+            "report_location": report_location.to_dict(),
         }
     finally:
         engine.dispose()
