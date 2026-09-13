@@ -9,7 +9,7 @@ from sqlalchemy import Connection, text
 
 from pitchvalue.ingestion.football_data_uk.canonical import normalize_team_name
 
-TEAM_MAPPING_REVIEW_VERSION = "five_dfa_team_review_2026_27_v2"
+TEAM_MAPPING_REVIEW_VERSION = "five_dfa_team_review_2026_27_v3"
 
 
 class TeamMappingClassification(StrEnum):
@@ -339,6 +339,14 @@ REVIEWED_TEAM_MAPPINGS = (
     ReviewedTeamMapping(
         "4162280280",
         "Frosinone",
+        TeamMappingClassification.OUT_OF_SCOPE,
+        None,
+        "ITA",
+        "Serie A",
+    ),
+    ReviewedTeamMapping(
+        "2763501169",
+        "Fiorentina",
         TeamMappingClassification.OUT_OF_SCOPE,
         None,
         "ITA",

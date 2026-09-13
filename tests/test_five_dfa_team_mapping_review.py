@@ -49,24 +49,24 @@ def _provider_id(db: Connection) -> int:
     )
 
 
-def test_review_manifest_covers_every_previous_unresolved_identity() -> None:
-    assert len(REVIEWED_TEAM_MAPPINGS) == 45
-    assert len({item.provider_team_id for item in REVIEWED_TEAM_MAPPINGS}) == 45
+def test_review_manifest_covers_every_explicitly_observed_identity() -> None:
+    assert len(REVIEWED_TEAM_MAPPINGS) == 46
+    assert len({item.provider_team_id for item in REVIEWED_TEAM_MAPPINGS}) == 46
     counts = Counter(item.classification for item in REVIEWED_TEAM_MAPPINGS)
     assert counts == {
         TeamMappingClassification.RESOLVED_EXISTING_TEAM: 18,
         TeamMappingClassification.CANONICAL_TEAM_MISSING: 9,
-        TeamMappingClassification.OUT_OF_SCOPE: 18,
+        TeamMappingClassification.OUT_OF_SCOPE: 19,
     }
-    assert TEAM_MAPPING_REVIEW_VERSION == "five_dfa_team_review_2026_27_v2"
+    assert TEAM_MAPPING_REVIEW_VERSION == "five_dfa_team_review_2026_27_v3"
 
 
 @pytest.mark.integration
 def test_review_resolves_supported_scope_and_marks_serie_a_unsupported(db: Connection) -> None:
     summary = apply_reviewed_team_mappings(db, _provider_id(db))
-    assert summary.reviewed == 45
+    assert summary.reviewed == 46
     assert summary.resolved == 27
-    assert summary.unsupported == 18
+    assert summary.unsupported == 19
     assert summary.review_required == summary.conflicts == 0
     assert 0 <= summary.canonical_teams_created <= 9
     assert (
@@ -95,7 +95,7 @@ def test_review_resolves_supported_scope_and_marks_serie_a_unsupported(db: Conne
             },
         ).all()
     )
-    assert Counter(statuses.values()) == {"RESOLVED": 27, "UNSUPPORTED": 18}
+    assert Counter(statuses.values()) == {"RESOLVED": 27, "UNSUPPORTED": 19}
 
 
 @pytest.mark.integration
@@ -243,6 +243,7 @@ def test_out_of_scope_decisions_never_supply_a_canonical_target() -> None:
         "Cagliari",
         "Como",
         "Frosinone",
+        "Fiorentina",
         "Genoa",
         "Inter Milan",
         "Juventus",

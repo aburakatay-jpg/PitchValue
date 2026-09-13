@@ -7,7 +7,7 @@ source ID, canonical target, review version, provider alias, and provenance. Tea
 Serie A are retained as source identities with `UNSUPPORTED` status and are not added merely to
 improve a completeness metric.
 
-The reviewed inventory currently contains 27 supported-scope decisions and 18 out-of-scope
+The reviewed inventory currently contains 27 supported-scope decisions and 19 out-of-scope
 decisions. Nine supported 2026/27 teams absent from the historical canonical corpus may be created
 only through those explicit decisions. Reapplying the manifest reuses both canonical teams and
 provider aliases. The combined mapping contract version participates in deterministic run identity,
