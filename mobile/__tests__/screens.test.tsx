@@ -17,9 +17,10 @@ describe('screen foundations', () => {
     expect(view.getByLabelText('Loading PitchValue')).toBeTruthy();
   });
 
-  it('renders Today no-value state', async () => {
+  it('renders Today as a safe fixture empty state without mock fallback', async () => {
     const view = await render(<TodayScreen />);
-    expect(view.getByText('No strong value found')).toBeTruthy();
+    expect(view.getByText('Fixture data unavailable')).toBeTruthy();
+    expect(view.queryByText(mockMatches[0]!.homeTeam)).toBeNull();
   });
 
   it('renders all four AI actions', async () => {

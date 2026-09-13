@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader, Button } from '@/components/ui';
 import { colors, radii, spacing, typeScale } from '@/theme/tokens';
@@ -32,7 +33,10 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const content = steps[step] ?? steps[0];
   const lastStep = step === steps.length - 1;
   return (
-    <View style={styles.screen}>
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
+      style={styles.screen}
+    >
       <View style={styles.brand}>
         <Text style={styles.wordmark}>PitchValue</Text>
         <Text style={styles.tagline}>Find value beyond the odds.</Text>
@@ -55,7 +59,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       <Text style={styles.progress}>
         {step + 1} / {steps.length}
       </Text>
-    </View>
+    </SafeAreaView>
   );
 }
 

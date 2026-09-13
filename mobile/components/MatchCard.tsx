@@ -2,14 +2,24 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Badge, sharedStyles } from '@/components/ui';
-import type { MockMatch } from '@/dev/mock-data';
 import { colors, spacing, touchTarget, typeScale } from '@/theme/tokens';
 
-export function MatchCard({ match }: { match: MockMatch }) {
+export type FixtureCardModel = Readonly<{
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  kickoff: string;
+  competition: string;
+  quality: 'Elite' | 'Strong' | 'Value';
+  locked: boolean;
+}>;
+
+export function MatchCard({ match }: { match: FixtureCardModel }) {
   return (
     <Link href={{ pathname: '/match/[id]', params: { id: match.id } }} asChild>
       <Pressable
         accessibilityLabel={`Open ${match.homeTeam} versus ${match.awayTeam}`}
+        accessibilityRole="button"
         style={styles.card}
       >
         <View style={sharedStyles.rowBetween}>

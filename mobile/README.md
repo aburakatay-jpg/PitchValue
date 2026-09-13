@@ -1,6 +1,6 @@
 # PitchValue mobile
 
-Dark-first React Native foundation built with Expo SDK 57, TypeScript, and Expo Router. It contains development-only UI shells; it does not contain prediction, purchase, authentication, advertising, notification, analytics, or backend API behavior.
+Dark-first React Native foundation built with Expo SDK 57, TypeScript, and Expo Router. It contains UI shells and typed public API contract foundations; it does not yet contain production data fetching, prediction, purchase, authentication, advertising, notification, or analytics behavior.
 
 ## Requirements
 
@@ -19,6 +19,8 @@ npm start
 Scan the QR code with the iPhone camera and open it in Expo Go while the phone and PC can reach each other. Use `npm run web` for a browser preview. Run `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm test` for validation.
 
 Copy `.env.example` to a local `.env` only when overriding the API endpoint. `EXPO_PUBLIC_API_BASE_URL` is public client configuration: never put credentials, signing keys, database passwords, service-role keys, or other secrets in any `EXPO_PUBLIC_*` variable.
+
+Synthetic fixture previews are disabled by default. They require both a development build and the explicit `EXPO_PUBLIC_ENABLE_MOCK_DATA=true` flag. Production builds ignore this flag and fail closed to honest empty/unavailable states; API failures never activate mock data.
 
 ## Expo Go and future native builds
 

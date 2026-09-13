@@ -1,4 +1,4 @@
-import { config } from '@/lib/config';
+import { config, isDevelopmentPreviewEnabled } from '@/lib/config';
 import { hasPremiumAccess, isEntitlementState } from '@/lib/entitlement';
 import { tabRoutes } from '@/lib/routes';
 import { colors, theme } from '@/theme/tokens';
@@ -36,5 +36,12 @@ describe('mobile foundation', () => {
 
   it('loads required environment configuration safely', () => {
     expect(config.apiBaseUrl).toMatch(/^https?:\/\//);
+  });
+
+  it('allows synthetic preview data only behind an explicit development gate', () => {
+    expect(isDevelopmentPreviewEnabled(true, 'true')).toBe(true);
+    expect(isDevelopmentPreviewEnabled(true, 'false')).toBe(false);
+    expect(isDevelopmentPreviewEnabled(false, 'true')).toBe(false);
+    expect(isDevelopmentPreviewEnabled(false, undefined)).toBe(false);
   });
 });

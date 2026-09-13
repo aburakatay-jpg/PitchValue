@@ -7,7 +7,12 @@ export const predictionViewStates = [
   'WATCHLIST',
   'PICK',
   'SCORE_INCOMPLETE',
+  'OFFLINE',
+  'CONFIRMED',
   'CHANGED',
+  'WITHDRAWN',
+  'FINAL_CHECK_UNAVAILABLE',
+  'PREMIUM_LOCKED',
   'HISTORICAL',
   'STALE',
 ] as const;
@@ -22,7 +27,6 @@ export type PredictionStateContract = Readonly<{
   state: PredictionViewState;
   modelReadinessGate: ModelReadinessGate;
   publicDecision: 'NO_BET' | 'WATCHLIST' | 'PICK' | null;
-  internalShadowDecision: 'NO_BET' | 'WATCHLIST' | 'PICK' | null;
   blockerCodes: readonly string[];
   premiumLocked: boolean;
 }>;

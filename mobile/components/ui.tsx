@@ -14,8 +14,13 @@ import { colors, radii, spacing, touchTarget, typeScale } from '@/theme/tokens';
 
 export function Screen({ children }: PropsWithChildren) {
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.screen}>{children}</ScrollView>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
+      <ScrollView
+        contentContainerStyle={styles.screen}
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -24,7 +29,7 @@ export function AppHeader({
   eyebrow,
   title,
 }: {
-  eyebrow?: string;
+  eyebrow?: string | undefined;
   title: string;
 }) {
   return (
@@ -99,10 +104,14 @@ export function Badge({
   tone = 'primary',
 }: {
   label: string;
-  tone?: 'primary' | 'accent' | 'positive';
+  tone?: 'primary' | 'accent' | 'positive' | 'warning' | 'negative';
 }) {
   return (
-    <View style={[styles.badge, { borderColor: colors[tone] }]}>
+    <View
+      accessibilityLabel={label}
+      accessibilityRole="text"
+      style={[styles.badge, { borderColor: colors[tone] }]}
+    >
       <Text style={[styles.badgeText, { color: colors[tone] }]}>{label}</Text>
     </View>
   );
@@ -116,7 +125,11 @@ export function EmptyState({
   detail: string;
 }) {
   return (
-    <View style={styles.stateCard}>
+    <View
+      accessibilityLabel={title}
+      accessibilityRole="summary"
+      style={styles.stateCard}
+    >
       <Text style={styles.stateTitle}>{title}</Text>
       <Text style={styles.secondary}>{detail}</Text>
     </View>
@@ -125,7 +138,12 @@ export function EmptyState({
 
 export function LoadingState() {
   return (
-    <View accessibilityLabel="Loading PitchValue" style={styles.centered}>
+    <View
+      accessibilityLabel="Loading PitchValue"
+      accessibilityLiveRegion="polite"
+      accessibilityRole="progressbar"
+      style={styles.centered}
+    >
       <ActivityIndicator color={colors.secondary} size="large" />
       <Text style={styles.secondary}>Loading PitchValue…</Text>
     </View>
@@ -134,7 +152,11 @@ export function LoadingState() {
 
 export function ErrorState({ retry }: { retry?: () => void }) {
   return (
-    <View style={styles.stateCard}>
+    <View
+      accessibilityLiveRegion="polite"
+      accessibilityRole="alert"
+      style={styles.stateCard}
+    >
       <Text style={styles.stateTitle}>Something went wrong</Text>
       <Text style={styles.secondary}>Please try again when you are ready.</Text>
       {retry ? <Button onPress={retry}>Try again</Button> : null}

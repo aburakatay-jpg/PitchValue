@@ -2,11 +2,14 @@ import { Tabs } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { tabRoutes } from '@/lib/routes';
-import { colors, typeScale } from '@/theme/tokens';
+import { colors, touchTarget, typeScale } from '@/theme/tokens';
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   return (
-    <Text style={[styles.icon, focused && styles.iconFocused]}>
+    <Text
+      accessibilityElementsHidden
+      style={[styles.icon, focused && styles.iconFocused]}
+    >
       {label.slice(0, 1)}
     </Text>
   );
@@ -26,6 +29,7 @@ export default function TabLayout() {
           minHeight: 64,
         },
         tabBarLabelStyle: { fontSize: typeScale.caption, fontWeight: '700' },
+        tabBarItemStyle: { minHeight: touchTarget },
       }}
     >
       {tabRoutes.map((route) => (

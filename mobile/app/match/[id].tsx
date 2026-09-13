@@ -6,11 +6,13 @@ import {
   AppHeader,
   Badge,
   Button,
+  EmptyState,
   Screen,
   SectionHeader,
   sharedStyles,
 } from '@/components/ui';
 import { mockMatches } from '@/dev/mock-data';
+import { config } from '@/lib/config';
 import { colors, spacing, typeScale } from '@/theme/tokens';
 
 const analysisFields = [
@@ -25,8 +27,20 @@ const analysisFields = [
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const match = mockMatches.find((item) => item.id === id) ?? mockMatches[0];
-  if (!match) return null;
+  const match = config.developmentPreviewEnabled
+    ? mockMatches.find((item) => item.id === id)
+    : undefined;
+  if (!match) {
+    return (
+      <Screen>
+        <AppHeader title="Match detail" />
+        <EmptyState
+          title="Public match data unavailable"
+          detail="Internal or synthetic analysis is never used as a public fallback."
+        />
+      </Screen>
+    );
+  }
   return (
     <Screen>
       <AppHeader

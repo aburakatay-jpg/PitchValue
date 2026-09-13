@@ -16,13 +16,12 @@ describe('provider-independent prediction states', () => {
     );
   });
 
-  it('blocks public PICK before model readiness passes while retaining shadow state', () => {
+  it('blocks public PICK before model readiness passes without a shadow field', () => {
     const blocked: PredictionStateContract = {
       surface: 'MATCH_DETAIL',
       state: 'DATA_INSUFFICIENT',
       modelReadinessGate: 'PENDING',
       publicDecision: null,
-      internalShadowDecision: 'PICK',
       blockerCodes: ['MODEL_READINESS_PENDING'],
       premiumLocked: false,
     };
@@ -36,7 +35,6 @@ describe('provider-independent prediction states', () => {
       state: 'PICK',
       modelReadinessGate: 'PENDING',
       publicDecision: 'PICK',
-      internalShadowDecision: 'PICK',
       blockerCodes: [],
       premiumLocked: false,
     };
@@ -48,7 +46,7 @@ describe('provider-independent prediction states', () => {
   it('contains no client-side probability, edge, no-vig, or Bet Score fields', () => {
     const serialized = JSON.stringify(mockPredictionStates);
     expect(serialized).not.toMatch(
-      /probability|noVig|edge|betScore|publicationEligible/,
+      /probability|noVig|edge|betScore|publicationEligible|internalShadow/,
     );
   });
 });

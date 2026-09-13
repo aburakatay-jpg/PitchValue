@@ -1,12 +1,6 @@
-export type MockMatch = {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  kickoff: string;
-  competition: string;
-  quality: 'Elite' | 'Strong' | 'Value';
-  locked: boolean;
-};
+import type { FixtureCardModel } from '@/components/MatchCard';
+
+export type MockMatch = FixtureCardModel;
 
 // Development-only synthetic fixtures. These are not predictions or live facts.
 export const mockMatches: MockMatch[] = [
