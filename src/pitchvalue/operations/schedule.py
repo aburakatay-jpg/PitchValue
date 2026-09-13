@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -67,3 +68,47 @@ def next_configured_run(after: datetime) -> datetime:
                 if candidate > cursor:
                     candidates.append(candidate)
     return min(candidates)
+
+
+def previous_configured_run(at_or_before: datetime) -> datetime:
+    if at_or_before.tzinfo is None or at_or_before.utcoffset() is None:
+        raise ValueError("at_or_before must be timezone-aware")
+    cursor = at_or_before.astimezone(UTC)
+    candidates: list[datetime] = []
+    for days in range(8):
+        candidate_date = cursor.date() - timedelta(days=days)
+        for definition in RUN_SCHEDULE:
+            if candidate_date.weekday() == definition.weekday:
+                candidate = datetime.combine(candidate_date, definition.at_utc)
+                if candidate <= cursor:
+                    candidates.append(candidate)
+    return max(candidates)
+
+
+def configured_runs_between(start: datetime, end: datetime) -> tuple[datetime, ...]:
+    if start.tzinfo is None or end.tzinfo is None:
+        raise ValueError("schedule boundaries must be timezone-aware")
+    if end <= start:
+        raise ValueError("schedule interval must be positive")
+    cursor = start.astimezone(UTC)
+    stop = end.astimezone(UTC)
+    runs: list[datetime] = []
+    candidate = next_configured_run(cursor - timedelta(microseconds=1))
+    while candidate < stop:
+        if candidate >= cursor:
+            runs.append(candidate)
+        candidate = next_configured_run(candidate)
+    return tuple(runs)
+
+
+def schedule_run_identity(scheduled_for: datetime, fixture_timezone: str) -> str:
+    horizon = fixture_horizon(scheduled_for, fixture_timezone)
+    value = "|".join(
+        (
+            SCHEDULE_VERSION,
+            scheduled_for.astimezone(UTC).isoformat(),
+            horizon.timezone_name,
+            *(item.isoformat() for item in horizon.local_dates),
+        )
+    )
+    return "scheduled-shadow-" + hashlib.sha256(value.encode()).hexdigest()[:16]

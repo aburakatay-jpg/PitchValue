@@ -5,7 +5,11 @@ import pytest
 from pitchvalue.config.settings import ConfigurationError
 from pitchvalue.prediction.contracts import MarketFamily
 from pitchvalue.providers.contracts import CapabilityAvailability
-from pitchvalue.providers.five_dfa.capabilities import FREE_CAPABILITIES
+from pitchvalue.providers.five_dfa.capabilities import (
+    FREE_CAPABILITIES,
+    FREE_COMPETITION_COVERAGE,
+    CompetitionCoverageState,
+)
 from pitchvalue.providers.five_dfa.config import load_five_dfa_config
 
 
@@ -57,3 +61,17 @@ def test_provider_config_is_optional_until_loaded_and_redacts_key() -> None:
 def test_missing_provider_key_fails_only_when_provider_config_is_requested() -> None:
     with pytest.raises(ConfigurationError, match="FIVEDFA_API_KEY"):
         load_five_dfa_config({})
+
+
+def test_free_competition_coverage_register_is_complete_and_evidence_bounded() -> None:
+    coverage = {item.competition: item for item in FREE_COMPETITION_COVERAGE}
+    assert len(coverage) == 10
+    assert {
+        name for name, item in coverage.items() if item.state is CompetitionCoverageState.AVAILABLE
+    } == {"Premier League", "Ligue 1", "Bundesliga", "La Liga"}
+    assert all(
+        item.state is CompetitionCoverageState.NOT_YET_VERIFIED
+        for name, item in coverage.items()
+        if name not in FREE_CAPABILITIES.supported_competitions
+    )
+    assert "Serie A" not in coverage

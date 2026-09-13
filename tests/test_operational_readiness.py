@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from pitchvalue.api.app import create_app
 from pitchvalue.api.database import EXPECTED_ALEMBIC_REVISION, DatabaseResource
 from pitchvalue.config import Settings, load_settings
-from pitchvalue.operations.release_validation import validate_release
+from pitchvalue.operations.release_validation import validate_release, validate_shadow_activation
 from pitchvalue.prediction.persistence import (
     PredictionPersistenceError,
     PredictionPersistenceRequest,
@@ -128,6 +129,40 @@ def test_release_validation_reports_current_migration_and_prediction_schema() ->
     assert result.expected_revision == EXPECTED_ALEMBIC_REVISION
     assert result.prediction_snapshot_count == 0
     assert result.failure_code is None
+
+
+@pytest.mark.integration
+def test_shadow_activation_validation_is_complete_read_only_and_fail_closed(
+    tmp_path: Path,
+) -> None:
+    settings = load_settings(os.environ)
+    values = dict(os.environ)
+    values.update(
+        {
+            "FIVEDFA_API_KEY": "fake-release-validation-key",
+            "SCHEDULER_ENABLED": "false",
+            "PUBLICATION_ENABLED": "false",
+            "EXTERNAL_ALERTS_ENABLED": "false",
+        }
+    )
+    result = validate_shadow_activation(
+        settings,
+        values,
+        tmp_path,
+        now=datetime(2026, 9, 14, tzinfo=UTC),
+    )
+    assert result.ready
+    assert result.current_season_fresh
+    assert result.public_eligible_predictions == 0
+    assert result.public_shadow_predictions == 0
+    blocked = validate_shadow_activation(
+        settings,
+        {**values, "PUBLICATION_ENABLED": "true"},
+        tmp_path,
+        now=datetime(2026, 9, 14, tzinfo=UTC),
+    )
+    assert not blocked.ready
+    assert "PUBLICATION_MUST_REMAIN_DISABLED" in blocked.reasons
 
 
 @pytest.mark.integration

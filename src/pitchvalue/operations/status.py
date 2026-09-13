@@ -19,6 +19,7 @@ from pitchvalue.operations.hardening import (
     recover_stale_run,
     stale_runs,
 )
+from pitchvalue.operations.heartbeat import load_heartbeat
 from pitchvalue.providers.five_dfa.config import load_five_dfa_project_config
 
 
@@ -40,6 +41,10 @@ def system_status(*, stale_after: timedelta = timedelta(hours=2)) -> dict[str, o
     critical: list[dict[str, object]] = []
     public_count: int | None = None
     last_provider_success: object = None
+    heartbeat: dict[str, object] = {
+        "state": "UNHEALTHY",
+        "code": "DATABASE_UNAVAILABLE",
+    }
     if health.database_reachable and health.migration_current:
         engine = create_engine(settings.database_url, pool_pre_ping=True)
         try:
@@ -84,6 +89,11 @@ def system_status(*, stale_after: timedelta = timedelta(hours=2)) -> dict[str, o
                         ORDER BY finished_at DESC NULLS LAST LIMIT 1"""
                     )
                 ).scalar_one_or_none()
+                heartbeat = load_heartbeat(
+                    connection,
+                    now=datetime.now(UTC),
+                    scheduler_enabled=gates.scheduler_enabled,
+                ).to_dict()
         finally:
             engine.dispose()
     return {
@@ -102,6 +112,7 @@ def system_status(*, stale_after: timedelta = timedelta(hours=2)) -> dict[str, o
             "publication": gates.publication_enabled,
             "external_alerts": gates.external_alerts_enabled,
         },
+        "heartbeat": heartbeat,
         "stuck_runs": [asdict(item) for item in stuck],
         "recent_runs": runs,
         "recent_critical_events": critical,
@@ -151,11 +162,29 @@ def inspect_run(run_id: str) -> dict[str, object]:
                     {"run_id": run_id},
                 ).scalar_one()
             )
+            coverage = dict(
+                connection.execute(
+                    text(
+                        """SELECT
+                        count(*) AS fixtures,
+                        count(*) FILTER (WHERE raw_ml_probabilities <> '{}'::jsonb) AS raw_ml,
+                        count(*) FILTER (WHERE elo_output->>'status' = 'READY') AS elo,
+                        count(*) FILTER (WHERE form_output->>'status' = 'READY') AS form,
+                        count(*) FILTER (WHERE poisson_output->>'status' = 'READY') AS poisson,
+                        count(*) FILTER (WHERE agreement_output IS NOT NULL) AS agreement
+                        FROM shadow_analysis_snapshots WHERE run_id=:run_id"""
+                    ),
+                    {"run_id": run_id},
+                )
+                .mappings()
+                .one()
+            )
         return {
             "status": "FOUND",
             "run": dict(run),
             "quarantines": [dict(item) for item in quarantines],
             "shadow_analyses": shadow_count,
+            "model_coverage": coverage,
             "events": [dict(item) for item in events],
             "report_location": "NOT_PERSISTED_IN_DATABASE",
         }
