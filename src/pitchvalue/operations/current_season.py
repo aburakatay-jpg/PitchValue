@@ -29,6 +29,10 @@ from pitchvalue.operations.repository import persist_event, persist_quarantine, 
 from pitchvalue.providers.five_dfa.capabilities import PROVIDER_NAME
 from pitchvalue.providers.five_dfa.fixtures import ProviderFixture, parse_runtime_fixture
 from pitchvalue.providers.five_dfa.mapping import MAPPING_VERSION, MappingStatus, map_competition
+from pitchvalue.providers.five_dfa.team_mapping_review import (
+    TEAM_MAPPING_REVIEW_VERSION,
+    apply_reviewed_team_mappings,
+)
 from pitchvalue.providers.source_persistence import (
     FixtureWriteResult,
     discover_team_candidate,
@@ -39,8 +43,9 @@ from pitchvalue.providers.source_persistence import (
     upsert_source_reference,
 )
 
-PERSISTENCE_VERSION = "provider_neutral_current_season_v1"
+PERSISTENCE_VERSION = "provider_neutral_current_season_v2"
 EVENT_VERSION = "persisted_shadow_event_v1"
+MAPPING_CONTRACT_VERSION = f"{MAPPING_VERSION}:{TEAM_MAPPING_REVIEW_VERSION}"
 
 
 @dataclass(frozen=True)
@@ -55,6 +60,7 @@ class CurrentSeasonPersistenceResult:
     quarantines_created: int
     events_created: int
     malformed: int
+    terminal_status: RunStatus
 
 
 def persist_current_season_payloads(
@@ -142,6 +148,9 @@ def persist_current_season_payloads(
         except ValueError:
             malformed += 1
 
+    apply_reviewed_team_mappings(connection, provider_id)
+    mappings = resolve_explicit_team_mappings(connection, provider_id)
+
     parsed: list[ProviderFixture] = []
     writes: list[FixtureWriteResult] = []
     match_ids: dict[str, int] = {}
@@ -219,8 +228,8 @@ def persist_current_season_payloads(
         RunType.SHADOW,
         prediction_as_of,
         prediction_as_of,
-        prediction_as_of,
-        status,
+        None,
+        RunStatus.RUNNING,
         PERSISTENCE_VERSION,
         FixtureHorizon(
             "UTC",
@@ -235,7 +244,7 @@ def persist_current_season_payloads(
         "UNAVAILABLE",
         "UNAVAILABLE",
         "task11_proportional_no_vig_v1",
-        MAPPING_VERSION,
+        MAPPING_CONTRACT_VERSION,
     )
     persist_run(connection, run)
     connection.execute(
@@ -247,12 +256,7 @@ def persist_current_season_payloads(
         for source_ref, reason in pending_quarantines
     )
     events = 0
-    for event_type in (
-        EventType.RUN_STARTED,
-        EventType.CURRENT_SEASON_SYNC_SUCCEEDED,
-        EventType.PERSISTENCE_SUCCEEDED,
-        EventType.RUN_SUCCEEDED,
-    ):
+    for event_type in (EventType.RUN_STARTED, EventType.CURRENT_SEASON_SYNC_SUCCEEDED):
         event = OperationalEvent(
             OperationalEvent.deterministic_id(
                 event_type, run_id, "current_season", event_type.value
@@ -263,7 +267,11 @@ def persist_current_season_payloads(
             severity_for(event_type),
             run_id,
             "current_season",
-            {"provider": PROVIDER_NAME, "persistence_version": PERSISTENCE_VERSION},
+            {
+                "provider": PROVIDER_NAME,
+                "persistence_version": PERSISTENCE_VERSION,
+                "mapping_review_version": TEAM_MAPPING_REVIEW_VERSION,
+            },
             DeliveryVisibility.INTERNAL,
             run_id=run_id,
             provider_domain="fixtures",
@@ -280,6 +288,7 @@ def persist_current_season_payloads(
         quarantines,
         events,
         malformed,
+        status,
     )
 
 
@@ -350,6 +359,12 @@ def deterministic_run_id(
         key=lambda item: item,
     )
     canonical = json.dumps(
-        [PERSISTENCE_VERSION, prediction_as_of.isoformat(), normalized], separators=(",", ":")
+        [
+            PERSISTENCE_VERSION,
+            MAPPING_CONTRACT_VERSION,
+            prediction_as_of.isoformat(),
+            normalized,
+        ],
+        separators=(",", ":"),
     )
     return "persisted-shadow-" + hashlib.sha256(canonical.encode()).hexdigest()[:16]

@@ -8,7 +8,7 @@ from enum import StrEnum
 
 from pitchvalue.providers.five_dfa.capabilities import PROVIDER_NAME, SUPPORTED_COMPETITIONS
 
-MAPPING_VERSION = "five_dfa_free_mapping_v1"
+MAPPING_VERSION = "five_dfa_free_mapping_v2"
 
 COMPETITION_NAME_MAP = {
     "Premier League": "Premier League",

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
@@ -13,10 +14,18 @@ from typing import Any
 from sqlalchemy import Connection, create_engine, text
 
 from pitchvalue.config import load_settings
+from pitchvalue.operations.contracts import RunStatus
 from pitchvalue.operations.current_season import (
     CurrentSeasonPersistenceResult,
     deterministic_run_id,
     persist_current_season_payloads,
+)
+from pitchvalue.operations.events import (
+    DeliveryVisibility,
+    EventType,
+    OperationalEvent,
+    ReasonCode,
+    severity_for,
 )
 from pitchvalue.operations.manual_shadow_run import (
     AuthenticatedShadowRunReport,
@@ -24,6 +33,7 @@ from pitchvalue.operations.manual_shadow_run import (
     run_authenticated_shadow,
     write_local_reports,
 )
+from pitchvalue.operations.repository import persist_event
 from pitchvalue.operations.shadow_repository import ShadowAnalysisWrite, persist_shadow_analysis
 from pitchvalue.providers.five_dfa.adapter import FiveDfaFreeAdapter
 from pitchvalue.providers.five_dfa.client import FiveDfaClient
@@ -49,6 +59,12 @@ class PersistedShadowResult:
     odds_reused: int
     dq_created: int
     report_directory: Path
+
+
+@dataclass(frozen=True)
+class PersistedShadowReplayResult:
+    first: PersistedShadowResult
+    replay: PersistedShadowResult
 
 
 class _ReplayAdapter:
@@ -82,12 +98,67 @@ def run_persisted_shadow(
     end_time: datetime,
     prediction_as_of: datetime,
     report_root: Path,
+    max_fixtures: int | None = None,
 ) -> PersistedShadowResult:
     """Persist authentic source evidence and never-public shadow analysis replay-safely."""
     payloads, rate_states = adapter.fixture_payloads(start_time=start_time, end_time=end_time)
-    materialized = tuple(dict(item) for item in payloads)
+    materialized = _bounded_payloads(payloads, max_fixtures)
+    replay = _ReplayAdapter(materialized, rate_states, adapter)
+    return _persist_materialized_shadow(
+        database_url,
+        replay,
+        start_time=start_time,
+        end_time=end_time,
+        prediction_as_of=prediction_as_of,
+        report_root=report_root,
+    )
+
+
+def run_persisted_shadow_with_replay(
+    database_url: str,
+    adapter: FiveDfaFreeAdapter,
+    *,
+    start_time: datetime,
+    end_time: datetime,
+    prediction_as_of: datetime,
+    report_root: Path,
+    max_fixtures: int | None = None,
+) -> PersistedShadowReplayResult:
+    """Fetch once, then prove deterministic persistence replay without another network call."""
+    payloads, rate_states = adapter.fixture_payloads(start_time=start_time, end_time=end_time)
+    replay = _ReplayAdapter(_bounded_payloads(payloads, max_fixtures), rate_states, adapter)
+    first = _persist_materialized_shadow(
+        database_url,
+        replay,
+        start_time=start_time,
+        end_time=end_time,
+        prediction_as_of=prediction_as_of,
+        report_root=report_root,
+    )
+    second = _persist_materialized_shadow(
+        database_url,
+        replay,
+        start_time=start_time,
+        end_time=end_time,
+        prediction_as_of=prediction_as_of,
+        report_root=report_root,
+    )
+    return PersistedShadowReplayResult(first, second)
+
+
+def _persist_materialized_shadow(
+    database_url: str,
+    replay: _ReplayAdapter,
+    *,
+    start_time: datetime,
+    end_time: datetime,
+    prediction_as_of: datetime,
+    report_root: Path,
+) -> PersistedShadowResult:
+    materialized = replay.payloads
     run_id = deterministic_run_id(materialized, prediction_as_of)
     engine = create_engine(database_url, pool_pre_ping=True)
+    sync: CurrentSeasonPersistenceResult | None = None
     try:
         with engine.begin() as connection:
             sync = persist_current_season_payloads(
@@ -98,7 +169,6 @@ def run_persisted_shadow(
                 window_end=end_time,
                 prediction_as_of=prediction_as_of,
             )
-        replay = _ReplayAdapter(materialized, rate_states, adapter)
         with engine.connect().execution_options(isolation_level="REPEATABLE READ") as connection:
             connection.execute(text("SET TRANSACTION READ ONLY"))
             report = run_authenticated_shadow(
@@ -172,6 +242,8 @@ def run_persisted_shadow(
             sync_write_status="PERSISTED_REPLAY_SAFE",
         )
         directory = write_local_reports(report, report_root)
+        with engine.begin() as connection:
+            _finish_run(connection, sync, prediction_as_of)
         return PersistedShadowResult(
             report,
             sync,
@@ -182,8 +254,67 @@ def run_persisted_shadow(
             dq_created,
             directory,
         )
+    except BaseException:
+        if sync is not None:
+            with engine.begin() as connection:
+                _fail_run(connection, sync.run_id, prediction_as_of)
+        raise
     finally:
         engine.dispose()
+
+
+def _finish_run(
+    connection: Connection, sync: CurrentSeasonPersistenceResult, occurred_at: datetime
+) -> None:
+    _set_terminal_status(connection, sync.run_id, sync.terminal_status, occurred_at)
+    for event_type in (EventType.PERSISTENCE_SUCCEEDED, EventType.RUN_SUCCEEDED):
+        persist_event(connection, _lifecycle_event(event_type, sync.run_id, occurred_at))
+
+
+def _fail_run(connection: Connection, run_id: str, occurred_at: datetime) -> None:
+    if not _set_terminal_status(connection, run_id, RunStatus.FAILED, occurred_at):
+        return
+    for event_type in (EventType.PERSISTENCE_FAILED, EventType.RUN_FAILED):
+        persist_event(connection, _lifecycle_event(event_type, run_id, occurred_at, failed=True))
+
+
+def _set_terminal_status(
+    connection: Connection, run_id: str, status: RunStatus, occurred_at: datetime
+) -> bool:
+    changed = connection.execute(
+        text(
+            """UPDATE engine_runs SET status=:status,finished_at=:finished_at
+            WHERE run_id=:run_id AND status='RUNNING'"""
+        ),
+        {"status": status.value, "finished_at": occurred_at, "run_id": run_id},
+    ).rowcount
+    if changed:
+        return True
+    existing = connection.execute(
+        text("SELECT status FROM engine_runs WHERE run_id=:run_id"), {"run_id": run_id}
+    ).scalar_one()
+    if existing != status.value and status is not RunStatus.FAILED:
+        raise ValueError("engine run has a conflicting terminal status")
+    return False
+
+
+def _lifecycle_event(
+    event_type: EventType, run_id: str, occurred_at: datetime, *, failed: bool = False
+) -> OperationalEvent:
+    return OperationalEvent(
+        OperationalEvent.deterministic_id(event_type, run_id, "persisted_shadow", event_type.value),
+        event_type,
+        "persisted_shadow_lifecycle_v1",
+        occurred_at,
+        severity_for(event_type),
+        run_id,
+        "persisted_shadow",
+        {"outcome": "failed" if failed else "succeeded"},
+        DeliveryVisibility.INTERNAL,
+        run_id=run_id,
+        provider_domain="fixtures",
+        reason_code=ReasonCode.PERSISTENCE_FAILED if failed else None,
+    )
 
 
 def _quality_evaluation(
@@ -312,23 +443,66 @@ def _day(value: str) -> datetime:
     return datetime.combine(date.fromisoformat(value), time.min, UTC)
 
 
+def _bounded_payloads(
+    payloads: Sequence[Mapping[str, object]], max_fixtures: int | None
+) -> tuple[dict[str, object], ...]:
+    materialized = tuple(dict(item) for item in payloads)
+    if max_fixtures is None:
+        return materialized
+    if max_fixtures <= 0:
+        raise ValueError("max_fixtures must be positive")
+    return tuple(
+        sorted(
+            materialized,
+            key=lambda item: (str(item.get("kickoff_utc", "")), str(item.get("id", ""))),
+        )[:max_fixtures]
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Persist an authenticated internal shadow run")
     parser.add_argument("--start-date", required=True, type=_day)
     parser.add_argument("--end-date", required=True, type=_day)
     parser.add_argument("--as-of", required=True, type=_aware)
     parser.add_argument("--report-directory", required=True, type=Path)
+    parser.add_argument("--verify-replay", action="store_true")
+    parser.add_argument("--max-fixtures", type=int)
     args = parser.parse_args()
     config = load_five_dfa_project_config(os.environ)
     with FiveDfaClient(config) as client:
+        adapter = FiveDfaFreeAdapter(client)
+        if args.verify_replay:
+            pair = run_persisted_shadow_with_replay(
+                load_settings().database_url,
+                adapter,
+                start_time=args.start_date,
+                end_time=args.end_date + timedelta(days=1),
+                prediction_as_of=args.as_of,
+                report_root=args.report_directory,
+                max_fixtures=args.max_fixtures,
+            )
+            print(
+                json.dumps(
+                    {"first": _result_dict(pair.first), "replay": _result_dict(pair.replay)},
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            )
+            return 0
         result = run_persisted_shadow(
             load_settings().database_url,
-            FiveDfaFreeAdapter(client),
+            adapter,
             start_time=args.start_date,
             end_time=args.end_date + timedelta(days=1),
             prediction_as_of=args.as_of,
             report_root=args.report_directory,
+            max_fixtures=args.max_fixtures,
         )
+    print(json.dumps(_result_dict(result), sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _result_dict(result: PersistedShadowResult) -> dict[str, object]:
     output = result.report.to_dict()
     output["persisted_run_id"] = result.sync.run_id
     output["shadow_created"] = result.shadow_created
@@ -337,8 +511,7 @@ def main() -> int:
     output["odds_reused"] = result.odds_reused
     output["dq_created"] = result.dq_created
     output["report_directory"] = str(result.report_directory)
-    print(json.dumps(output, sort_keys=True, separators=(",", ":")))
-    return 0
+    return output
 
 
 if __name__ == "__main__":
