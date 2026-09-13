@@ -38,6 +38,18 @@ def _clean_fixture_data(connection: Connection) -> None:
     connection.execute(text("DELETE FROM prediction_snapshots"))
     connection.execute(
         text(
+            """DELETE FROM match_statistics
+            WHERE match_id IN (
+                SELECT match_id FROM matches
+                WHERE competition_id IN (
+                    SELECT competition_id FROM competitions
+                    WHERE canonical_name = 'TASK 21 Competition'
+                )
+            )"""
+        )
+    )
+    connection.execute(
+        text(
             """DELETE FROM match_provider_refs
             WHERE provider_id IN (
                 SELECT provider_id FROM providers WHERE name = 'TASK 21 fixture provider'
