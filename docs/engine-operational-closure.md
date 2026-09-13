@@ -101,11 +101,10 @@ Activation gates are fail-closed. Missing values mean false. The required curren
 Backend contract audit:
 
 - Explore/public-eligible list and per-match public predictions exist and may safely be empty.
-- `BACKEND_CONTRACT_GAP`: canonical Today fixture list.
-- `BACKEND_CONTRACT_GAP`: Match Detail fixture/result/statistics response.
-- `BACKEND_CONTRACT_GAP`: public supported-market and data-insufficient state schema.
-- `BACKEND_CONTRACT_GAP`: explicit stale and Final Check response state.
-- Fixture visibility must not depend on a public pick; shadow rows never fill Explore.
+- Today fixture listing and Match Detail are additive read-only V1 contracts.
+- Supported-market, data-insufficient, score-incomplete, stale, and Final Check states are explicit.
+- Fixture visibility does not depend on a public pick; shadow rows never fill Explore.
+- No provider-independent backend contract gap from this audit remains open.
 
 ## Rollback and incidents
 
