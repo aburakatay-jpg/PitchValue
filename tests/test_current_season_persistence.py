@@ -245,6 +245,73 @@ def test_kickoff_revision_and_final_replay_are_safe(db: Connection) -> None:
 
 
 @pytest.mark.integration
+def test_final_result_correction_and_finished_kickoff_revision_require_review(
+    db: Connection,
+) -> None:
+    _teams(db)
+    finished = _payload(status="finished", goals={"home": 2, "away": 1})
+    first = persist_current_season_payloads(
+        db,
+        (finished,),
+        run_id=deterministic_run_id((finished,), NOW),
+        window_start=NOW,
+        window_end=NOW + timedelta(days=2),
+        prediction_as_of=NOW,
+    )
+    corrected = _payload(status="finished", goals={"home": 1, "away": 1})
+    correction = persist_current_season_payloads(
+        db,
+        (corrected,),
+        run_id=deterministic_run_id((corrected,), NOW),
+        window_start=NOW,
+        window_end=NOW + timedelta(days=2),
+        prediction_as_of=NOW,
+    )
+    moved_final = _payload(
+        kickoff=NOW + timedelta(days=1, hours=2),
+        status="finished",
+        goals={"home": 2, "away": 1},
+    )
+    moved = persist_current_season_payloads(
+        db,
+        (moved_final,),
+        run_id=deterministic_run_id((moved_final,), NOW),
+        window_start=NOW,
+        window_end=NOW + timedelta(days=2),
+        prediction_as_of=NOW,
+    )
+    assert correction.fixture_writes[0].status.value == "RESULT_REVISION_REVIEW"
+    assert moved.fixture_writes[0].status.value == "LIFECYCLE_REVIEW"
+    match_id = first.match_ids[0][1]
+    assert tuple(
+        db.execute(
+            text(
+                "SELECT kickoff_at_utc,home_score,away_score,result FROM matches WHERE match_id=:id"
+            ),
+            {"id": match_id},
+        ).one()
+    ) == (NOW + timedelta(days=1), 2, 1, "H")
+
+
+@pytest.mark.integration
+def test_unknown_provider_lifecycle_is_quarantined_not_persisted(db: Connection) -> None:
+    _teams(db)
+    unknown = _payload(status="unknown")
+    result = persist_current_season_payloads(
+        db,
+        (unknown,),
+        run_id=deterministic_run_id((unknown,), NOW),
+        window_start=NOW,
+        window_end=NOW + timedelta(days=2),
+        prediction_as_of=NOW,
+    )
+    assert result.fixture_writes == ()
+    assert result.quarantines_created == 1
+    assert result.terminal_status.value == "PARTIAL_WITH_QUARANTINES"
+    assert result.match_ids == ()
+
+
+@pytest.mark.integration
 def test_shadow_analysis_is_idempotent_and_never_public(db: Connection) -> None:
     _teams(db)
     payload = _payload()

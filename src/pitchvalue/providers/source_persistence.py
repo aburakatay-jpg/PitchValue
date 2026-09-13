@@ -12,6 +12,12 @@ from sqlalchemy import Connection, text
 
 from pitchvalue.ingestion.football_data_uk.canonical import normalize_team_name
 from pitchvalue.providers.five_dfa.fixtures import FixtureStatus, ProviderFixture
+from pitchvalue.providers.lifecycle import (
+    CanonicalFixtureState,
+    LifecycleDecision,
+    evaluate_transition,
+    kickoff_revision_allowed,
+)
 
 
 class FixtureWriteStatus(StrEnum):
@@ -20,6 +26,7 @@ class FixtureWriteStatus(StrEnum):
     KICKOFF_REVISED = "KICKOFF_REVISED"
     FINISHED = "FINISHED"
     RESULT_REVISION_REVIEW = "RESULT_REVISION_REVIEW"
+    LIFECYCLE_REVIEW = "LIFECYCLE_REVIEW"
     PROVIDER_ID_REPLACEMENT_REVIEW = "PROVIDER_ID_REPLACEMENT_REVIEW"
 
 
@@ -290,35 +297,48 @@ def persist_fixture(
             write_status = FixtureWriteStatus.INSERTED
         else:
             match_id = int(existing["match_id"])
-            if (
-                existing["status"] == "FINISHED"
-                and status == "FINISHED"
-                and (existing["home_score"], existing["away_score"])
-                != (fixture.home_score, fixture.away_score)
-            ):
+            current_state = CanonicalFixtureState(str(existing["status"]))
+            incoming_state = _provider_lifecycle(fixture.status)
+            if incoming_state is None:
                 source_ref = _fixture_reference(
                     connection, fixture, provider_id, match_id, mapping_version, seen_at
                 )
-                return FixtureWriteResult(
-                    FixtureWriteStatus.RESULT_REVISION_REVIEW, match_id, source_ref
+                return FixtureWriteResult(FixtureWriteStatus.LIFECYCLE_REVIEW, match_id, source_ref)
+            result_changed = (
+                current_state is CanonicalFixtureState.FINISHED
+                and incoming_state is CanonicalFixtureState.FINISHED
+                and (existing["home_score"], existing["away_score"])
+                != (fixture.home_score, fixture.away_score)
+            )
+            transition = evaluate_transition(
+                current_state, incoming_state, result_changed=result_changed
+            )
+            if transition.decision is LifecycleDecision.REVIEW_REQUIRED:
+                source_ref = _fixture_reference(
+                    connection, fixture, provider_id, match_id, mapping_version, seen_at
                 )
-            if existing["kickoff_at_utc"] != fixture.kickoff_utc:
+                review_status = (
+                    FixtureWriteStatus.RESULT_REVISION_REVIEW
+                    if transition.reason == "RESULT_REVISION_REVIEW"
+                    else FixtureWriteStatus.LIFECYCLE_REVIEW
+                )
+                return FixtureWriteResult(review_status, match_id, source_ref)
+            kickoff_changed = existing["kickoff_at_utc"] != fixture.kickoff_utc
+            if kickoff_changed and not kickoff_revision_allowed(current_state):
+                source_ref = _fixture_reference(
+                    connection, fixture, provider_id, match_id, mapping_version, seen_at
+                )
+                return FixtureWriteResult(FixtureWriteStatus.LIFECYCLE_REVIEW, match_id, source_ref)
+            if status == "FINISHED" and existing["status"] != "FINISHED":
                 connection.execute(
                     text(
-                        """UPDATE matches SET kickoff_at_utc=:kickoff,updated_at=now()
+                        """UPDATE matches SET kickoff_at_utc=:kickoff,status='FINISHED',
+                        home_score=:home_score,away_score=:away_score,result=:result,
+                        decided_by='regular_time',updated_at=now()
                         WHERE match_id=:match_id"""
                     ),
-                    {"kickoff": fixture.kickoff_utc, "match_id": match_id},
-                )
-                write_status = FixtureWriteStatus.KICKOFF_REVISED
-            elif status == "FINISHED" and existing["status"] != "FINISHED":
-                connection.execute(
-                    text(
-                        """UPDATE matches SET status='FINISHED',home_score=:home_score,
-                    away_score=:away_score,result=:result,decided_by='regular_time',updated_at=now()
-                    WHERE match_id=:match_id"""
-                    ),
                     {
+                        "kickoff": fixture.kickoff_utc,
                         "home_score": fixture.home_score,
                         "away_score": fixture.away_score,
                         "result": result,
@@ -326,6 +346,18 @@ def persist_fixture(
                     },
                 )
                 write_status = FixtureWriteStatus.FINISHED
+            elif kickoff_changed:
+                connection.execute(
+                    text(
+                        """UPDATE matches SET kickoff_at_utc=:kickoff,updated_at=now()
+                        WHERE match_id=:match_id"""
+                    ),
+                    {
+                        "kickoff": fixture.kickoff_utc,
+                        "match_id": match_id,
+                    },
+                )
+                write_status = FixtureWriteStatus.KICKOFF_REVISED
             else:
                 write_status = FixtureWriteStatus.UNCHANGED
         source_ref = _fixture_reference(
@@ -409,6 +441,15 @@ def _canonical_status(status: FixtureStatus) -> str:
         FixtureStatus.IN_PLAY: "SCHEDULED",
         FixtureStatus.FINISHED: "FINISHED",
         FixtureStatus.UNKNOWN: "SCHEDULED",
+    }[status]
+
+
+def _provider_lifecycle(status: FixtureStatus) -> CanonicalFixtureState | None:
+    return {
+        FixtureStatus.SCHEDULED: CanonicalFixtureState.SCHEDULED,
+        FixtureStatus.IN_PLAY: CanonicalFixtureState.IN_PLAY,
+        FixtureStatus.FINISHED: CanonicalFixtureState.FINISHED,
+        FixtureStatus.UNKNOWN: None,
     }[status]
 
 

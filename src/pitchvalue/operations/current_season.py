@@ -202,6 +202,24 @@ def persist_current_season_payloads(
                 f"FIXTURE_{'UNSUPPORTED' if reason == 'UNSUPPORTED_COMPETITION' else 'UNRESOLVED'}"
             ] += 1
             continue
+        if fixture.status.value == "unknown":
+            source_ref = upsert_source_reference(
+                connection,
+                provider_id=provider_id,
+                entity_type="FIXTURE",
+                provider_entity_id=fixture.provider_fixture_id,
+                provider_display_name=(
+                    f"{fixture.home_team.provider_name} v {fixture.away_team.provider_name}"
+                ),
+                mapping_status="REVIEW_REQUIRED",
+                mapping_version=MAPPING_VERSION,
+                provenance="five_dfa_authenticated_fixture_v1",
+                seen_at=prediction_as_of,
+                payload=payload,
+            )
+            pending_quarantines.append((source_ref, "UNKNOWN_LIFECYCLE_REVIEW"))
+            reference_counts["FIXTURE_REVIEW_REQUIRED"] += 1
+            continue
         write = persist_fixture(
             connection,
             fixture,
