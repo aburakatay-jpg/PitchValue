@@ -40,11 +40,23 @@ def test_scoreless_versioned_evidence_persists_idempotently() -> None:
             ).one()
             assert tuple(row) == ("HISTORICAL_RECONSTRUCTED", None)
             assert (
-                connection.execute(text("SELECT count(*) FROM data_quality_evidence")).scalar_one()
+                connection.execute(
+                    text(
+                        "SELECT count(*) FROM data_quality_evidence "
+                        "WHERE evaluation_id = :evaluation_id"
+                    ),
+                    {"evaluation_id": evaluation.evaluation_id},
+                ).scalar_one()
                 == 6
             )
-            connection.execute(text("DELETE FROM data_quality_evidence"))
-            connection.execute(text("DELETE FROM data_quality_evaluations"))
+            connection.execute(
+                text("DELETE FROM data_quality_evidence WHERE evaluation_id = :evaluation_id"),
+                {"evaluation_id": evaluation.evaluation_id},
+            )
+            connection.execute(
+                text("DELETE FROM data_quality_evaluations WHERE evaluation_id = :evaluation_id"),
+                {"evaluation_id": evaluation.evaluation_id},
+            )
             _clean_fixture_data(connection)
     finally:
         engine.dispose()

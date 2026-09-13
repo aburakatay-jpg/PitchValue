@@ -140,19 +140,24 @@ def transition_run(run: EngineRun, status: RunStatus, occurred_at: datetime) -> 
 class Quarantine:
     quarantine_id: str
     run_id: str
-    match_id: int
+    match_id: int | None
     market_family: str | None
     scope: QuarantineScope
     reason_code: str
     occurred_at: datetime
     evidence: Mapping[str, str]
     status: QuarantineStatus = QuarantineStatus.ACTIVE
+    source_entity_ref_id: int | None = None
 
     def __post_init__(self) -> None:
         for name in ("quarantine_id", "run_id", "reason_code"):
             _nonblank(getattr(self, name), name)
-        if self.match_id <= 0:
+        if self.match_id is not None and self.match_id <= 0:
             raise ValueError("match_id must be positive")
+        if self.source_entity_ref_id is not None and self.source_entity_ref_id <= 0:
+            raise ValueError("source_entity_ref_id must be positive")
+        if (self.match_id is None) == (self.source_entity_ref_id is None):
+            raise ValueError("quarantine requires exactly one canonical or source identity")
         _aware(self.occurred_at, "occurred_at")
         if self.scope is QuarantineScope.MATCH and self.market_family is not None:
             raise ValueError("match quarantine cannot specify market_family")
@@ -165,13 +170,14 @@ class Quarantine:
     @staticmethod
     def deterministic_id(
         run_id: str,
-        match_id: int,
+        match_id: int | None,
         scope: QuarantineScope,
         market: str | None,
         reason: str,
+        source_entity_ref_id: int | None = None,
     ) -> str:
         payload = json.dumps(
-            [run_id, match_id, scope.value, market, reason],
+            [run_id, match_id, source_entity_ref_id, scope.value, market, reason],
             ensure_ascii=True,
             separators=(",", ":"),
         )

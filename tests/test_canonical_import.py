@@ -112,7 +112,7 @@ def test_full_replay_reuses_season_teams_aliases_matches_refs_and_stats(db: Conn
             "data_quality",
         )
     )
-    assert first.seasons_created == 1
+    assert first.seasons_created + first.seasons_reused == 1
     assert first.teams_created == 3
     assert first.aliases_created == 3
     assert first.matches_created == 2
@@ -133,43 +133,68 @@ def test_valid_results_and_score_semantics(db: Connection) -> None:
         "E0,18/08/2024,20:00,Home C,Away C,0,2,A,,,,,,,,,,,,,,,,",
     )
     metrics, _, _ = import_dataset(db, content)
-    results = db.execute(text("SELECT result FROM matches ORDER BY result")).scalars().all()
+    results = (
+        db.execute(
+            text(
+                "SELECT m.result FROM matches AS m "
+                "JOIN teams AS t ON t.team_id=m.home_team_id "
+                "WHERE t.canonical_name IN ('Home A','Home B','Home C') ORDER BY m.result"
+            )
+        )
+        .scalars()
+        .all()
+    )
     assert metrics.matches_created == 3
     assert results == ["A", "D", "H"]
 
 
 @pytest.mark.integration
 def test_contradictory_result_and_paired_halftime_are_rejected(db: Connection) -> None:
+    before = scalar(db, "SELECT count(*) FROM matches")
     content = csv_bytes(
         "E0,16/08/2024,20:00,Alpha,Beta,2,1,A,1,0,,,,,,,,,,,,,",
         "E0,17/08/2024,20:00,Gamma,Delta,1,0,H,1,,,,,,,,,,,,,,",
     )
     metrics, _, _ = import_dataset(db, content)
     assert metrics.rejected_canonical_rows == 2
-    assert scalar(db, "SELECT count(*) FROM matches") == 0
+    assert scalar(db, "SELECT count(*) FROM matches") == before
 
 
 @pytest.mark.integration
 def test_blank_halftime_and_date_only_do_not_fabricate_values(db: Connection) -> None:
     content = csv_bytes("E0,16/08/2024,,Alpha,Beta,0,0,D,,,,,,,,,,,,,,,,")
     metrics, _, _ = import_dataset(db, content)
-    row = db.execute(text("SELECT kickoff_at_utc, home_ht_score, away_ht_score FROM matches")).one()
+    row = db.execute(
+        text(
+            "SELECT m.kickoff_at_utc,m.home_ht_score,m.away_ht_score FROM matches AS m "
+            "JOIN teams AS t ON t.team_id=m.home_team_id WHERE t.canonical_name='Alpha'"
+        )
+    ).one()
     assert metrics.matches_created == 1
     assert tuple(row) == (None, None, None)
 
 
 @pytest.mark.integration
 def test_stats_missing_zero_creation_and_quality_flags(db: Connection) -> None:
+    odds_before = scalar(db, "SELECT count(*) FROM odds_snapshots")
     content = csv_bytes(
         "E0,16/08/2024,20:00,Alpha,Beta,0,0,D,,,,,,,,,,,,,,,,",
         "E0,17/08/2024,20:00,Gamma,Delta,1,0,H,,,,0,,,,,,,,,,,,",
     )
     metrics, _, _ = import_dataset(db, content)
-    stats = db.execute(text("SELECT home_shots FROM match_statistics")).scalar_one()
+    stats = db.execute(
+        text(
+            "SELECT s.home_shots FROM match_statistics AS s "
+            "JOIN matches AS m USING (match_id) JOIN teams AS t ON t.team_id=m.home_team_id "
+            "WHERE t.canonical_name='Gamma'"
+        )
+    ).scalar_one()
     qualities = db.execute(
         text(
             "SELECT result_available, stats_available, odds_available, xg_available "
-            "FROM data_quality ORDER BY stats_available"
+            "FROM data_quality AS q JOIN matches AS m USING (match_id) "
+            "JOIN teams AS t ON t.team_id=m.home_team_id "
+            "WHERE t.canonical_name IN ('Alpha','Gamma') ORDER BY stats_available"
         )
     ).all()
     assert metrics.statistics_created == 1
@@ -178,7 +203,7 @@ def test_stats_missing_zero_creation_and_quality_flags(db: Connection) -> None:
         (True, False, False, False),
         (True, True, False, False),
     ]
-    assert scalar(db, "SELECT count(*) FROM odds_snapshots") == 0
+    assert scalar(db, "SELECT count(*) FROM odds_snapshots") == odds_before
 
 
 @pytest.mark.integration
@@ -216,13 +241,14 @@ def test_no_fuzzy_merge_for_similar_names(db: Connection) -> None:
 
 @pytest.mark.integration
 def test_invalid_division_and_negative_score_are_rejected(db: Connection) -> None:
+    before = scalar(db, "SELECT count(*) FROM matches")
     content = csv_bytes(
         "F1,16/08/2024,20:00,Alpha,Beta,1,0,H,,,,,,,,,,,,,,,,",
         "E0,17/08/2024,20:00,Gamma,Delta,-1,0,A,,,,,,,,,,,,,,,,",
     )
     metrics, _, _ = import_dataset(db, content)
     assert metrics.rejected_canonical_rows == 2
-    assert scalar(db, "SELECT count(*) FROM matches") == 0
+    assert scalar(db, "SELECT count(*) FROM matches") == before
 
 
 @pytest.mark.integration

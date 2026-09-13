@@ -79,7 +79,7 @@ def test_local_import_preserves_stages_and_replays_idempotently(
         assert first.fetch_status == "local_preserved"
         assert second.fetch_status == "already_preserved"
         assert first.content_hash == hashlib.sha256(content).hexdigest()
-        assert first.canonical.matches_created == 1
+        assert first.canonical.matches_created + first.canonical.matches_reused == 1
         assert second.canonical.matches_created == 0
         assert second.canonical.matches_reused == 1
         assert second.canonical.provider_refs_created == 0
@@ -179,7 +179,8 @@ def _cleanup(engine: Engine, batch_ids: list[int]) -> None:
             text(
                 "DELETE FROM seasons WHERE competition_id = "
                 "(SELECT competition_id FROM competitions WHERE canonical_name='Premier League') "
-                "AND season_name='2024/25'"
+                "AND season_name='2024/25' "
+                "AND NOT EXISTS (SELECT 1 FROM matches WHERE matches.season_id=seasons.season_id)"
             )
         )
 

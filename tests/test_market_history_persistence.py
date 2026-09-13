@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import Connection, Engine, create_engine, text
 
 from pitchvalue.config import load_settings
-from pitchvalue.markets.history.config import FOOTBALL_DATA_MAPPINGS
+from pitchvalue.markets.history.config import FOOTBALL_DATA_MAPPINGS, SUPPORTED_SOURCE_FIELDS
 from pitchvalue.markets.history.contracts import (
     HistoricalOddsError,
     HistoricalPriceObservation,
@@ -166,10 +166,25 @@ def test_source_reader_chooses_stable_representative(db: Connection) -> None:
 
 
 def test_inventory_reports_supported_fields(db: Connection) -> None:
+    before = {
+        (item.source_code, item.season_name, item.source_field): (
+            item.present_count,
+            item.missing_count,
+        )
+        for item in inventory_supported_fields(db)
+    }
     _source_context(db)
-    items = tuple(item for item in inventory_supported_fields(db) if item.source_code == "E0")
-    assert len(items) == 6
-    assert all(item.present_count == 1 and item.missing_count == 0 for item in items)
+    after = {
+        (item.source_code, item.season_name, item.source_field): (
+            item.present_count,
+            item.missing_count,
+        )
+        for item in inventory_supported_fields(db)
+    }
+    for source_field in SUPPORTED_SOURCE_FIELDS:
+        key = ("E0", "2025/26", source_field)
+        before_present, before_missing = before[key]
+        assert after[key] == (before_present + 1, before_missing)
 
 
 def test_persistence_is_atomic_and_idempotent(db: Connection) -> None:

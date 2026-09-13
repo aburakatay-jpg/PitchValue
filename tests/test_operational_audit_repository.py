@@ -88,9 +88,19 @@ def test_run_quarantine_event_and_delivery_are_durable_and_retry_safe() -> None:
                 DeliveryStatus.DELIVERED,
                 attempt_count=2,
             )
-            assert connection.execute(text("SELECT count(*) FROM engine_runs")).scalar_one() == 1
             assert (
-                connection.execute(text("SELECT count(*) FROM run_quarantines")).scalar_one() == 1
+                connection.execute(
+                    text("SELECT count(*) FROM engine_runs WHERE run_id=:run_id"),
+                    {"run_id": run.run_id},
+                ).scalar_one()
+                == 1
+            )
+            assert (
+                connection.execute(
+                    text("SELECT count(*) FROM run_quarantines WHERE run_id=:run_id"),
+                    {"run_id": run.run_id},
+                ).scalar_one()
+                == 1
             )
             delivery = connection.execute(
                 text(
@@ -100,10 +110,22 @@ def test_run_quarantine_event_and_delivery_are_durable_and_retry_safe() -> None:
                 {"event_id": event.event_id},
             ).one()
             assert tuple(delivery) == ("DELIVERED", 2)
-            connection.execute(text("DELETE FROM operational_event_deliveries"))
-            connection.execute(text("DELETE FROM operational_events"))
-            connection.execute(text("DELETE FROM run_quarantines"))
-            connection.execute(text("DELETE FROM engine_runs"))
+            connection.execute(
+                text("DELETE FROM operational_event_deliveries WHERE event_id=:event_id"),
+                {"event_id": event.event_id},
+            )
+            connection.execute(
+                text("DELETE FROM operational_events WHERE event_id=:event_id"),
+                {"event_id": event.event_id},
+            )
+            connection.execute(
+                text("DELETE FROM run_quarantines WHERE run_id=:run_id"),
+                {"run_id": run.run_id},
+            )
+            connection.execute(
+                text("DELETE FROM engine_runs WHERE run_id=:run_id"),
+                {"run_id": run.run_id},
+            )
             _clean_fixture_data(connection)
     finally:
         engine.dispose()

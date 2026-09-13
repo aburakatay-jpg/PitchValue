@@ -48,10 +48,12 @@ def persist_quarantine(connection: Connection, quarantine: Quarantine) -> bool:
     result = connection.execute(
         text(
             """INSERT INTO run_quarantines (
-                quarantine_id, run_id, match_id, market_family, scope, reason_code,
+                quarantine_id, run_id, match_id, source_entity_ref_id,
+                market_family, scope, reason_code,
                 occurred_at, evidence, status
             ) VALUES (
-                :quarantine_id, :run_id, :match_id, :market_family, :scope, :reason_code,
+                :quarantine_id, :run_id, :match_id, :source_entity_ref_id,
+                :market_family, :scope, :reason_code,
                 :occurred_at, CAST(:evidence AS jsonb), :status
             ) ON CONFLICT (quarantine_id) DO NOTHING RETURNING quarantine_id"""
         ),
@@ -65,6 +67,24 @@ def persist_quarantine(connection: Connection, quarantine: Quarantine) -> bool:
         },
     )
     return result.scalar_one_or_none() is not None
+
+
+def update_run_status(connection: Connection, run: EngineRun) -> None:
+    """Persist a validated lifecycle transition without changing run identity."""
+    changed = connection.execute(
+        text(
+            """UPDATE engine_runs SET started_at=:started_at, finished_at=:finished_at,
+            status=:status WHERE run_id=:run_id"""
+        ),
+        {
+            "run_id": run.run_id,
+            "started_at": run.started_at,
+            "finished_at": run.finished_at,
+            "status": run.status.value,
+        },
+    ).rowcount
+    if changed != 1:
+        raise ValueError("engine run was not found")
 
 
 def persist_event(connection: Connection, event: OperationalEvent) -> bool:
