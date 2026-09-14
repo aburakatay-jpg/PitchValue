@@ -21,7 +21,6 @@ const analysisFields = [
   ['PitchValue Score', '74 mock'],
   ['Edge', '+4.2% mock'],
   ['Probability / confidence', '55% / illustrative'],
-  ['Model agreement', 'Placeholder'],
 ] as const;
 
 export default function MatchDetailScreen() {

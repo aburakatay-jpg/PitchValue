@@ -22,6 +22,8 @@ Copy `.env.example` to a local `.env` only when overriding the API endpoint. `EX
 
 Synthetic fixture previews are disabled by default. They require both a development build and the explicit `EXPO_PUBLIC_ENABLE_MOCK_DATA=true` flag. Production builds ignore this flag and fail closed to honest empty/unavailable states; API failures never activate mock data.
 
+Today reads chronological fixtures from `GET /api/v1/fixtures/today`. Explore reads only publication-eligible analysis from `GET /api/v1/predictions`. The small public-data hook aborts superseded requests, retains successful data during a failed refresh, and never changes backend freshness semantics. Device-offline detection is intentionally not inferred from generic request failures.
+
 ## Expo Go and future native builds
 
 The current dependency set is supported by Expo Go, including AsyncStorage for the one-time onboarding marker. No custom native code is present. A Development Build and EAS Build become appropriate when later approved work introduces StoreKit, production notifications, custom native modules, or release signing. No prebuild/eject step is currently required.

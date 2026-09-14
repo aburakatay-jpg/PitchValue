@@ -86,6 +86,23 @@ export type PublicPrediction = Readonly<{
   blockers: readonly string[];
 }>;
 
+export type PredictionListResponse = Readonly<{
+  predictions: readonly PublicPrediction[];
+  count: number;
+}>;
+
+export type PublicApiErrorResponse = Readonly<{
+  error: Readonly<{
+    code:
+      | 'VALIDATION_ERROR'
+      | 'NOT_FOUND'
+      | 'SERVICE_UNAVAILABLE'
+      | 'INTERNAL_ERROR';
+    message: string;
+    request_id: string;
+  }>;
+}>;
+
 export type TodayFixturesResponse = Readonly<{
   fixture_date: string;
   timezone: string;

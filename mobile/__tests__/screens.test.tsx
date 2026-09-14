@@ -7,7 +7,7 @@ jest.mock('expo-router', () => ({
 
 import { AiScreen } from '@/app/(tabs)/ai';
 import { BetsScreen } from '@/app/(tabs)/bets';
-import { TodayScreen } from '@/app/(tabs)/today';
+import { TodayView } from '@/app/(tabs)/today';
 import { RootLanding } from '@/app/index';
 import { aiActions, mockMatches } from '@/dev/mock-data';
 
@@ -18,8 +18,22 @@ describe('screen foundations', () => {
   });
 
   it('renders Today as a safe fixture empty state without mock fallback', async () => {
-    const view = await render(<TodayScreen />);
-    expect(view.getByText('Fixture data unavailable')).toBeTruthy();
+    const view = await render(
+      <TodayView
+        data={{
+          fixture_date: '2026-09-14',
+          timezone: 'Europe/Istanbul',
+          state: 'NO_FIXTURES',
+          fixtures: [],
+          count: 0,
+        }}
+        error={null}
+        initialLoading={false}
+        onRefresh={jest.fn()}
+        refreshing={false}
+      />,
+    );
+    expect(view.getByText('No matches scheduled')).toBeTruthy();
     expect(view.queryByText(mockMatches[0]!.homeTeam)).toBeNull();
   });
 

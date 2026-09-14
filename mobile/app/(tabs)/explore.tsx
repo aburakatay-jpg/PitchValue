@@ -1,44 +1,114 @@
-import { View } from 'react-native';
-
+import { ExplorePredictionCard } from '@/components/discovery';
+import { InlineNotice, PredictionCardSkeleton } from '@/components/feedback';
 import { MatchCard } from '@/components/MatchCard';
 import {
   AppHeader,
-  Chip,
   EmptyState,
   Screen,
   SectionHeader,
-  sharedStyles,
+  UnavailableState,
 } from '@/components/ui';
 import { mockMatches } from '@/dev/mock-data';
+import { usePublicResource } from '@/hooks/use-public-resource';
 import { config } from '@/lib/config';
+import { getExplorePredictions, type PublicApiError } from '@/lib/public-api';
+import type { PredictionListResponse } from '@/types/public-api';
 
-export default function ExploreScreen() {
+export function ExploreView({
+  data,
+  error,
+  initialLoading,
+  onRefresh,
+  refreshing,
+}: {
+  data: PredictionListResponse | null;
+  error: PublicApiError | null;
+  initialLoading: boolean;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  if (initialLoading && data === null) {
+    return (
+      <Screen>
+        <AppHeader title="Explore" />
+        <SectionHeader
+          title="Published analysis"
+          detail="Loading value signals"
+        />
+        <PredictionCardSkeleton />
+        <PredictionCardSkeleton />
+      </Screen>
+    );
+  }
+  if (!data && error) {
+    return (
+      <Screen>
+        <AppHeader title="Explore" />
+        <UnavailableState
+          title="Unable to load value signals"
+          detail="Please try again shortly."
+          retry={onRefresh}
+        />
+      </Screen>
+    );
+  }
   return (
-    <Screen>
-      <AppHeader
-        eyebrow={
-          config.developmentPreviewEnabled ? 'Synthetic selections' : undefined
-        }
-        title="Explore"
-      />
+    <Screen onRefresh={onRefresh} refreshing={refreshing}>
+      <AppHeader title="Explore" />
       <SectionHeader
-        title="PitchValue selections"
-        detail="Filter controls are visual placeholders for a later data source."
+        title="Published analysis"
+        detail="Only analyses that meet PitchValue publication criteria appear here."
       />
-      <View style={sharedStyles.row}>
-        {['All', 'Elite', 'Strong', 'Value'].map((filter, index) => (
-          <Chip key={filter} label={filter} selected={index === 0} />
-        ))}
-      </View>
-      {config.developmentPreviewEnabled
-        ? mockMatches.map((match) => <MatchCard key={match.id} match={match} />)
-        : null}
-      {!config.developmentPreviewEnabled ? (
-        <EmptyState
-          title="No published analysis"
-          detail="Explore stays empty until publication-safe analysis is available."
+      {error ? (
+        <InlineNotice
+          title="Could not refresh value signals"
+          detail="Showing the last available published analyses."
+          tone="negative"
         />
       ) : null}
+      {(data?.predictions.length ?? 0) === 0 ? (
+        <EmptyState
+          title="No publishable signals right now"
+          detail="PitchValue only surfaces analyses that meet its publication criteria."
+        />
+      ) : (
+        data?.predictions.map((prediction, index) => (
+          <ExplorePredictionCard
+            key={`${prediction.match_id}-${prediction.market}-${prediction.selection}-${index}`}
+            prediction={prediction}
+          />
+        ))
+      )}
     </Screen>
+  );
+}
+
+function ExploreProductionScreen() {
+  const resource = usePublicResource(getExplorePredictions);
+  return (
+    <ExploreView {...resource} onRefresh={() => void resource.refresh()} />
+  );
+}
+
+function ExplorePreviewScreen() {
+  return (
+    <Screen>
+      <AppHeader eyebrow="Synthetic selections" title="Explore" />
+      <SectionHeader
+        title="Development preview"
+        detail="Explicit mock mode is enabled."
+      />
+      {mockMatches.map((match) => (
+        <MatchCard key={match.id} match={match} />
+      ))}
+    </Screen>
+  );
+}
+
+export default function ExploreScreen() {
+  return config.developmentPreviewEnabled ? (
+    <ExplorePreviewScreen />
+  ) : (
+    <ExploreProductionScreen />
   );
 }

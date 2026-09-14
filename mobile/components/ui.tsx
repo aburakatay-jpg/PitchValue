@@ -2,6 +2,7 @@ import type { PropsWithChildren, ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,14 +11,38 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing, touchTarget, typeScale } from '@/theme/tokens';
+import {
+  colors,
+  radii,
+  spacing,
+  touchTarget,
+  typography,
+  typeScale,
+} from '@/theme/tokens';
 
-export function Screen({ children }: PropsWithChildren) {
+export function Screen({
+  children,
+  onRefresh,
+  refreshing = false,
+}: PropsWithChildren<{
+  onRefresh?: (() => void) | undefined;
+  refreshing?: boolean;
+}>) {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.screen}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              colors={[colors.secondary]}
+              onRefresh={onRefresh}
+              refreshing={refreshing}
+              tintColor={colors.secondary}
+            />
+          ) : undefined
+        }
       >
         {children}
       </ScrollView>
@@ -164,6 +189,28 @@ export function ErrorState({ retry }: { retry?: () => void }) {
   );
 }
 
+export function UnavailableState({
+  title,
+  detail,
+  retry,
+}: {
+  title: string;
+  detail: string;
+  retry?: (() => void) | undefined;
+}) {
+  return (
+    <View accessibilityLiveRegion="polite" style={styles.stateCard}>
+      <Text style={styles.stateTitle}>{title}</Text>
+      <Text style={styles.secondary}>{detail}</Text>
+      {retry ? (
+        <Button accessibilityLabel={`Retry: ${title}`} onPress={retry}>
+          Retry
+        </Button>
+      ) : null}
+    </View>
+  );
+}
+
 export const sharedStyles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
@@ -180,9 +227,9 @@ export const sharedStyles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  label: { color: colors.textSecondary, fontSize: typeScale.caption },
-  body: { color: colors.text, fontSize: typeScale.body, lineHeight: 24 },
-  strong: { color: colors.text, fontSize: typeScale.body, fontWeight: '700' },
+  label: { color: colors.textSecondary, ...typography.caption },
+  body: { color: colors.text, ...typography.body },
+  strong: { color: colors.text, ...typography.body, fontWeight: '700' },
 });
 
 const styles = StyleSheet.create({
@@ -196,17 +243,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  title: { color: colors.text, fontSize: typeScale.hero, fontWeight: '800' },
+  title: { color: colors.text, ...typography.pageTitle },
   sectionHeader: { gap: spacing.xs },
   sectionTitle: {
     color: colors.text,
-    fontSize: typeScale.title,
-    fontWeight: '700',
+    ...typography.sectionTitle,
   },
   secondary: {
     color: colors.textSecondary,
-    fontSize: typeScale.body,
-    lineHeight: 23,
+    ...typography.body,
   },
   button: {
     alignItems: 'center',
@@ -260,8 +305,7 @@ const styles = StyleSheet.create({
   },
   stateTitle: {
     color: colors.text,
-    fontSize: typeScale.title,
-    fontWeight: '700',
+    ...typography.sectionTitle,
   },
   centered: {
     minHeight: 240,
