@@ -13,7 +13,13 @@ import { aiActions, mockMatches } from '@/dev/mock-data';
 
 describe('screen foundations', () => {
   it('renders the app root loading state', async () => {
-    const view = await render(<RootLanding loading onComplete={jest.fn()} />);
+    const view = await render(
+      <RootLanding
+        onAgeAccepted={jest.fn()}
+        onComplete={jest.fn()}
+        stage="LOADING"
+      />,
+    );
     expect(view.getByLabelText('Loading PitchValue')).toBeTruthy();
   });
 

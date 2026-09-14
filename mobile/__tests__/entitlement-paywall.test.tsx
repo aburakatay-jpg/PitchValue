@@ -1,10 +1,29 @@
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { PaywallShell } from '@/components/Paywall';
-import { PremiumGuard } from '@/components/PremiumGuard';
+import {
+  PaywallPresentation,
+  PaywallShell,
+  annualPlanDetail,
+  plans,
+} from '@/components/Paywall';
+import { LockedPremiumSection, PremiumGuard } from '@/components/PremiumGuard';
 
 describe('premium UI foundation', () => {
+  it('uses a contextual, accessible premium boundary for guests', async () => {
+    const onUnlock = jest.fn();
+    const view = await render(
+      <LockedPremiumSection
+        detail="See the complete evidence behind this analysis."
+        onUnlock={onUnlock}
+        title="Unlock analysis details"
+      />,
+    );
+    expect(view.getByLabelText('Premium content locked')).toBeTruthy();
+    await fireEvent.press(view.getByText('View Premium'));
+    expect(onUnlock).toHaveBeenCalledTimes(1);
+  });
+
   it('locks premium content for a guest', async () => {
     const view = await render(
       <PremiumGuard state="GUEST">
@@ -36,19 +55,50 @@ describe('premium UI foundation', () => {
     expect(view.getByLabelText('Premium content locked')).toBeTruthy();
   });
 
-  it('does not promise a free trial when eligibility is unknown', async () => {
+  it('presents all three plan concepts without hardcoded store prices', async () => {
+    expect(plans.map((plan) => plan.name)).toEqual([
+      'Monthly',
+      '3 Months',
+      'Annual',
+    ]);
+    const view = await render(<PaywallShell />);
+    expect(view.getAllByText('Localized price unavailable')).toHaveLength(3);
+    expect(view.queryByText(/TL|\$|€|£/)).toBeNull();
+    expect(view.getAllByText('Purchase unavailable')).toHaveLength(3);
+  });
+
+  it('does not promise a trial without store eligibility', async () => {
     const view = await render(<PaywallShell trialEligibility="unknown" />);
-    expect(view.queryByText(/3-day trial/i)).toBeNull();
-    expect(view.getByLabelText('Review annual option')).toBeTruthy();
+    expect(view.queryByText(/3-day|free trial/i)).toBeNull();
+    expect(annualPlanDetail('unknown')).toMatch(/require the App Store/i);
   });
 
-  it('shows trial CTA only for an eligible annual preview', async () => {
-    const view = await render(<PaywallShell trialEligibility="eligible" />);
-    expect(view.getByLabelText('Preview 3-day trial')).toBeTruthy();
+  it('does not claim even eligible presentation has verified a trial', () => {
+    expect(annualPlanDetail('eligible')).toMatch(/may be offered/i);
   });
 
-  it('shows continuation CTA when annual trial is ineligible', async () => {
-    const view = await render(<PaywallShell trialEligibility="ineligible" />);
-    expect(view.getByLabelText('Continue with annual')).toBeTruthy();
+  it('keeps purchase and restore actions honestly disabled', async () => {
+    const view = await render(<PaywallShell />);
+    for (const plan of plans) {
+      expect(
+        view.getByLabelText(`${plan.name} purchase unavailable`),
+      ).toBeDisabled();
+    }
+    expect(view.getByLabelText('Restore purchases unavailable')).toBeDisabled();
+  });
+
+  it('contains no casino or urgency copy', async () => {
+    const view = await render(<PaywallShell />);
+    const output = JSON.stringify(view.toJSON());
+    expect(output).not.toMatch(
+      /WIN MORE|BOOST PROFITS|LIMITED TIME|countdown/i,
+    );
+  });
+
+  it('keeps an accessible close control available', async () => {
+    const onClose = jest.fn();
+    const view = await render(<PaywallPresentation onClose={onClose} />);
+    await fireEvent.press(view.getByLabelText('Close Premium options'));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

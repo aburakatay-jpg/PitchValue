@@ -35,6 +35,8 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="match/[id]" options={{ title: 'Match detail' }} />
+          <Stack.Screen name="auth/index" options={{ title: 'Account' }} />
+          <Stack.Screen name="auth/email" options={{ title: 'Email' }} />
           <Stack.Screen
             name="paywall"
             options={{ presentation: 'modal', title: 'PitchValue Premium' }}

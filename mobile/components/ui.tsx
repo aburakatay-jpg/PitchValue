@@ -86,14 +86,17 @@ export function Button({
   children,
   disabled,
   style,
+  variant = 'primary',
   ...props
-}: PressableProps) {
+}: PressableProps & { variant?: 'primary' | 'secondary' | 'quiet' }) {
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       style={(state) => [
         styles.button,
+        variant === 'secondary' && styles.buttonSecondary,
+        variant === 'quiet' && styles.buttonQuiet,
         disabled && styles.buttonDisabled,
         state.pressed && !disabled && styles.pressed,
         typeof style === 'function' ? style(state) : style,
@@ -262,6 +265,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   buttonDisabled: { opacity: 0.45 },
+  buttonSecondary: { backgroundColor: colors.surfaceRaised },
+  buttonQuiet: { backgroundColor: colors.transparent },
   buttonText: {
     color: colors.text,
     fontSize: typeScale.body,

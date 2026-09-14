@@ -1,43 +1,101 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
-import { OnboardingFlow } from '@/components/OnboardingFlow';
+import {
+  AgeConfirmation,
+  ExitConfirmation,
+  OnboardingFlow,
+} from '@/components/OnboardingFlow';
 import { LoadingState, Screen } from '@/components/ui';
 import {
-  isOnboardingComplete,
+  loadFirstLaunchState,
+  markAgeConfirmed,
   markOnboardingComplete,
+  type FirstLaunchState,
 } from '@/lib/onboarding-storage';
 
+export type LandingStage =
+  'LOADING' | 'AGE_CONFIRMATION' | 'EXITED' | 'ONBOARDING';
+
+export function landingStageFromState(state: FirstLaunchState): LandingStage {
+  if (!state.ageConfirmed) return 'AGE_CONFIRMATION';
+  return state.tutorialComplete ? 'LOADING' : 'ONBOARDING';
+}
+
 export function RootLanding({
-  loading,
+  stage,
+  onAgeAccepted,
   onComplete,
+  storageError = false,
 }: {
-  loading: boolean;
+  stage: LandingStage;
+  onAgeAccepted: () => void;
   onComplete: () => void;
+  storageError?: boolean;
 }) {
-  if (loading)
+  const [exited, setExited] = useState(stage === 'EXITED');
+  if (stage === 'LOADING')
     return (
       <Screen>
         <LoadingState />
       </Screen>
     );
-  return <OnboardingFlow onComplete={onComplete} />;
+  if (exited) return <ExitConfirmation onReview={() => setExited(false)} />;
+  if (stage === 'AGE_CONFIRMATION')
+    return (
+      <AgeConfirmation
+        onAccept={onAgeAccepted}
+        onExit={() => setExited(true)}
+        storageError={storageError}
+      />
+    );
+  return <OnboardingFlow onComplete={onComplete} storageError={storageError} />;
 }
 
 export default function IndexScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [stage, setStage] = useState<LandingStage>('LOADING');
+  const [storageError, setStorageError] = useState(false);
 
   useEffect(() => {
-    isOnboardingComplete()
-      .then((complete) => complete && router.replace('/(tabs)/today'))
-      .finally(() => setLoading(false));
+    loadFirstLaunchState()
+      .then((state) => {
+        if (state.tutorialComplete) {
+          router.replace('/(tabs)/today');
+          return;
+        }
+        setStage(landingStageFromState(state));
+      })
+      .catch(() => {
+        setStorageError(true);
+        setStage('AGE_CONFIRMATION');
+      });
   }, [router]);
 
-  const complete = async () => {
-    await markOnboardingComplete();
-    router.replace('/(tabs)/today');
+  const acceptAge = async () => {
+    try {
+      await markAgeConfirmed();
+      setStorageError(false);
+      setStage('ONBOARDING');
+    } catch {
+      setStorageError(true);
+    }
   };
-
-  return <RootLanding loading={loading} onComplete={complete} />;
+  const complete = async () => {
+    try {
+      await markOnboardingComplete();
+      setStorageError(false);
+      router.replace('/(tabs)/today');
+    } catch {
+      setStorageError(true);
+    }
+  };
+  return (
+    <RootLanding
+      onAgeAccepted={() => void acceptAge()}
+      onComplete={() => void complete()}
+      stage={stage}
+      storageError={storageError}
+    />
+  );
 }

@@ -1,58 +1,54 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Badge, Button, sharedStyles } from '@/components/ui';
-import { colors, spacing, typeScale } from '@/theme/tokens';
+import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
+import { colors, spacing, typography } from '@/theme/tokens';
 import type { TrialEligibility } from '@/types/entitlement';
 
-export const plans = [
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: '499.99 TL / month',
-    detail: 'No trial',
-  },
-  {
-    id: 'quarterly',
-    name: '3 Months',
-    price: '999.99 TL total',
-    detail: '333.33 TL/month · No trial',
-  },
+export const premiumBenefits = [
+  'Full market analysis',
+  'Bet Score details',
+  'Model agreement when authoritative data is available',
+  'Final Check',
+  'AI explanations',
+  'Coupon Builder',
 ] as const;
 
-export function annualPlanCopy(eligibility: TrialEligibility) {
-  if (eligibility === 'eligible')
-    return { detail: 'Eligible for a 3-day trial', cta: 'Preview 3-day trial' };
-  if (eligibility === 'ineligible')
-    return { detail: '~250 TL/month', cta: 'Continue with annual' };
-  return {
-    detail: '~250 TL/month · Trial eligibility checked at purchase',
-    cta: 'Review annual option',
-  };
+export const plans = [
+  { id: 'monthly', name: 'Monthly' },
+  { id: 'quarterly', name: '3 Months' },
+  { id: 'annual', name: 'Annual' },
+] as const;
+
+export function annualPlanDetail(eligibility: TrialEligibility): string {
+  if (eligibility === 'eligible') {
+    return 'A trial may be offered after App Store eligibility is verified.';
+  }
+  return 'Trial eligibility and localized pricing require the App Store.';
 }
 
-export function PaywallPlanCard({
+function PaywallPlanCard({
   name,
-  price,
-  detail,
-  highlighted = false,
-  cta = 'Purchase unavailable in this preview',
+  annual,
+  trialEligibility,
 }: {
   name: string;
-  price: string;
-  detail: string;
-  highlighted?: boolean;
-  cta?: string;
+  annual: boolean;
+  trialEligibility: TrialEligibility;
 }) {
   return (
-    <View style={[sharedStyles.card, highlighted && styles.highlighted]}>
+    <View style={[sharedStyles.card, annual && styles.highlighted]}>
       <View style={sharedStyles.rowBetween}>
         <Text style={styles.name}>{name}</Text>
-        {highlighted ? <Badge label="Best value" tone="accent" /> : null}
+        {annual ? <Badge label="Annual option" tone="accent" /> : null}
       </View>
-      <Text style={styles.price}>{price}</Text>
-      <Text style={styles.detail}>{detail}</Text>
-      <Button accessibilityLabel={cta} disabled>
-        {cta}
+      <Text style={styles.price}>Localized price unavailable</Text>
+      <Text style={styles.detail}>
+        {annual
+          ? annualPlanDetail(trialEligibility)
+          : 'Pricing will be supplied by the App Store.'}
+      </Text>
+      <Button accessibilityLabel={`${name} purchase unavailable`} disabled>
+        Purchase unavailable
       </Button>
     </View>
   );
@@ -63,22 +59,53 @@ export function PaywallShell({
 }: {
   trialEligibility?: TrialEligibility;
 }) {
-  const annual = annualPlanCopy(trialEligibility);
   return (
     <View style={styles.stack}>
-      {plans.map((plan) => (
-        <PaywallPlanCard key={plan.id} {...plan} />
-      ))}
-      <PaywallPlanCard
-        name="Annual"
-        price="2,999.99 TL total"
-        detail={annual.detail}
-        highlighted
-        cta={annual.cta}
+      <SectionHeader
+        title="Unlock full PitchValue analysis"
+        detail="One Premium product, presented calmly and without invented store availability."
       />
+      <View style={sharedStyles.card}>
+        {premiumBenefits.map((benefit) => (
+          <Text key={benefit} style={styles.benefit}>
+            • {benefit}
+          </Text>
+        ))}
+      </View>
+      {plans.map((plan) => (
+        <PaywallPlanCard
+          annual={plan.id === 'annual'}
+          key={plan.id}
+          name={plan.name}
+          trialEligibility={trialEligibility}
+        />
+      ))}
+      <Button
+        accessibilityLabel="Restore purchases unavailable"
+        disabled
+        variant="quiet"
+      >
+        Restore Purchases · Unavailable
+      </Button>
       <Text style={styles.footnote}>
-        Development preview only. No payment action is connected.
+        Presentation only. No payment, restoration, trial confirmation, or
+        entitlement change is performed.
       </Text>
+    </View>
+  );
+}
+
+export function PaywallPresentation({ onClose }: { onClose: () => void }) {
+  return (
+    <View style={styles.stack}>
+      <Button
+        accessibilityLabel="Close Premium options"
+        onPress={onClose}
+        variant="quiet"
+      >
+        Close
+      </Button>
+      <PaywallShell trialEligibility="unknown" />
     </View>
   );
 }
@@ -86,12 +113,13 @@ export function PaywallShell({
 const styles = StyleSheet.create({
   stack: { gap: spacing.md },
   highlighted: { borderColor: colors.accent },
-  name: { color: colors.text, fontSize: typeScale.title, fontWeight: '700' },
-  price: { color: colors.text, fontSize: typeScale.title, fontWeight: '800' },
-  detail: { color: colors.textSecondary, fontSize: typeScale.body },
+  name: { color: colors.text, ...typography.sectionTitle },
+  price: { color: colors.text, ...typography.featured },
+  detail: { color: colors.textSecondary, ...typography.body },
+  benefit: { color: colors.text, ...typography.body },
   footnote: {
     color: colors.textSecondary,
-    fontSize: typeScale.caption,
     textAlign: 'center',
+    ...typography.caption,
   },
 });
