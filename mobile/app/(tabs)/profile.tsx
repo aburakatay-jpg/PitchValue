@@ -59,10 +59,12 @@ function InformationRow({ label, value }: { label: string; value: string }) {
 export function ProfileView({
   entitlement,
   onSignIn,
+  onOpenTrackRecord,
   onViewPremium,
 }: {
   entitlement: EntitlementState;
   onSignIn: () => void;
+  onOpenTrackRecord: () => void;
   onViewPremium: () => void;
 }) {
   const guest = entitlement === 'GUEST';
@@ -106,6 +108,9 @@ export function ProfileView({
           No verified performance record is available. PitchValue never
           fabricates ROI.
         </Text>
+        <Button onPress={onOpenTrackRecord} variant="secondary">
+          Open My Bets
+        </Button>
       </ProfileGroup>
       <ProfileGroup title="Responsible Gaming">
         <Text style={styles.detail}>
@@ -136,6 +141,7 @@ export default function ProfileScreen() {
   return (
     <ProfileView
       entitlement={state}
+      onOpenTrackRecord={() => router.push('/(tabs)/bets')}
       onSignIn={() => router.push('/auth/index' as Href)}
       onViewPremium={() => router.push('/paywall')}
     />

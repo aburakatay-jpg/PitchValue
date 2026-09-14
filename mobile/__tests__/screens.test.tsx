@@ -48,9 +48,10 @@ describe('screen foundations', () => {
     for (const action of aiActions) expect(view.getByText(action)).toBeTruthy();
   });
 
-  it('renders My Bets as locked for the default guest', async () => {
+  it('renders My Bets as an honest unavailable tracking workspace', async () => {
     const view = await render(<BetsScreen />);
-    expect(view.getByLabelText('Premium content locked')).toBeTruthy();
+    expect(view.getByText('Tracked selections unavailable')).toBeTruthy();
+    expect(view.queryByText('Premium bet workspace placeholder')).toBeNull();
   });
 
   it('keeps mock fixtures clearly synthetic', () => {

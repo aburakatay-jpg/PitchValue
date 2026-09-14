@@ -26,6 +26,8 @@ First launch is a fail-closed two-stage flow: an 18+ confirmation followed by ex
 
 Apple and Google account controls are honest disabled presentation shells. The Email route provides accessible form and validation foundations but cannot submit until account/session endpoints exist. Premium presentation uses App Store-owned price and trial placeholders; purchase and restore controls remain disabled. No local identity, entitlement, transaction, or trial is fabricated.
 
+My Bets exposes the canonical Active, History, and Performance workspace structure, but the production sections remain explicitly unavailable because no user-owned save, settlement, stake, return, or historical-price contract exists. Match Detail does not expose a fake Save action, and AsyncStorage is not used as a substitute personal ledger. See [the contract audit](docs/my-bets-contract-audit.md).
+
 Today reads chronological fixtures from `GET /api/v1/fixtures/today`. Explore reads only publication-eligible analysis from `GET /api/v1/predictions`. Match Detail reads the canonical fixture, public analysis, V1 market states, Final Check, persisted statistics, and freshness from `GET /api/v1/matches/{match_id}`. Missing analysis and unavailable sections remain explicit and never activate shadow or mock fallbacks. The small public-data hook aborts superseded requests, retains successful data during a failed refresh, and never changes backend freshness semantics. Device-offline detection is intentionally not inferred from generic request failures.
 
 ## Expo Go and future native builds

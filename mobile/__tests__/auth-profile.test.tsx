@@ -41,9 +41,11 @@ describe('auth-safe presentation', () => {
 describe('Profile foundation', () => {
   it('renders all canonical groups and a truthful Guest state', async () => {
     const onSignIn = jest.fn();
+    const onOpenTrackRecord = jest.fn();
     const view = await render(
       <ProfileView
         entitlement="GUEST"
+        onOpenTrackRecord={onOpenTrackRecord}
         onSignIn={onSignIn}
         onViewPremium={jest.fn()}
       />,
@@ -53,6 +55,8 @@ describe('Profile foundation', () => {
     expect(view.getAllByText('Guest').length).toBeGreaterThan(0);
     await fireEvent.press(view.getByText('Sign in'));
     expect(onSignIn).toHaveBeenCalledTimes(1);
+    await fireEvent.press(view.getByText('Open My Bets'));
+    expect(onOpenTrackRecord).toHaveBeenCalledTimes(1);
     expect(view.queryByText(/%|ROI \d/i)).toBeNull();
     expect(
       view.getByText('No configurable preferences are currently available.'),
@@ -65,6 +69,7 @@ describe('Profile foundation', () => {
       const view = await render(
         <ProfileView
           entitlement={state}
+          onOpenTrackRecord={jest.fn()}
           onSignIn={jest.fn()}
           onViewPremium={jest.fn()}
         />,

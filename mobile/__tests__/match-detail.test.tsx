@@ -46,6 +46,8 @@ describe('Match Detail resource and fixture identity', () => {
     expect(view.getByText('Very Long Canonical Home United')).toBeTruthy();
     expect(view.getByText('Scheduled')).toBeTruthy();
     expect(view.queryByText(/0 – 0/)).toBeNull();
+    expect(view.queryByText(/^Save$/)).toBeNull();
+    expect(view.queryByText(/^Saved$/)).toBeNull();
   });
 
   it('shows an authoritative finished score only when present', async () => {
