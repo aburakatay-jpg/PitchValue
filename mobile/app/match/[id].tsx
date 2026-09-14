@@ -1,87 +1,150 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { PremiumGuard } from '@/components/PremiumGuard';
+import { InlineNotice, MatchDetailSkeleton } from '@/components/feedback';
 import {
-  AppHeader,
-  Badge,
-  Button,
-  EmptyState,
+  AllMarkets,
+  FinalCheckSection,
+  FreshnessSection,
+  MatchHeader,
+  PublicAnalysisSection,
+  StatisticsSection,
+} from '@/components/match-detail';
+import {
   Screen,
   SectionHeader,
+  UnavailableState,
   sharedStyles,
 } from '@/components/ui';
 import { mockMatches } from '@/dev/mock-data';
+import { usePublicResource } from '@/hooks/use-public-resource';
 import { config } from '@/lib/config';
-import { colors, spacing, typeScale } from '@/theme/tokens';
+import { getMatchDetail, type PublicApiError } from '@/lib/public-api';
+import { colors, typography } from '@/theme/tokens';
+import type { MatchDetailResponse } from '@/types/public-api';
 
-const analysisFields = [
-  ['Selected market', 'Development-only market'],
-  ['Odds', '1.95 mock'],
-  ['PitchValue Score', '74 mock'],
-  ['Edge', '+4.2% mock'],
-  ['Probability / confidence', '55% / illustrative'],
-] as const;
+export function parseCanonicalMatchId(
+  value: string | readonly string[] | undefined,
+): number | null {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (typeof candidate !== 'string' || !/^[1-9]\d*$/.test(candidate)) {
+    return null;
+  }
+  const parsed = Number(candidate);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
 
-export default function MatchDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
-  const match = config.developmentPreviewEnabled
-    ? mockMatches.find((item) => item.id === id)
-    : undefined;
-  if (!match) {
+export function MatchDetailView({
+  data,
+  error,
+  initialLoading,
+  onRefresh,
+  refreshing,
+}: {
+  data: MatchDetailResponse | null;
+  error: PublicApiError | null;
+  initialLoading: boolean;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  if (initialLoading && data === null) {
     return (
       <Screen>
-        <AppHeader title="Match detail" />
-        <EmptyState
-          title="Public match data unavailable"
-          detail="Internal or synthetic analysis is never used as a public fallback."
+        <MatchDetailSkeleton />
+      </Screen>
+    );
+  }
+  if (!data && error) {
+    const missing = error.kind === 'NOT_FOUND';
+    return (
+      <Screen>
+        <UnavailableState
+          title={
+            missing
+              ? 'Match not found'
+              : 'Match data is temporarily unavailable'
+          }
+          detail={
+            missing
+              ? 'This fixture ID is not available.'
+              : 'Please try again shortly.'
+          }
+          retry={missing ? undefined : onRefresh}
         />
       </Screen>
     );
   }
+  if (!data) return <InvalidMatchState />;
+  return (
+    <Screen onRefresh={onRefresh} refreshing={refreshing}>
+      {error ? (
+        <InlineNotice
+          title="Could not refresh match detail"
+          detail="Showing the last available public match data."
+          tone="negative"
+        />
+      ) : null}
+      <MatchHeader detail={data} />
+      <PublicAnalysisSection detail={data} />
+      <AllMarkets markets={data.markets} />
+      <FinalCheckSection state={data.final_check} />
+      <StatisticsSection detail={data} />
+      <FreshnessSection detail={data} />
+    </Screen>
+  );
+}
+
+function InvalidMatchState() {
   return (
     <Screen>
-      <AppHeader
-        eyebrow={`${match.competition} · ${match.kickoff}`}
-        title={`${match.homeTeam} vs ${match.awayTeam}`}
+      <UnavailableState
+        title="Match not found"
+        detail="A valid fixture ID is required."
       />
-      <Badge label="Development-only analysis" tone="accent" />
-      <View style={styles.metrics}>
-        {analysisFields.map(([label, value]) => (
-          <View key={label} style={sharedStyles.rowBetween}>
-            <Text style={sharedStyles.label}>{label}</Text>
-            <Text style={styles.metric}>{value}</Text>
-          </View>
-        ))}
-      </View>
-      <PremiumGuard onLocked={() => router.push('/paywall')}>
-        <View style={sharedStyles.card}>
-          <SectionHeader
-            title="Short reasoning"
-            detail="No real analysis is produced in this foundation build."
-          />
-          <Text style={sharedStyles.body}>
-            Alternative pick: development placeholder only.
-          </Text>
-        </View>
-      </PremiumGuard>
-      <View style={styles.actions}>
-        <Button disabled>Save Pick</Button>
-        <Button disabled>Final Check</Button>
+    </Screen>
+  );
+}
+
+function ProductionMatchDetail({ matchId }: { matchId: number }) {
+  const loader = useCallback(
+    (signal: AbortSignal) => getMatchDetail(matchId, signal),
+    [matchId],
+  );
+  const resource = usePublicResource(loader);
+  return (
+    <MatchDetailView {...resource} onRefresh={() => void resource.refresh()} />
+  );
+}
+
+function DevelopmentMatchDetail({ id }: { id: string }) {
+  const match = mockMatches.find((item) => item.id === id);
+  if (!match) return <InvalidMatchState />;
+  return (
+    <Screen>
+      <View style={sharedStyles.card}>
+        <SectionHeader
+          title={`${match.homeTeam} vs ${match.awayTeam}`}
+          detail={`Development preview · ${match.competition} · ${match.kickoff}`}
+        />
+        <Text style={styles.preview}>
+          Synthetic fixture preview. No public analysis is attached.
+        </Text>
       </View>
     </Screen>
   );
 }
 
+export default function MatchDetailScreen() {
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const matchId = parseCanonicalMatchId(id);
+  if (config.developmentPreviewEnabled && typeof id === 'string') {
+    return <DevelopmentMatchDetail id={id} />;
+  }
+  if (matchId === null) return <InvalidMatchState />;
+  return <ProductionMatchDetail matchId={matchId} />;
+}
+
 const styles = StyleSheet.create({
-  metrics: { ...sharedStyles.card, gap: spacing.md },
-  metric: {
-    color: colors.text,
-    fontSize: typeScale.body,
-    fontWeight: '800',
-    flexShrink: 1,
-    textAlign: 'right',
-  },
-  actions: { gap: spacing.sm },
+  preview: { color: colors.textSecondary, ...typography.body },
 });

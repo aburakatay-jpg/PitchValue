@@ -1,6 +1,6 @@
 # PitchValue mobile
 
-Dark-first React Native foundation built with Expo SDK 57, TypeScript, and Expo Router. It contains UI shells and typed public API contract foundations; it does not yet contain production data fetching, prediction, purchase, authentication, advertising, notification, or analytics behavior.
+Dark-first React Native client built with Expo SDK 57, TypeScript, and Expo Router. Today, Explore, and Match Detail use typed read-only public API contracts. The mobile app does not calculate predictions, edge, Bet Score, publication decisions, or model agreement; it does not contain purchase, authentication, advertising, notification, or analytics behavior.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ Copy `.env.example` to a local `.env` only when overriding the API endpoint. `EX
 
 Synthetic fixture previews are disabled by default. They require both a development build and the explicit `EXPO_PUBLIC_ENABLE_MOCK_DATA=true` flag. Production builds ignore this flag and fail closed to honest empty/unavailable states; API failures never activate mock data.
 
-Today reads chronological fixtures from `GET /api/v1/fixtures/today`. Explore reads only publication-eligible analysis from `GET /api/v1/predictions`. The small public-data hook aborts superseded requests, retains successful data during a failed refresh, and never changes backend freshness semantics. Device-offline detection is intentionally not inferred from generic request failures.
+Today reads chronological fixtures from `GET /api/v1/fixtures/today`. Explore reads only publication-eligible analysis from `GET /api/v1/predictions`. Match Detail reads the canonical fixture, public analysis, V1 market states, Final Check, persisted statistics, and freshness from `GET /api/v1/matches/{match_id}`. Missing analysis and unavailable sections remain explicit and never activate shadow or mock fallbacks. The small public-data hook aborts superseded requests, retains successful data during a failed refresh, and never changes backend freshness semantics. Device-offline detection is intentionally not inferred from generic request failures.
 
 ## Expo Go and future native builds
 

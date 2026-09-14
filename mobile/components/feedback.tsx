@@ -52,6 +52,32 @@ export function PredictionCardSkeleton() {
   );
 }
 
+export function MatchDetailSkeleton() {
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={styles.detailStack}
+      testID="match-detail-skeleton"
+    >
+      <View style={styles.card}>
+        <SkeletonBlock height={14} width="42%" />
+        <SkeletonBlock height={28} width="88%" />
+        <SkeletonBlock height={28} width="74%" />
+      </View>
+      <View style={styles.card}>
+        <SkeletonBlock height={20} width="48%" />
+        <SkeletonBlock height={48} />
+      </View>
+      <View style={styles.card}>
+        <SkeletonBlock height={20} width="35%" />
+        <SkeletonBlock height={40} />
+        <SkeletonBlock height={40} />
+      </View>
+    </View>
+  );
+}
+
 export function InlineNotice({
   title,
   detail,
@@ -93,6 +119,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   row: { flexDirection: 'row', gap: spacing.sm },
+  detailStack: { gap: spacing.lg },
   notice: {
     backgroundColor: colors.surface,
     borderLeftWidth: 3,

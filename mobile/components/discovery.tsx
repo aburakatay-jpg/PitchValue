@@ -22,14 +22,14 @@ function fixtureAnalysisLabel(fixture: PublicFixtureSummary): string {
   return 'No analysis published';
 }
 
-function lifecycleLabel(value: string): string {
+export function lifecycleLabel(value: string): string {
   return value
     .replaceAll('_', ' ')
     .toLowerCase()
     .replace(/^./, (letter) => letter.toUpperCase());
 }
 
-function lifecycleTone(
+export function lifecycleTone(
   value: string,
 ): 'primary' | 'positive' | 'warning' | 'negative' {
   const normalized = value.toUpperCase();

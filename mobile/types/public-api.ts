@@ -122,7 +122,16 @@ export type MatchDetailResponse = PublicFixtureSummary &
       away: number;
       result: string | null;
     }> | null;
-    statistics: Readonly<Record<string, number | string | null>> | null;
+    statistics: Readonly<{
+      home_shots: number | null;
+      away_shots: number | null;
+      home_shots_on_target: number | null;
+      away_shots_on_target: number | null;
+      home_possession: string | null;
+      away_possession: string | null;
+      home_corners: number | null;
+      away_corners: number | null;
+    }> | null;
     statistics_state:
       'AVAILABLE' | 'DATA_INSUFFICIENT' | 'STALE' | 'PROVIDER_UNAVAILABLE';
     markets: readonly PublicMarketAvailability[];
