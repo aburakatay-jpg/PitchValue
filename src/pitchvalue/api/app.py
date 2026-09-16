@@ -54,8 +54,8 @@ def create_app(
         CORSMiddleware,
         allow_origins=list(resolved_settings.cors_allowed_origins),
         allow_credentials=False,
-        allow_methods=["GET"],
-        allow_headers=["Accept", "Content-Type", "X-Request-ID"],
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Accept", "Authorization", "Content-Type", "X-Request-ID"],
     )
     application.add_middleware(RequestContextMiddleware)
     install_error_handlers(application)

@@ -20,6 +20,10 @@ class ErrorCode(StrEnum):
     NOT_FOUND = "NOT_FOUND"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
+    UNAUTHORIZED = "UNAUTHORIZED"
+    FORBIDDEN = "FORBIDDEN"
+    CONFLICT = "CONFLICT"
+    EXTERNAL_ACTIVATION_REQUIRED = "EXTERNAL_ACTIVATION_REQUIRED"
 
 
 class ErrorDetail(BaseModel):
@@ -92,6 +96,10 @@ def install_error_handlers(app: FastAPI) -> None:
 
 
 ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    401: {"model": ErrorResponse, "description": "Authentication required"},
+    403: {"model": ErrorResponse, "description": "Forbidden"},
+    409: {"model": ErrorResponse, "description": "Conflict"},
+    503: {"model": ErrorResponse, "description": "Service unavailable"},
     422: {"model": ErrorResponse, "description": "Validation error"},
     500: {"model": ErrorResponse, "description": "Internal error"},
 }

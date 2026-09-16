@@ -11,7 +11,7 @@ from sqlalchemy import Connection, Engine, create_engine, text
 from pitchvalue.config import Settings
 
 EngineFactory = Callable[..., Engine]
-EXPECTED_ALEMBIC_REVISION = "20260913_0011"
+EXPECTED_ALEMBIC_REVISION = "20260916_0012"
 
 
 class DatabaseResourceProtocol(Protocol):
@@ -22,6 +22,8 @@ class DatabaseResourceProtocol(Protocol):
     def check(self) -> None: ...
 
     def connect(self) -> AbstractContextManager[Connection]: ...
+
+    def transaction(self) -> AbstractContextManager[Connection]: ...
 
     def dispose(self) -> None: ...
 
@@ -68,6 +70,14 @@ class DatabaseResource:
         if self._engine is None:
             raise RuntimeError("database resource is not initialized")
         with self._engine.connect() as connection:
+            yield connection
+
+    @contextmanager
+    def transaction(self) -> Iterator[Connection]:
+        """Provide one committed write transaction for product-service commands."""
+        if self._engine is None:
+            raise RuntimeError("database resource is not initialized")
+        with self._engine.begin() as connection:
             yield connection
 
     def dispose(self) -> None:

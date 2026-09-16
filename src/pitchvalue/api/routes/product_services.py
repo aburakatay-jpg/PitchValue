@@ -1,0 +1,445 @@
+"""Authenticated, user-scoped product service routes."""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import Connection
+
+from pitchvalue.api.dependencies import (
+    get_bearer_token,
+    get_connection,
+    get_current_user,
+    get_transaction,
+)
+from pitchvalue.api.errors import ApiError, ErrorCode
+from pitchvalue.api.product_models import (
+    AskRequest,
+    AssistantResponse,
+    CommerceCatalogResponse,
+    CommerceVerificationRequestModel,
+    CouponRequest,
+    CouponResponse,
+    EmailAuthRequest,
+    EntitlementResponse,
+    ExplainRequest,
+    ExternalAuthRequest,
+    PasswordResetRequest,
+    PerformanceResponse,
+    PublicContextResponse,
+    RefreshRequest,
+    SavedSelectionListResponse,
+    SavedSelectionResponse,
+    SaveSelectionRequest,
+    ServiceReadinessResponse,
+    SessionResponse,
+    UserResponse,
+)
+from pitchvalue.operations.release_validation import validate_product_service_readiness
+from pitchvalue.prediction.repository import current_predictions, published_predictions
+from pitchvalue.product_services.assistant import (
+    CouponResult,
+    CouponRisk,
+    CouponState,
+    ExternalAssistantAdapter,
+    build_coupon,
+    explain_public_prediction,
+    public_context,
+    unsupported_prediction_request,
+)
+from pitchvalue.product_services.auth import (
+    AuthError,
+    IssuedSession,
+    ProductUser,
+    UnconfiguredIdentityVerifier,
+    UnconfiguredPasswordResetDelivery,
+    create_guest_session,
+    login_email,
+    logout,
+    normalize_email,
+    refresh_session,
+    register_email,
+)
+from pitchvalue.product_services.entitlements import (
+    CommerceVerificationRequest,
+    EntitlementState,
+    ExternalCommerceVerifier,
+    resolve_entitlement,
+)
+from pitchvalue.product_services.tracking import (
+    SavedSelection,
+    TrackingError,
+    get_saved_selection,
+    list_saved_selections,
+    performance,
+    remove_saved_selection,
+    save_public_selection,
+)
+
+router = APIRouter(tags=["product-services"])
+
+
+@router.post("/auth/guest", response_model=SessionResponse)
+def guest_session(
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> SessionResponse:
+    return _session(create_guest_session(connection))
+
+
+@router.post("/auth/email/register", response_model=SessionResponse)
+def email_register(
+    request: EmailAuthRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> SessionResponse:
+    try:
+        return _session(register_email(connection, request.email, request.password))
+    except AuthError as error:
+        raise ApiError(409, ErrorCode.CONFLICT, str(error)) from error
+
+
+@router.post("/auth/email/login", response_model=SessionResponse)
+def email_login(
+    request: EmailAuthRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> SessionResponse:
+    try:
+        return _session(login_email(connection, request.email, request.password))
+    except AuthError as error:
+        raise ApiError(401, ErrorCode.UNAUTHORIZED, "Invalid credentials") from error
+
+
+@router.post("/auth/email/password-reset", status_code=202)
+def email_password_reset(request: PasswordResetRequest) -> Response:
+    try:
+        normalized = normalize_email(request.email)
+        UnconfiguredPasswordResetDelivery().request_reset(normalized)
+    except AuthError as error:
+        raise ApiError(422, ErrorCode.VALIDATION_ERROR, "Invalid email") from error
+    except RuntimeError as error:
+        raise ApiError(
+            503,
+            ErrorCode.EXTERNAL_ACTIVATION_REQUIRED,
+            "Password reset delivery requires external activation",
+        ) from error
+    return Response(status_code=202)
+
+
+@router.post("/auth/external/{provider}", response_model=SessionResponse)
+def external_login(provider: str, request: ExternalAuthRequest) -> SessionResponse:
+    if provider.upper() not in {"APPLE", "GOOGLE"}:
+        raise ApiError(422, ErrorCode.VALIDATION_ERROR, "Unsupported identity provider")
+    try:
+        UnconfiguredIdentityVerifier().verify(request.provider_token)
+    except RuntimeError as error:
+        raise ApiError(
+            503,
+            ErrorCode.EXTERNAL_ACTIVATION_REQUIRED,
+            "Identity provider requires external activation",
+        ) from error
+    raise ApiError(503, ErrorCode.SERVICE_UNAVAILABLE, "Identity provider unavailable")
+
+
+@router.post("/auth/refresh", response_model=SessionResponse)
+def session_refresh(
+    request: RefreshRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> SessionResponse:
+    try:
+        return _session(refresh_session(connection, request.refresh_token))
+    except AuthError as error:
+        raise ApiError(
+            401, ErrorCode.UNAUTHORIZED, "Refresh token is invalid or expired"
+        ) from error
+
+
+@router.post("/auth/logout", status_code=204)
+def session_logout(
+    token: Annotated[str, Depends(get_bearer_token)],
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> Response:
+    del user
+    logout(connection, token)
+    return Response(status_code=204)
+
+
+@router.get("/me", response_model=UserResponse)
+def current_user(user: Annotated[ProductUser, Depends(get_current_user)]) -> UserResponse:
+    return _user(user)
+
+
+@router.get("/me/entitlement", response_model=EntitlementResponse)
+def current_entitlement(
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> EntitlementResponse:
+    return EntitlementResponse(**resolve_entitlement(connection, user.user_id).__dict__)
+
+
+@router.get("/commerce/catalog", response_model=CommerceCatalogResponse)
+def commerce_catalog() -> CommerceCatalogResponse:
+    return CommerceCatalogResponse(
+        state="EXTERNAL_ACTIVATION_REQUIRED",
+        plans=("MONTHLY", "THREE_MONTH", "ANNUAL"),
+        prices=(),
+        trial_eligibility="UNKNOWN",
+    )
+
+
+@router.post("/commerce/verify", response_model=EntitlementResponse)
+def verify_purchase(
+    request: CommerceVerificationRequestModel,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+) -> EntitlementResponse:
+    del user
+    try:
+        ExternalCommerceVerifier().verify(
+            CommerceVerificationRequest(
+                request.provider,
+                request.external_transaction_id,
+                request.product_identifier,
+                request.plan,
+                request.verification_token,
+            )
+        )
+    except RuntimeError as error:
+        raise ApiError(
+            503,
+            ErrorCode.EXTERNAL_ACTIVATION_REQUIRED,
+            "Commerce verification requires external activation",
+        ) from error
+    raise ApiError(503, ErrorCode.SERVICE_UNAVAILABLE, "Commerce verification unavailable")
+
+
+@router.post("/commerce/restore", response_model=EntitlementResponse)
+def restore_purchases(
+    user: Annotated[ProductUser, Depends(get_current_user)],
+) -> EntitlementResponse:
+    del user
+    raise ApiError(
+        503,
+        ErrorCode.EXTERNAL_ACTIVATION_REQUIRED,
+        "Purchase restoration requires external activation",
+    )
+
+
+@router.get("/me/bets", response_model=SavedSelectionListResponse)
+def my_bets(
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+    section: Annotated[str, Query(pattern="^(active|history)$")] = "active",
+) -> SavedSelectionListResponse:
+    records = list_saved_selections(connection, user.user_id, history=section == "history")
+    return SavedSelectionListResponse(
+        records=tuple(_saved(item) for item in records), count=len(records)
+    )
+
+
+@router.get("/me/bets/performance", response_model=PerformanceResponse)
+def my_bets_performance(
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> PerformanceResponse:
+    return PerformanceResponse(**performance(connection, user.user_id).__dict__)
+
+
+@router.get("/me/bets/{saved_selection_id}", response_model=SavedSelectionResponse)
+def my_bet(
+    saved_selection_id: str,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> SavedSelectionResponse:
+    try:
+        return _saved(get_saved_selection(connection, user.user_id, saved_selection_id))
+    except TrackingError as error:
+        raise ApiError(404, ErrorCode.NOT_FOUND, "Tracked selection not found") from error
+
+
+@router.post("/me/bets", response_model=SavedSelectionResponse, status_code=201)
+def save_bet(
+    request: SaveSelectionRequest,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    read_connection: Annotated[Connection, Depends(get_connection)],
+    write_connection: Annotated[Connection, Depends(get_transaction)],
+) -> SavedSelectionResponse:
+    candidates = current_predictions(read_connection, [request.match_id], publication_only=True)
+    prediction = next(
+        (
+            item
+            for item in candidates
+            if item.market == request.market and item.selection == request.selection
+        ),
+        None,
+    )
+    if prediction is None:
+        raise ApiError(409, ErrorCode.CONFLICT, "Public prediction is unavailable")
+    try:
+        record = save_public_selection(
+            write_connection,
+            user_id=user.user_id,
+            prediction_snapshot_id=prediction.prediction_snapshot_id,
+            line=request.line,
+            saved_decimal_odds=request.saved_decimal_odds,
+            stake=request.stake,
+            currency=request.currency,
+        )
+    except TrackingError as error:
+        raise ApiError(409, ErrorCode.CONFLICT, str(error)) from error
+    return _saved(record)
+
+
+@router.delete("/me/bets/{saved_selection_id}", status_code=204)
+def remove_bet(
+    saved_selection_id: str,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> Response:
+    if not remove_saved_selection(connection, user.user_id, saved_selection_id):
+        raise ApiError(404, ErrorCode.NOT_FOUND, "Active tracked selection not found")
+    return Response(status_code=204)
+
+
+@router.get("/ai/best-value", response_model=CouponResponse)
+def best_value(
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> CouponResponse:
+    _require_premium(connection, user)
+    records = tuple(published_predictions(connection, limit=4, offset=0))
+    contexts = tuple(public_context(item) for item in records)
+    state = CouponState.EMPTY if not contexts else CouponState.READY
+    return _coupon(CouponResult(state, CouponRisk.BALANCED, 4, contexts))
+
+
+@router.post("/ai/explain", response_model=AssistantResponse)
+def explain_pick(
+    request: ExplainRequest,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> AssistantResponse:
+    _require_premium(connection, user)
+    record = next(
+        (
+            item
+            for item in current_predictions(connection, [request.match_id], publication_only=True)
+            if item.market == request.market and item.selection == request.selection
+        ),
+        None,
+    )
+    return _assistant(
+        explain_public_prediction(record, ExternalAssistantAdapter(), question=request.question)
+    )
+
+
+@router.post("/ai/ask", response_model=AssistantResponse)
+def ask_pitchvalue(
+    request: AskRequest,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> AssistantResponse:
+    _require_premium(connection, user)
+    if request.match_id is None or request.market is None or request.selection is None:
+        return _assistant(unsupported_prediction_request())
+    return explain_pick(
+        ExplainRequest(
+            match_id=request.match_id,
+            market=request.market,
+            selection=request.selection,
+            question=request.question,
+        ),
+        user,
+        connection,
+    )
+
+
+@router.post("/coupon-builder", response_model=CouponResponse)
+def coupon_builder(
+    request: CouponRequest,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> CouponResponse:
+    _require_premium(connection, user)
+    try:
+        risk = CouponRisk(request.risk)
+    except ValueError as error:
+        raise ApiError(422, ErrorCode.VALIDATION_ERROR, "Unsupported coupon risk") from error
+    records = tuple(published_predictions(connection, limit=100, offset=0))
+    return _coupon(build_coupon(records, risk=risk, requested_count=request.requested_count))
+
+
+@router.get("/product-services/readiness", response_model=ServiceReadinessResponse)
+def product_service_readiness(
+    connection: Annotated[Connection, Depends(get_connection)],
+) -> ServiceReadinessResponse:
+    result = validate_product_service_readiness(connection)
+    return ServiceReadinessResponse(
+        AUTH_READY=result.AUTH_READY.value,
+        ENTITLEMENT_READY=result.ENTITLEMENT_READY.value,
+        COMMERCE_ACTIVATION_READY=result.COMMERCE_ACTIVATION_READY.value,
+        MY_BETS_READY=result.MY_BETS_READY.value,
+        AI_CONTRACT_READY=result.AI_CONTRACT_READY.value,
+        COUPON_BUILDER_READY=result.COUPON_BUILDER_READY.value,
+    )
+
+
+def _require_premium(connection: Connection, user: ProductUser) -> None:
+    entitlement = resolve_entitlement(connection, user.user_id)
+    if entitlement.state not in {
+        EntitlementState.PREMIUM_ACTIVE,
+        EntitlementState.PREMIUM_TRIAL,
+    }:
+        raise ApiError(403, ErrorCode.FORBIDDEN, "Premium entitlement required")
+
+
+def _user(user: ProductUser) -> UserResponse:
+    return UserResponse(
+        user_id=user.user_id, account_kind=user.account_kind.value, email=user.email
+    )
+
+
+def _session(value: IssuedSession) -> SessionResponse:
+    return SessionResponse(
+        user=_user(value.user),
+        access_token=value.access_token,
+        refresh_token=value.refresh_token,
+        access_expires_at=value.access_expires_at,
+        refresh_expires_at=value.refresh_expires_at,
+    )
+
+
+def _saved(value: SavedSelection) -> SavedSelectionResponse:
+    return SavedSelectionResponse(
+        saved_selection_id=value.saved_selection_id,
+        match_id=value.match_id,
+        market=value.market,
+        selection=value.selection,
+        line=value.line,
+        saved_decimal_odds=value.saved_decimal_odds,
+        stake=value.stake,
+        currency=value.currency,
+        tracking_status=value.tracking_status.value,
+        outcome=None if value.outcome is None else value.outcome.value,
+        created_at=value.created_at,
+    )
+
+
+def _context(value: object) -> PublicContextResponse:
+    return PublicContextResponse(**value.__dict__)
+
+
+def _assistant(value: object) -> AssistantResponse:
+    return AssistantResponse(
+        state=value.state.value,  # type: ignore[attr-defined]
+        answer=value.answer,  # type: ignore[attr-defined]
+        context=None if value.context is None else _context(value.context),  # type: ignore[attr-defined]
+    )
+
+
+def _coupon(value: object) -> CouponResponse:
+    return CouponResponse(
+        state=value.state.value,  # type: ignore[attr-defined]
+        risk=value.risk.value,  # type: ignore[attr-defined]
+        requested_count=value.requested_count,  # type: ignore[attr-defined]
+        selections=tuple(_context(item) for item in value.selections),  # type: ignore[attr-defined]
+    )

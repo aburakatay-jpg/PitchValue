@@ -7,9 +7,10 @@ import os
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from pathlib import Path
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import Connection, create_engine, text
 
 from pitchvalue.api.database import EXPECTED_ALEMBIC_REVISION, DatabaseResource
 from pitchvalue.config import Settings, load_settings
@@ -57,6 +58,71 @@ class ShadowActivationValidationResult:
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
+
+
+class ProductServiceReadinessState(StrEnum):
+    CODE_READY = "CODE_READY"
+    EXTERNAL_CREDENTIAL_REQUIRED = "EXTERNAL_CREDENTIAL_REQUIRED"
+    PRODUCTION_ACTIVATION_REQUIRED = "PRODUCTION_ACTIVATION_REQUIRED"
+    BLOCKED = "BLOCKED"
+
+
+@dataclass(frozen=True)
+class ProductServiceReadinessResult:
+    AUTH_READY: ProductServiceReadinessState
+    ENTITLEMENT_READY: ProductServiceReadinessState
+    COMMERCE_ACTIVATION_READY: ProductServiceReadinessState
+    MY_BETS_READY: ProductServiceReadinessState
+    AI_CONTRACT_READY: ProductServiceReadinessState
+    COUPON_BUILDER_READY: ProductServiceReadinessState
+    missing_tables: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+def validate_product_service_readiness(connection: Connection) -> ProductServiceReadinessResult:
+    """Report code/schema readiness separately from external activation."""
+    required = (
+        "app_users",
+        "auth_identities",
+        "auth_sessions",
+        "entitlement_evidence",
+        "commerce_evidence",
+        "saved_selections",
+    )
+    missing = tuple(
+        name
+        for name in required
+        if connection.execute(
+            text("SELECT to_regclass(:table_name)"), {"table_name": f"public.{name}"}
+        ).scalar_one()
+        is None
+    )
+    code_state = (
+        ProductServiceReadinessState.BLOCKED if missing else ProductServiceReadinessState.CODE_READY
+    )
+    return ProductServiceReadinessResult(
+        AUTH_READY=code_state,
+        ENTITLEMENT_READY=code_state,
+        COMMERCE_ACTIVATION_READY=(
+            ProductServiceReadinessState.BLOCKED
+            if missing
+            else ProductServiceReadinessState.EXTERNAL_CREDENTIAL_REQUIRED
+        ),
+        MY_BETS_READY=code_state,
+        AI_CONTRACT_READY=(
+            ProductServiceReadinessState.BLOCKED
+            if missing
+            else ProductServiceReadinessState.EXTERNAL_CREDENTIAL_REQUIRED
+        ),
+        COUPON_BUILDER_READY=(
+            ProductServiceReadinessState.BLOCKED
+            if missing
+            else ProductServiceReadinessState.PRODUCTION_ACTIVATION_REQUIRED
+        ),
+        missing_tables=missing,
+    )
 
 
 def validate_release(settings: Settings) -> ReleaseValidationResult:
