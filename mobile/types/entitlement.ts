@@ -3,6 +3,7 @@ export const entitlementStates = [
   'PREMIUM_ACTIVE',
   'PREMIUM_TRIAL',
   'PREMIUM_EXPIRED',
+  'PREMIUM_INACTIVE',
 ] as const;
 
 export type EntitlementState = (typeof entitlementStates)[number];

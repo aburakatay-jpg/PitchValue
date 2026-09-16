@@ -16,23 +16,23 @@ export const assistantFeatures = [
 export type AssistantFeature = (typeof assistantFeatures)[number];
 
 export const assistantContract = {
-  explanationEndpoint: 'MISSING',
-  explainPick: 'MISSING',
-  askPitchValue: 'MISSING',
-  structuredContext: 'MISSING',
-  publicPredictionPool: 'PARTIALLY_SUPPORTED',
+  explanationEndpoint: 'PARTIALLY_SUPPORTED',
+  explainPick: 'PARTIALLY_SUPPORTED',
+  askPitchValue: 'PARTIALLY_SUPPORTED',
+  structuredContext: 'SUPPORTED',
+  publicPredictionPool: 'SUPPORTED',
   todaysBestValueRanking: 'BLOCKED_BY_PRODUCT_DECISION',
   conversationSession: 'MISSING',
   conversationPersistence: 'MISSING',
   rateLimiting: 'MISSING',
-  aiEntitlementEnforcement: 'BLOCKED_BY_ENTITLEMENT',
-  aiAuthentication: 'BLOCKED_BY_AUTH',
-  couponBuilderEndpoint: 'MISSING',
-  couponEligiblePool: 'PARTIALLY_SUPPORTED',
-  couponRiskSemantics: 'BLOCKED_BY_PRODUCT_DECISION',
-  couponStablePredictionReference: 'MISSING',
-  couponDeduplication: 'MISSING',
-  couponSelectionValidation: 'MISSING',
+  aiEntitlementEnforcement: 'SUPPORTED',
+  aiAuthentication: 'SUPPORTED',
+  couponBuilderEndpoint: 'SUPPORTED',
+  couponEligiblePool: 'SUPPORTED',
+  couponRiskSemantics: 'SUPPORTED',
+  couponStablePredictionReference: 'PARTIALLY_SUPPORTED',
+  couponDeduplication: 'SUPPORTED',
+  couponSelectionValidation: 'SUPPORTED',
 } as const satisfies Readonly<Record<string, AssistantContractCapability>>;
 
 export const productionAssistantAvailable = false;

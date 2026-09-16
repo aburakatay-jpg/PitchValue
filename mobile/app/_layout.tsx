@@ -2,6 +2,10 @@ import { DarkTheme, Stack, ThemeProvider, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { EntitlementProvider } from '@/features/entitlement/EntitlementContext';
+import {
+  ProductSessionProvider,
+  useProductSession,
+} from '@/features/session/ProductSessionContext';
 import { colors } from '@/theme/tokens';
 
 const pitchValueNavigationTheme = {
@@ -17,11 +21,20 @@ const pitchValueNavigationTheme = {
 };
 
 export default function RootLayout() {
+  return (
+    <ProductSessionProvider>
+      <RootNavigation />
+    </ProductSessionProvider>
+  );
+}
+
+function RootNavigation() {
   const router = useRouter();
+  const session = useProductSession();
   return (
     <ThemeProvider value={pitchValueNavigationTheme}>
       <EntitlementProvider
-        state="GUEST"
+        state={session.entitlement}
         openPaywall={() => router.push('/paywall')}
       >
         <StatusBar style="light" />

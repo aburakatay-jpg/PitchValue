@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -21,9 +21,11 @@ import {
 import { mockMatches } from '@/dev/mock-data';
 import { usePublicResource } from '@/hooks/use-public-resource';
 import { config } from '@/lib/config';
+import { useProductSession } from '@/features/session/ProductSessionContext';
+import { saveSelection } from '@/lib/product-api';
 import { getMatchDetail, type PublicApiError } from '@/lib/public-api';
 import { colors, typography } from '@/theme/tokens';
-import type { MatchDetailResponse } from '@/types/public-api';
+import type { MatchDetailResponse, PublicPrediction } from '@/types/public-api';
 
 export function parseCanonicalMatchId(
   value: string | readonly string[] | undefined,
@@ -42,12 +44,16 @@ export function MatchDetailView({
   initialLoading,
   onRefresh,
   refreshing,
+  onSavePrediction,
+  saveMessage,
 }: {
   data: MatchDetailResponse | null;
   error: PublicApiError | null;
   initialLoading: boolean;
   onRefresh: () => void;
   refreshing: boolean;
+  onSavePrediction?: ((prediction: PublicPrediction) => void) | undefined;
+  saveMessage?: string | null;
 }) {
   if (initialLoading && data === null) {
     return (
@@ -90,8 +96,14 @@ export function MatchDetailView({
           tone="negative"
         />
       ) : null}
+      {saveMessage ? (
+        <InlineNotice
+          title={saveMessage}
+          tone={saveMessage === 'Saved to My Bets' ? 'positive' : 'negative'}
+        />
+      ) : null}
       <MatchHeader detail={data} />
-      <PublicAnalysisSection detail={data} />
+      <PublicAnalysisSection detail={data} onSave={onSavePrediction} />
       <AllMarkets markets={data.markets} />
       <FinalCheckSection state={data.final_check} />
       <StatisticsSection detail={data} />
@@ -112,13 +124,39 @@ function InvalidMatchState() {
 }
 
 function ProductionMatchDetail({ matchId }: { matchId: number }) {
+  const session = useProductSession();
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const loader = useCallback(
     (signal: AbortSignal) => getMatchDetail(matchId, signal),
     [matchId],
   );
   const resource = usePublicResource(loader);
+  const save = async (prediction: PublicPrediction) => {
+    if (!session.accessToken) return;
+    try {
+      await saveSelection(
+        session.accessToken,
+        {
+          match_id: prediction.match_id,
+          market: prediction.market,
+          selection: prediction.selection,
+        },
+        new AbortController().signal,
+      );
+      setSaveMessage('Saved to My Bets');
+    } catch {
+      setSaveMessage('Unable to save this selection');
+    }
+  };
   return (
-    <MatchDetailView {...resource} onRefresh={() => void resource.refresh()} />
+    <MatchDetailView
+      {...resource}
+      onRefresh={() => void resource.refresh()}
+      onSavePrediction={
+        session.accessToken ? (prediction) => void save(prediction) : undefined
+      }
+      saveMessage={saveMessage}
+    />
   );
 }
 

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { lifecycleLabel, lifecycleTone } from '@/components/discovery';
 import { InlineNotice, StaleIndicator } from '@/components/feedback';
-import { Badge, SectionHeader, sharedStyles } from '@/components/ui';
+import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
 import {
   colors,
   radii,
@@ -104,7 +104,13 @@ function AnalysisMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PublicPredictionRow({ prediction }: { prediction: PublicPrediction }) {
+function PublicPredictionRow({
+  prediction,
+  onSave,
+}: {
+  prediction: PublicPrediction;
+  onSave?: ((prediction: PublicPrediction) => void) | undefined;
+}) {
   return (
     <View style={styles.analysisRow}>
       <View style={sharedStyles.rowBetween}>
@@ -146,14 +152,21 @@ function PublicPredictionRow({ prediction }: { prediction: PublicPrediction }) {
       <Text style={styles.explainer}>
         Edge is the server-provided probability difference, not expected profit.
       </Text>
+      {onSave ? (
+        <Button onPress={() => onSave(prediction)} variant="secondary">
+          Save to My Bets
+        </Button>
+      ) : null}
     </View>
   );
 }
 
 export function PublicAnalysisSection({
   detail,
+  onSave,
 }: {
   detail: MatchDetailResponse;
+  onSave?: ((prediction: PublicPrediction) => void) | undefined;
 }) {
   if (
     detail.public_analysis === 'DATA_INSUFFICIENT' ||
@@ -187,6 +200,7 @@ export function PublicAnalysisSection({
       {detail.public_predictions.map((prediction, index) => (
         <PublicPredictionRow
           key={`${prediction.market}-${prediction.selection}-${index}`}
+          onSave={onSave}
           prediction={prediction}
         />
       ))}

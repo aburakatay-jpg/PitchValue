@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SkeletonBlock } from '@/components/feedback';
@@ -10,10 +10,16 @@ import {
   touchTarget,
   typography,
 } from '@/theme/tokens';
+import { getSavedSelections, getTrackingPerformance } from '@/lib/product-api';
+import type {
+  SavedSelection,
+  TrackingPerformance,
+} from '@/types/product-services';
 
 export const myBetsTabs = ['Active', 'History', 'Performance'] as const;
 export type MyBetsTab = (typeof myBetsTabs)[number];
-export type MyBetsSectionState = 'UNAVAILABLE' | 'LOADING' | 'ERROR' | 'EMPTY';
+export type MyBetsSectionState =
+  'UNAVAILABLE' | 'LOADING' | 'ERROR' | 'EMPTY' | 'READY';
 
 export const productionMyBetsStates: Readonly<
   Record<MyBetsTab, MyBetsSectionState>
@@ -28,7 +34,7 @@ const sectionCopy: Readonly<
     MyBetsTab,
     Readonly<
       Record<
-        Exclude<MyBetsSectionState, 'LOADING'>,
+        Exclude<MyBetsSectionState, 'LOADING' | 'READY'>,
         { title: string; detail: string }
       >
     >
@@ -81,13 +87,54 @@ const sectionCopy: Readonly<
 };
 
 export function MyBetsView({
+  accessToken,
   initialTab = 'Active',
   sectionStates = productionMyBetsStates,
 }: {
+  accessToken?: string | null;
   initialTab?: MyBetsTab;
   sectionStates?: Readonly<Record<MyBetsTab, MyBetsSectionState>>;
 }) {
   const [selected, setSelected] = useState<MyBetsTab>(initialTab);
+  const [remoteState, setRemoteState] = useState<MyBetsSectionState>('LOADING');
+  const [records, setRecords] = useState<readonly SavedSelection[]>([]);
+  const [metrics, setMetrics] = useState<TrackingPerformance | null>(null);
+  useEffect(() => {
+    if (accessToken === undefined) return;
+    if (accessToken === null) return;
+    const controller = new AbortController();
+    const load = async () => {
+      setRemoteState('LOADING');
+      try {
+        if (selected === 'Performance') {
+          const value = await getTrackingPerformance(
+            accessToken,
+            controller.signal,
+          );
+          setMetrics(value);
+          setRemoteState(value.tracked === 0 ? 'EMPTY' : 'READY');
+        } else {
+          const value = await getSavedSelections(
+            accessToken,
+            selected === 'Active' ? 'active' : 'history',
+            controller.signal,
+          );
+          setRecords(value.records);
+          setRemoteState(value.count === 0 ? 'EMPTY' : 'READY');
+        }
+      } catch {
+        if (!controller.signal.aborted) setRemoteState('ERROR');
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [accessToken, selected]);
+  const state =
+    accessToken === undefined
+      ? sectionStates[selected]
+      : accessToken === null
+        ? 'UNAVAILABLE'
+        : remoteState;
   return (
     <View style={styles.stack}>
       <View accessibilityRole="tablist" style={styles.tabs}>
@@ -110,7 +157,12 @@ export function MyBetsView({
           </Pressable>
         ))}
       </View>
-      <MyBetsSection state={sectionStates[selected]} tab={selected} />
+      <MyBetsSection
+        metrics={metrics}
+        records={records}
+        state={state}
+        tab={selected}
+      />
     </View>
   );
 }
@@ -118,11 +170,48 @@ export function MyBetsView({
 function MyBetsSection({
   tab,
   state,
+  records,
+  metrics,
 }: {
   tab: MyBetsTab;
   state: MyBetsSectionState;
+  records: readonly SavedSelection[];
+  metrics: TrackingPerformance | null;
 }) {
   if (state === 'LOADING') return <MyBetsSkeleton tab={tab} />;
+  if (state === 'READY') {
+    if (tab === 'Performance' && metrics) {
+      return (
+        <View style={sharedStyles.card}>
+          <SectionHeader title="Track record" />
+          <Text style={styles.note}>Tracked: {metrics.tracked}</Text>
+          <Text style={styles.note}>Won: {metrics.wins}</Text>
+          <Text style={styles.note}>Lost: {metrics.losses}</Text>
+          <Text style={styles.note}>Void: {metrics.voids}</Text>
+          <Text style={styles.note}>Withdrawn: {metrics.withdrawn}</Text>
+          <Text style={styles.note}>
+            ROI: {metrics.roi === null ? 'Unavailable' : `${metrics.roi}%`}
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.stack}>
+        {records.map((record) => (
+          <View key={record.saved_selection_id} style={sharedStyles.card}>
+            <Text style={styles.recordTitle}>
+              {record.market.replaceAll('_', ' ')} ·{' '}
+              {record.selection.replaceAll('_', ' ')}
+            </Text>
+            <Text style={styles.note}>
+              {record.tracking_status}
+              {record.outcome ? ` · ${record.outcome}` : ''}
+            </Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
   const copy = sectionCopy[tab][state];
   return (
     <View accessibilityLiveRegion="polite" style={sharedStyles.card}>
@@ -179,5 +268,6 @@ const styles = StyleSheet.create({
   },
   tabTextSelected: { color: colors.text },
   note: { color: colors.textSecondary, ...typography.caption },
+  recordTitle: { color: colors.text, ...typography.body, fontWeight: '700' },
   skeleton: { gap: spacing.md },
 });

@@ -55,17 +55,13 @@ describe('AI and Coupon Builder contract audit', () => {
   it('records missing production services without pretending availability', () => {
     expect(productionAssistantAvailable).toBe(false);
     expect(productionCouponBuilderAvailable).toBe(false);
-    expect(assistantContract.explanationEndpoint).toBe('MISSING');
-    expect(assistantContract.structuredContext).toBe('MISSING');
+    expect(assistantContract.explanationEndpoint).toBe('PARTIALLY_SUPPORTED');
+    expect(assistantContract.structuredContext).toBe('SUPPORTED');
     expect(assistantContract.conversationSession).toBe('MISSING');
-    expect(assistantContract.couponBuilderEndpoint).toBe('MISSING');
-    expect(assistantContract.publicPredictionPool).toBe('PARTIALLY_SUPPORTED');
-    expect(assistantContract.couponRiskSemantics).toBe(
-      'BLOCKED_BY_PRODUCT_DECISION',
-    );
-    expect(assistantContract.aiEntitlementEnforcement).toBe(
-      'BLOCKED_BY_ENTITLEMENT',
-    );
+    expect(assistantContract.couponBuilderEndpoint).toBe('SUPPORTED');
+    expect(assistantContract.publicPredictionPool).toBe('SUPPORTED');
+    expect(assistantContract.couponRiskSemantics).toBe('SUPPORTED');
+    expect(assistantContract.aiEntitlementEnforcement).toBe('SUPPORTED');
   });
 });
 

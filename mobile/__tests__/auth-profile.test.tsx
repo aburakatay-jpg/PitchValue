@@ -29,12 +29,28 @@ describe('auth-safe presentation', () => {
     const password = view.getByLabelText('Password');
     expect(email).toHaveProp('keyboardType', 'email-address');
     expect(password).toHaveProp('secureTextEntry', true);
-    expect(
-      view.getByLabelText('Email authentication unavailable'),
-    ).toBeDisabled();
+    expect(view.getByLabelText('Sign in')).toBeDisabled();
     await fireEvent.changeText(email, 'invalid');
     await fireEvent(email, 'blur');
     expect(view.getByText('Enter a valid email address.')).toBeTruthy();
+  });
+
+  it('submits email authentication only through a real service callback', async () => {
+    const onSignIn = jest.fn().mockResolvedValue(undefined);
+    const view = await render(<EmailAuthShell onSignIn={onSignIn} />);
+    await fireEvent.changeText(
+      view.getByLabelText('Email'),
+      'user@example.com',
+    );
+    await fireEvent.changeText(
+      view.getByLabelText('Password'),
+      'secure password',
+    );
+    await fireEvent.press(view.getByLabelText('Sign in'));
+    expect(onSignIn).toHaveBeenCalledWith(
+      'user@example.com',
+      'secure password',
+    );
   });
 });
 

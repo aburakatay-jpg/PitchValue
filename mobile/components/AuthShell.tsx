@@ -29,7 +29,7 @@ export function AuthEntry({
     <Screen safeAreaEdges={stackScreenEdges}>
       <SectionHeader
         title="Sign in to PitchValue"
-        detail="Sign-in services are currently unavailable. Guest discovery remains available."
+        detail="Email sign-in and Guest discovery are available. Apple and Google require external activation."
       />
       <View style={styles.stack}>
         <Button accessibilityLabel="Continue with Apple, unavailable" disabled>
@@ -59,19 +59,50 @@ export function AuthEntry({
 
 type EmailMode = 'SIGN_IN' | 'SIGN_UP';
 
-export function EmailAuthShell() {
+export function EmailAuthShell({
+  onSignIn,
+  onSignUp,
+}: {
+  onSignIn?: ((email: string, password: string) => Promise<void>) | undefined;
+  onSignUp?: ((email: string, password: string) => Promise<void>) | undefined;
+}) {
   const [mode, setMode] = useState<EmailMode>('SIGN_IN');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [serviceError, setServiceError] = useState<string | null>(null);
   const validEmail = /^\S+@\S+\.\S+$/.test(email.trim());
-  const validPassword = password.length >= 8;
+  const validPassword = password.length >= 10;
+  const handler = mode === 'SIGN_IN' ? onSignIn : onSignUp;
+  const submit = async () => {
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    if (!validEmail || !validPassword || !handler) return;
+    setSubmitting(true);
+    setServiceError(null);
+    try {
+      await handler(email.trim(), password);
+    } catch {
+      setServiceError(
+        mode === 'SIGN_IN'
+          ? authErrorCopy.INCORRECT_CREDENTIALS
+          : authErrorCopy.SERVICE_UNAVAILABLE,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
   return (
     <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
       <SectionHeader
         title={mode === 'SIGN_IN' ? 'Sign in with email' : 'Create an account'}
-        detail="Email sign-in is currently unavailable. You can review the form without creating an account."
+        detail={
+          handler
+            ? 'Use your PitchValue email identity. Your session is stored securely on this device.'
+            : 'Email sign-in is currently unavailable.'
+        }
       />
       <View style={styles.modeRow}>
         <Button
@@ -125,11 +156,24 @@ export function EmailAuthShell() {
         />
         {passwordTouched && !validPassword ? (
           <Text accessibilityLiveRegion="polite" style={styles.error}>
-            Password must contain at least 8 characters.
+            Password must contain at least 10 characters.
           </Text>
         ) : null}
-        <Button accessibilityLabel="Email authentication unavailable" disabled>
-          {mode === 'SIGN_IN' ? 'Sign in unavailable' : 'Sign up unavailable'}
+        {serviceError ? (
+          <Text accessibilityLiveRegion="polite" style={styles.error}>
+            {serviceError}
+          </Text>
+        ) : null}
+        <Button
+          accessibilityLabel={mode === 'SIGN_IN' ? 'Sign in' : 'Sign up'}
+          disabled={!handler || submitting}
+          onPress={() => void submit()}
+        >
+          {submitting
+            ? 'Please wait'
+            : mode === 'SIGN_IN'
+              ? 'Sign In'
+              : 'Sign Up'}
         </Button>
         {mode === 'SIGN_IN' ? (
           <Text style={styles.caption}>

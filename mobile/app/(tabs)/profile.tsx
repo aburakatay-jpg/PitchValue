@@ -10,6 +10,7 @@ import {
   sharedStyles,
 } from '@/components/ui';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
+import { useProductSession } from '@/features/session/ProductSessionContext';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { EntitlementState } from '@/types/entitlement';
 
@@ -27,6 +28,7 @@ const entitlementLabels: Readonly<Record<EntitlementState, string>> = {
   PREMIUM_ACTIVE: 'Premium Active',
   PREMIUM_TRIAL: 'Premium Trial',
   PREMIUM_EXPIRED: 'Premium Inactive',
+  PREMIUM_INACTIVE: 'Premium Inactive',
 };
 
 function ProfileGroup({
@@ -61,11 +63,15 @@ export function ProfileView({
   onSignIn,
   onOpenTrackRecord,
   onViewPremium,
+  email = null,
+  onSignOut,
 }: {
   entitlement: EntitlementState;
   onSignIn: () => void;
   onOpenTrackRecord: () => void;
   onViewPremium: () => void;
+  email?: string | null;
+  onSignOut?: (() => void) | undefined;
 }) {
   const guest = entitlement === 'GUEST';
   return (
@@ -86,7 +92,16 @@ export function ProfileView({
               Sign in
             </Button>
           </>
-        ) : null}
+        ) : (
+          <>
+            {email ? <InformationRow label="Email" value={email} /> : null}
+            {onSignOut ? (
+              <Button onPress={onSignOut} variant="secondary">
+                Sign out
+              </Button>
+            ) : null}
+          </>
+        )}
       </ProfileGroup>
       <ProfileGroup title="Subscription">
         <InformationRow label="Access" value={entitlementLabels[entitlement]} />
@@ -135,11 +150,14 @@ export function ProfileView({
 export default function ProfileScreen() {
   const router = useRouter();
   const { state } = useEntitlement();
+  const session = useProductSession();
   return (
     <ProfileView
       entitlement={state}
+      email={session.user?.email ?? null}
       onOpenTrackRecord={() => router.push('/(tabs)/bets')}
       onSignIn={() => router.push('/auth/index' as Href)}
+      onSignOut={() => void session.signOut()}
       onViewPremium={() => router.push('/paywall')}
     />
   );

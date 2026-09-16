@@ -85,7 +85,7 @@ export function InlineNotice({
 }: {
   title: string;
   detail?: string | undefined;
-  tone?: 'warning' | 'negative';
+  tone?: 'warning' | 'negative' | 'positive';
 }) {
   return (
     <View

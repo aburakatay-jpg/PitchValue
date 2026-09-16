@@ -8,22 +8,24 @@ import {
 } from '@/components/MyBets';
 import {
   personalTrackingContract,
+  productTrackingContractReady,
   productionTrackingAvailable,
 } from '@/lib/personal-tracking';
 
 describe('personal tracking contract safety', () => {
   it('records that no production saved-user contract exists', () => {
     expect(productionTrackingAvailable).toBe(false);
+    expect(productTrackingContractReady).toBe(true);
     expect(personalTrackingContract.saveMatch).toBe('MISSING');
-    expect(personalTrackingContract.savePrediction).toBe('MISSING');
-    expect(personalTrackingContract.userOwnership).toBe('BLOCKED_BY_AUTH');
+    expect(personalTrackingContract.savePrediction).toBe('SUPPORTED');
+    expect(personalTrackingContract.userOwnership).toBe('SUPPORTED');
     expect(personalTrackingContract.guestPersistence).toBe(
-      'BLOCKED_BY_PRODUCT_DECISION',
+      'PARTIALLY_SUPPORTED',
     );
-    expect(personalTrackingContract.settlement).toBe('MISSING');
-    expect(personalTrackingContract.stake).toBe('MISSING');
-    expect(personalTrackingContract.oddsAtSave).toBe('MISSING');
-    expect(personalTrackingContract.roiInputs).toBe('MISSING');
+    expect(personalTrackingContract.settlement).toBe('SUPPORTED');
+    expect(personalTrackingContract.stake).toBe('SUPPORTED');
+    expect(personalTrackingContract.oddsAtSave).toBe('SUPPORTED');
+    expect(personalTrackingContract.roiInputs).toBe('SUPPORTED');
   });
 
   it('keeps every production section explicitly unavailable', () => {
