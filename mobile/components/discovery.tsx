@@ -110,12 +110,12 @@ export function ExplorePredictionCard({
       asChild
     >
       <Pressable
-        accessibilityLabel={`${prediction.selection} analysis for match ${prediction.match_id}`}
+        accessibilityLabel={`${prediction.selection} published analysis`}
         accessibilityRole="button"
         style={styles.card}
       >
         <View style={sharedStyles.rowBetween}>
-          <Text style={styles.competition}>MATCH {prediction.match_id}</Text>
+          <Text style={styles.competition}>Published analysis</Text>
           <Badge
             label={prediction.policy_decision.replaceAll('_', ' ')}
             tone="accent"

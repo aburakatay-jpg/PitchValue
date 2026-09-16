@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Screen, SectionHeader, sharedStyles } from '@/components/ui';
+import {
+  Button,
+  Screen,
+  SectionHeader,
+  sharedStyles,
+  stackScreenEdges,
+} from '@/components/ui';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 export const authErrorCopy = {
@@ -27,10 +26,10 @@ export function AuthEntry({
   onGuest: () => void;
 }) {
   return (
-    <Screen>
+    <Screen safeAreaEdges={stackScreenEdges}>
       <SectionHeader
         title="Sign in to PitchValue"
-        detail="Account services are not connected yet. Guest discovery remains available."
+        detail="Sign-in services are currently unavailable. Guest discovery remains available."
       />
       <View style={styles.stack}>
         <Button accessibilityLabel="Continue with Apple, unavailable" disabled>
@@ -52,8 +51,7 @@ export function AuthEntry({
         Continue as Guest
       </Button>
       <Text style={styles.caption}>
-        No SMS sign-in is offered. These account controls never create a local
-        or synthetic identity.
+        SMS sign-in is not offered. Continue as Guest to browse public analysis.
       </Text>
     </Screen>
   );
@@ -70,92 +68,80 @@ export function EmailAuthShell() {
   const validEmail = /^\S+@\S+\.\S+$/.test(email.trim());
   const validPassword = password.length >= 8;
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}
-    >
-      <Screen>
-        <SectionHeader
-          title={
-            mode === 'SIGN_IN' ? 'Sign in with email' : 'Create an account'
-          }
-          detail="Form presentation only. Account and session services are not connected."
+    <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
+      <SectionHeader
+        title={mode === 'SIGN_IN' ? 'Sign in with email' : 'Create an account'}
+        detail="Email sign-in is currently unavailable. You can review the form without creating an account."
+      />
+      <View style={styles.modeRow}>
+        <Button
+          onPress={() => setMode('SIGN_IN')}
+          variant={mode === 'SIGN_IN' ? 'primary' : 'secondary'}
+        >
+          Sign In
+        </Button>
+        <Button
+          onPress={() => setMode('SIGN_UP')}
+          variant={mode === 'SIGN_UP' ? 'primary' : 'secondary'}
+        >
+          Sign Up
+        </Button>
+      </View>
+      <View style={sharedStyles.card}>
+        <Text nativeID="email-label" style={styles.label}>
+          Email
+        </Text>
+        <TextInput
+          accessibilityLabelledBy="email-label"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          onBlur={() => setEmailTouched(true)}
+          onChangeText={setEmail}
+          returnKeyType="next"
+          style={styles.input}
+          value={email}
         />
-        <View style={styles.modeRow}>
-          <Button
-            onPress={() => setMode('SIGN_IN')}
-            variant={mode === 'SIGN_IN' ? 'primary' : 'secondary'}
-          >
-            Sign In
-          </Button>
-          <Button
-            onPress={() => setMode('SIGN_UP')}
-            variant={mode === 'SIGN_UP' ? 'primary' : 'secondary'}
-          >
-            Sign Up
-          </Button>
-        </View>
-        <View style={sharedStyles.card}>
-          <Text nativeID="email-label" style={styles.label}>
-            Email
+        {emailTouched && !validEmail ? (
+          <Text accessibilityLiveRegion="polite" style={styles.error}>
+            {authErrorCopy.INVALID_EMAIL}
           </Text>
-          <TextInput
-            accessibilityLabelledBy="email-label"
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            onBlur={() => setEmailTouched(true)}
-            onChangeText={setEmail}
-            returnKeyType="next"
-            style={styles.input}
-            value={email}
-          />
-          {emailTouched && !validEmail ? (
-            <Text accessibilityLiveRegion="polite" style={styles.error}>
-              {authErrorCopy.INVALID_EMAIL}
-            </Text>
-          ) : null}
-          <Text nativeID="password-label" style={styles.label}>
-            Password
+        ) : null}
+        <Text nativeID="password-label" style={styles.label}>
+          Password
+        </Text>
+        <TextInput
+          accessibilityLabelledBy="password-label"
+          autoCapitalize="none"
+          autoComplete={
+            mode === 'SIGN_IN' ? 'current-password' : 'new-password'
+          }
+          onBlur={() => setPasswordTouched(true)}
+          onChangeText={setPassword}
+          returnKeyType="done"
+          secureTextEntry
+          style={styles.input}
+          value={password}
+        />
+        {passwordTouched && !validPassword ? (
+          <Text accessibilityLiveRegion="polite" style={styles.error}>
+            Password must contain at least 8 characters.
           </Text>
-          <TextInput
-            accessibilityLabelledBy="password-label"
-            autoCapitalize="none"
-            autoComplete={
-              mode === 'SIGN_IN' ? 'current-password' : 'new-password'
-            }
-            onBlur={() => setPasswordTouched(true)}
-            onChangeText={setPassword}
-            returnKeyType="done"
-            secureTextEntry
-            style={styles.input}
-            value={password}
-          />
-          {passwordTouched && !validPassword ? (
-            <Text accessibilityLiveRegion="polite" style={styles.error}>
-              Password must contain at least 8 characters.
-            </Text>
-          ) : null}
-          <Button
-            accessibilityLabel="Email authentication unavailable"
-            disabled
-          >
-            {mode === 'SIGN_IN' ? 'Sign in unavailable' : 'Sign up unavailable'}
-          </Button>
-          {mode === 'SIGN_IN' ? (
-            <Text style={styles.caption}>
-              Forgot-password service is unavailable until account endpoints
-              exist.
-            </Text>
-          ) : null}
-        </View>
-      </Screen>
-    </KeyboardAvoidingView>
+        ) : null}
+        <Button accessibilityLabel="Email authentication unavailable" disabled>
+          {mode === 'SIGN_IN' ? 'Sign in unavailable' : 'Sign up unavailable'}
+        </Button>
+        {mode === 'SIGN_IN' ? (
+          <Text style={styles.caption}>
+            Password recovery is currently unavailable.
+          </Text>
+        ) : null}
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { backgroundColor: colors.background, flex: 1 },
   stack: { gap: spacing.sm },
   divider: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   line: { backgroundColor: colors.border, flex: 1, height: 1 },

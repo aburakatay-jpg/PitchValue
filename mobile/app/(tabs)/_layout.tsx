@@ -8,6 +8,7 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   return (
     <Text
       accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
       style={[styles.icon, focused && styles.iconFocused]}
     >
       {label.slice(0, 1)}

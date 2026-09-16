@@ -1,33 +1,59 @@
 import { Link, Stack } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, spacing, typeScale } from '@/theme/tokens';
+import { stackScreenEdges } from '@/components/ui';
+import {
+  colors,
+  radii,
+  spacing,
+  touchTarget,
+  typography,
+} from '@/theme/tokens';
 
 export default function NotFoundScreen() {
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={stackScreenEdges} style={styles.safe}>
       <Stack.Screen options={{ title: 'Not found' }} />
-      <Text style={styles.title}>This screen does not exist.</Text>
-      <Link href="/(tabs)/today" style={styles.link}>
-        Return to Today
-      </Link>
-    </View>
+      <View style={styles.container}>
+        <Text accessibilityRole="header" style={styles.title}>
+          This screen is unavailable
+        </Text>
+        <Text style={styles.detail}>
+          Return to Today to continue browsing published PitchValue data.
+        </Text>
+        <Link href="/(tabs)/today" asChild>
+          <Pressable
+            accessibilityLabel="Return to Today"
+            accessibilityRole="button"
+            style={styles.action}
+          >
+            <Text style={styles.actionText}>Return to Today</Text>
+          </Pressable>
+        </Link>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { backgroundColor: colors.background, flex: 1 },
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
     gap: spacing.md,
     padding: spacing.lg,
   },
-  title: { color: colors.text, fontSize: typeScale.title, fontWeight: '700' },
-  link: {
-    color: colors.secondary,
-    fontSize: typeScale.body,
-    padding: spacing.md,
+  title: { color: colors.text, ...typography.pageTitle },
+  detail: { color: colors.textSecondary, ...typography.body },
+  action: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    justifyContent: 'center',
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
+  actionText: { color: colors.text, ...typography.body, fontWeight: '700' },
 });

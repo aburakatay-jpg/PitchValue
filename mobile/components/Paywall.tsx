@@ -63,7 +63,7 @@ export function PaywallShell({
     <View style={styles.stack}>
       <SectionHeader
         title="Unlock full PitchValue analysis"
-        detail="One Premium product, presented calmly and without invented store availability."
+        detail="Review the planned Premium experience. Store purchases are not available yet."
       />
       <View style={sharedStyles.card}>
         {premiumBenefits.map((benefit) => (
@@ -88,8 +88,8 @@ export function PaywallShell({
         Restore Purchases · Unavailable
       </Button>
       <Text style={styles.footnote}>
-        Presentation only. No payment, restoration, trial confirmation, or
-        entitlement change is performed.
+        Payment, restoration, trial confirmation, and entitlement changes are
+        currently unavailable.
       </Text>
     </View>
   );

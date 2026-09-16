@@ -88,11 +88,7 @@ describe('AI landing and safe assistant surfaces', () => {
   it('uses one honest Premium boundary for Guest and no simulated upgrade', async () => {
     const view = await render(<AiView {...baseProps} />);
     expect(view.getAllByLabelText('Premium content locked')).toHaveLength(1);
-    expect(
-      view.getByText(
-        /server-side entitlement enforcement still require approval/i,
-      ),
-    ).toBeTruthy();
+    expect(view.getByText(/AI access is not available yet/i)).toBeTruthy();
   });
 
   it('keeps Today’s Best Value empty when the public pool is empty', async () => {
@@ -122,7 +118,7 @@ describe('AI landing and safe assistant surfaces', () => {
     const values = view.getAllByText(/SERVER (FIRST|SECOND)/);
     expect(values[0]).toHaveTextContent('SERVER FIRST');
     expect(values[1]).toHaveTextContent('SERVER SECOND');
-    expect(view.getByText(/No client ranking is applied/)).toBeTruthy();
+    expect(view.getByText(/No additional ranking is applied/)).toBeTruthy();
   });
 
   it('requires published context and never fakes an explanation', async () => {
@@ -134,12 +130,12 @@ describe('AI landing and safe assistant surfaces', () => {
     expect(view.getByText('Bet Score: Score unavailable')).toBeTruthy();
     await fireEvent.press(
       view.getByRole('button', {
-        name: /Use HOME_WIN for match 31 as explanation context/,
+        name: /Use HOME_WIN as explanation context/,
       }),
     );
     expect(view.getByText('Explanation unavailable')).toBeTruthy();
     expect(
-      view.getByText(/no production explanation service is connected/i),
+      view.getByText(/a detailed explanation is not available/i),
     ).toBeTruthy();
     expect(view.queryByText(/models agree|3 of 3|3\/4/i)).toBeNull();
   });
@@ -154,7 +150,7 @@ describe('AI landing and safe assistant surfaces', () => {
       view.getByRole('button', { name: 'Send question unavailable' }),
     ).toBeDisabled();
     expect(
-      view.getByText(/No answer or prediction will be fabricated/),
+      view.getByText(/No answer or prediction will be generated/),
     ).toBeTruthy();
   });
 
@@ -175,9 +171,7 @@ describe('Coupon Builder safe shell', () => {
       view.getByRole('radio', { name: /^Balanced\./ }).props.accessibilityState,
     ).toEqual({ selected: true });
     expect(view.getByRole('radio', { name: /^Bold\./ })).toBeTruthy();
-    expect(
-      view.getByText(/No production builder service is connected/),
-    ).toBeTruthy();
+    expect(view.getByText(/No coupon will be generated/)).toBeTruthy();
     expect(
       view.queryByText(
         /High winnings|Max profit|Jackpot|Guaranteed|Place Bet|Save Coupon/i,
@@ -192,10 +186,6 @@ describe('Coupon Builder safe shell', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Coupon Builder' }));
     expect(view.getByText('1 eligible signal available')).toBeTruthy();
     expect(view.getByText(/must not force four selections/i)).toBeTruthy();
-    expect(
-      view.getByText(
-        /same-match deduplication require a production backend contract/i,
-      ),
-    ).toBeTruthy();
+    expect(view.getByText(/only one selection from each match/i)).toBeTruthy();
   });
 });

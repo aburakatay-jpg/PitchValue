@@ -35,7 +35,7 @@ import type {
 const featureDetails: Readonly<Record<AssistantFeature, string>> = {
   'Coupon Builder': 'Organize eligible published analyses into 1–4 selections.',
   'Today’s Best Value':
-    'Review the current public analysis pool in server order.',
+    'Review the current public analysis pool in published order.',
   'Explain a Pick': 'Choose a published analysis as authoritative context.',
   'Ask PitchValue':
     'Ask grounded questions when the assistant service is available.',
@@ -44,7 +44,7 @@ const featureDetails: Readonly<Record<AssistantFeature, string>> = {
 function featureAvailability(feature: AssistantFeature): string {
   return feature === 'Today’s Best Value'
     ? 'Public signals available when published'
-    : 'Production service not connected';
+    : 'Currently unavailable';
 }
 
 export function AssistantSkeleton() {
@@ -104,7 +104,7 @@ function PublicSignalRow({
   const content = (
     <>
       <View style={sharedStyles.rowBetween}>
-        <Text style={styles.meta}>MATCH {prediction.match_id}</Text>
+        <Text style={styles.meta}>PUBLISHED ANALYSIS</Text>
         <Badge
           label={prediction.policy_decision.replaceAll('_', ' ')}
           tone="accent"
@@ -127,7 +127,7 @@ function PublicSignalRow({
   if (!onSelect) return <View style={styles.signalCard}>{content}</View>;
   return (
     <Pressable
-      accessibilityLabel={`Use ${prediction.selection} for match ${prediction.match_id} as explanation context`}
+      accessibilityLabel={`Use ${prediction.selection} as explanation context`}
       accessibilityRole="button"
       onPress={onSelect}
       style={({ pressed }) => [styles.signalCard, pressed && styles.pressed]}
@@ -150,7 +150,7 @@ function BestValueSurface({ data }: { data: PredictionListResponse | null }) {
     <View style={styles.stack}>
       <SectionHeader
         title="Current published signals"
-        detail="Shown in authoritative server order. No client ranking is applied."
+        detail="Shown in published order. No additional ranking is applied."
       />
       {data.predictions.map((prediction, index) => (
         <PublicSignalRow
@@ -188,7 +188,7 @@ function ExplainSurface({ data }: { data: PredictionListResponse | null }) {
       {selected ? (
         <UnavailableState
           title="Explanation unavailable"
-          detail={`The public ${selected.market.replaceAll('_', ' ')} / ${selected.selection.replaceAll('_', ' ')} context is selected, but no production explanation service is connected.`}
+          detail={`The published ${selected.market.replaceAll('_', ' ')} / ${selected.selection.replaceAll('_', ' ')} analysis is selected, but a detailed explanation is not available.`}
         />
       ) : null}
     </View>
@@ -201,7 +201,7 @@ function AskSurface() {
     <View style={styles.stack}>
       <UnavailableState
         title="Ask PitchValue unavailable"
-        detail="A grounded assistant service is not connected. No answer or prediction will be fabricated."
+        detail="The assistant is currently unavailable. No answer or prediction will be generated."
       />
       <View style={styles.form}>
         <Text style={styles.label}>Question</Text>
@@ -230,7 +230,7 @@ function CouponSurface({ data }: { data: PredictionListResponse | null }) {
     <View style={styles.stack}>
       <SectionHeader
         title="Coupon Builder"
-        detail="Presentation only. No production builder service is connected and no coupon is generated."
+        detail="Choose a preference to preview the intended experience. No coupon will be generated."
       />
       <View accessibilityRole="radiogroup" style={styles.riskGroup}>
         {couponRiskOptions.map((option) => {
@@ -250,6 +250,10 @@ function CouponSurface({ data }: { data: PredictionListResponse | null }) {
           );
         })}
       </View>
+      <Text style={styles.secondary}>
+        A future coupon may contain 1–4 selections and only one selection from
+        each match.
+      </Text>
       {eligible === 0 ? (
         <EmptyState
           title="No publishable signals"
@@ -267,7 +271,7 @@ function CouponSurface({ data }: { data: PredictionListResponse | null }) {
       )}
       <UnavailableState
         title="Coupon Builder unavailable"
-        detail="Risk semantics, stable selection references, validation, and same-match deduplication require a production backend contract."
+        detail="Coupon generation is not available. Eligible public analyses are not combined automatically."
       />
     </View>
   );
@@ -307,7 +311,7 @@ export function AiView({
     null,
   );
   return (
-    <Screen onRefresh={onRefresh} refreshing={refreshing}>
+    <Screen keyboardAware onRefresh={onRefresh} refreshing={refreshing}>
       <AppHeader eyebrow="Grounded analysis tools" title="PitchValue AI" />
       <Text style={styles.principle}>
         AI explains PitchValue analysis. It does not create independent
@@ -317,7 +321,7 @@ export function AiView({
       {initialLoading && data === null ? <AssistantSkeleton /> : null}
       {error && data === null ? (
         <UnavailableState
-          detail="Public analysis context could not be loaded. No mock or generated selection is substituted."
+          detail="Published analysis context could not be loaded. Please try again shortly."
           retry={onRefresh}
           title="Public analysis unavailable"
         />
@@ -336,7 +340,7 @@ export function AiView({
       ) : null}
       {!premiumAccess ? (
         <LockedPremiumSection
-          detail="AI access policy and server-side entitlement enforcement still require approval. No upgrade is simulated here."
+          detail="AI access is not available yet. Viewing Premium options will not change access."
           onUnlock={onOpenPremium}
           title="Premium AI foundation"
         />

@@ -237,7 +237,11 @@ function MarketGroup({
         style={styles.marketGroupButton}
       >
         <Text style={styles.marketGroupTitle}>{definition.title}</Text>
-        <Text accessibilityElementsHidden style={styles.disclosure}>
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.disclosure}
+        >
           {expanded ? '−' : '+'}
         </Text>
       </Pressable>
@@ -442,6 +446,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: touchTarget,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   marketGroupTitle: {
     color: colors.text,
@@ -455,6 +460,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     borderTopWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.md,
     minHeight: touchTarget,
     padding: spacing.md,

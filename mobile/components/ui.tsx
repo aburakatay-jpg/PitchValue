@@ -9,7 +9,7 @@ import {
   View,
   type PressableProps,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import {
   colors,
@@ -22,17 +22,28 @@ import {
 
 export function Screen({
   children,
+  keyboardAware = false,
   onRefresh,
   refreshing = false,
+  safeAreaEdges = defaultScreenEdges,
 }: PropsWithChildren<{
+  keyboardAware?: boolean;
   onRefresh?: (() => void) | undefined;
   refreshing?: boolean;
+  safeAreaEdges?: readonly Edge[];
 }>) {
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
+    <SafeAreaView
+      edges={safeAreaEdges}
+      style={styles.safe}
+      testID="screen-safe-area"
+    >
       <ScrollView
+        automaticallyAdjustKeyboardInsets={keyboardAware}
         contentContainerStyle={styles.screen}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        testID="screen-scroll-view"
         refreshControl={
           onRefresh ? (
             <RefreshControl
@@ -49,6 +60,9 @@ export function Screen({
     </SafeAreaView>
   );
 }
+
+export const defaultScreenEdges = ['top', 'left', 'right'] as const;
+export const stackScreenEdges = ['bottom', 'left', 'right'] as const;
 
 export function AppHeader({
   eyebrow,
@@ -76,13 +90,16 @@ export function SectionHeader({
 }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        {title}
+      </Text>
       {detail ? <Text style={styles.secondary}>{detail}</Text> : null}
     </View>
   );
 }
 
 export function Button({
+  accessibilityState,
   children,
   disabled,
   style,
@@ -92,6 +109,10 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{
+        ...accessibilityState,
+        disabled: Boolean(disabled),
+      }}
       disabled={disabled}
       style={(state) => [
         styles.button,
@@ -223,9 +244,15 @@ export const sharedStyles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   rowBetween: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
@@ -263,14 +290,21 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  buttonDisabled: { opacity: 0.45 },
+  buttonDisabled: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
   buttonSecondary: { backgroundColor: colors.surfaceRaised },
   buttonQuiet: { backgroundColor: colors.transparent },
   buttonText: {
     color: colors.text,
+    flexShrink: 1,
     fontSize: typeScale.body,
     fontWeight: '700',
+    textAlign: 'center',
   },
   pressed: { opacity: 0.8 },
   chip: {

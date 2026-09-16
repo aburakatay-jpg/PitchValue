@@ -62,7 +62,7 @@ export function AgeConfirmation({
             Terms · Privacy · Responsible Gambling
           </Text>
           <Text style={styles.caption}>
-            Final legal wording and destinations require approved Legal content.
+            Full legal information and destinations are not yet available.
           </Text>
         </View>
         <Button
@@ -182,6 +182,7 @@ function FirstLaunchPage({ children }: { children: ReactNode }) {
     >
       <ScrollView
         contentContainerStyle={styles.screen}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         {children}

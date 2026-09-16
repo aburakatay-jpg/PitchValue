@@ -94,8 +94,7 @@ export function ProfileView({
           View Premium
         </Button>
         <Text style={styles.detail}>
-          Management and restoration remain unavailable until store integration
-          exists.
+          Subscription management and restoration are currently unavailable.
         </Text>
       </ProfileGroup>
       <ProfileGroup title="Preferences">
@@ -117,8 +116,7 @@ export function ProfileView({
           18+ · Betting can involve financial loss.
         </Text>
         <Text style={styles.detail}>
-          Full Responsible Gambling content and destinations require Legal
-          approval.
+          Full Responsible Gambling information is not yet available.
         </Text>
       </ProfileGroup>
       <ProfileGroup title="App">
@@ -127,8 +125,7 @@ export function ProfileView({
           value={Constants.expoConfig?.version ?? 'Unavailable'}
         />
         <Text style={styles.detail}>
-          Terms, Privacy, Responsible Gambling, and Support routes require
-          approved content or service destinations.
+          Legal and support destinations are not yet available.
         </Text>
       </ProfileGroup>
     </Screen>

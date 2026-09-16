@@ -37,8 +37,7 @@ const sectionCopy: Readonly<
   Active: {
     UNAVAILABLE: {
       title: 'Tracked selections unavailable',
-      detail:
-        'PitchValue does not yet have an account-backed saved-record service.',
+      detail: 'Saving tracked selections is not available yet.',
     },
     ERROR: {
       title: 'Unable to load tracked selections',
@@ -53,7 +52,7 @@ const sectionCopy: Readonly<
   History: {
     UNAVAILABLE: {
       title: 'History unavailable',
-      detail: 'No authoritative user-record settlement service is connected.',
+      detail: 'Settled tracking history is not available yet.',
     },
     ERROR: {
       title: 'Unable to load history',
@@ -170,6 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: touchTarget,
     paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
   },
   tabSelected: { backgroundColor: colors.primary },
   tabText: {

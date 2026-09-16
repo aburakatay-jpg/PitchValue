@@ -1,4 +1,8 @@
-import { config, isDevelopmentPreviewEnabled } from '@/lib/config';
+import {
+  config,
+  isDevelopmentPreviewEnabled,
+  resolveApiBaseUrl,
+} from '@/lib/config';
 import { hasPremiumAccess, isEntitlementState } from '@/lib/entitlement';
 import { tabRoutes } from '@/lib/routes';
 import { colors, theme } from '@/theme/tokens';
@@ -36,6 +40,15 @@ describe('mobile foundation', () => {
 
   it('loads required environment configuration safely', () => {
     expect(config.apiBaseUrl).toMatch(/^https?:\/\//);
+  });
+
+  it('fails closed instead of using localhost in a production build', () => {
+    expect(resolveApiBaseUrl(false, undefined)).toBeNull();
+    expect(resolveApiBaseUrl(false, '  ')).toBeNull();
+    expect(resolveApiBaseUrl(true, undefined)).toBe('http://localhost:8000');
+    expect(resolveApiBaseUrl(false, 'https://api.pitchvalue.example')).toBe(
+      'https://api.pitchvalue.example',
+    );
   });
 
   it('allows synthetic preview data only behind an explicit development gate', () => {

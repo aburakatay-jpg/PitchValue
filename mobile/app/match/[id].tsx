@@ -16,6 +16,7 @@ import {
   SectionHeader,
   UnavailableState,
   sharedStyles,
+  stackScreenEdges,
 } from '@/components/ui';
 import { mockMatches } from '@/dev/mock-data';
 import { usePublicResource } from '@/hooks/use-public-resource';
@@ -50,7 +51,7 @@ export function MatchDetailView({
 }) {
   if (initialLoading && data === null) {
     return (
-      <Screen>
+      <Screen safeAreaEdges={stackScreenEdges}>
         <MatchDetailSkeleton />
       </Screen>
     );
@@ -58,7 +59,7 @@ export function MatchDetailView({
   if (!data && error) {
     const missing = error.kind === 'NOT_FOUND';
     return (
-      <Screen>
+      <Screen safeAreaEdges={stackScreenEdges}>
         <UnavailableState
           title={
             missing
@@ -67,7 +68,7 @@ export function MatchDetailView({
           }
           detail={
             missing
-              ? 'This fixture ID is not available.'
+              ? 'This match is not available.'
               : 'Please try again shortly.'
           }
           retry={missing ? undefined : onRefresh}
@@ -77,7 +78,11 @@ export function MatchDetailView({
   }
   if (!data) return <InvalidMatchState />;
   return (
-    <Screen onRefresh={onRefresh} refreshing={refreshing}>
+    <Screen
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      safeAreaEdges={stackScreenEdges}
+    >
       {error ? (
         <InlineNotice
           title="Could not refresh match detail"
@@ -97,10 +102,10 @@ export function MatchDetailView({
 
 function InvalidMatchState() {
   return (
-    <Screen>
+    <Screen safeAreaEdges={stackScreenEdges}>
       <UnavailableState
         title="Match not found"
-        detail="A valid fixture ID is required."
+        detail="A valid match is required."
       />
     </Screen>
   );
@@ -121,7 +126,7 @@ function DevelopmentMatchDetail({ id }: { id: string }) {
   const match = mockMatches.find((item) => item.id === id);
   if (!match) return <InvalidMatchState />;
   return (
-    <Screen>
+    <Screen safeAreaEdges={stackScreenEdges}>
       <View style={sharedStyles.card}>
         <SectionHeader
           title={`${match.homeTeam} vs ${match.awayTeam}`}

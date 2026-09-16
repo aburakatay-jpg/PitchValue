@@ -36,6 +36,9 @@ async function request<T>(
   signal: AbortSignal,
   validator: Validator<T>,
 ): Promise<T> {
+  if (config.apiBaseUrl === null) {
+    throw new PublicApiError('API_UNAVAILABLE');
+  }
   let response: Response;
   try {
     response = await fetch(`${config.apiBaseUrl.replace(/\/$/, '')}${path}`, {

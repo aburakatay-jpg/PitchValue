@@ -18,7 +18,7 @@ npm start
 
 Scan the QR code with the iPhone camera and open it in Expo Go while the phone and PC can reach each other. Use `npm run web` for a browser preview. Run `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm test` for validation.
 
-Copy `.env.example` to a local `.env` only when overriding the API endpoint. `EXPO_PUBLIC_API_BASE_URL` is public client configuration: never put credentials, signing keys, database passwords, service-role keys, or other secrets in any `EXPO_PUBLIC_*` variable.
+Copy `.env.example` to a local `.env` only when overriding the API endpoint. Development builds default to `http://localhost:8000`; production builds fail closed unless `EXPO_PUBLIC_API_BASE_URL` is explicitly configured. `EXPO_PUBLIC_API_BASE_URL` is public client configuration: never put credentials, signing keys, database passwords, service-role keys, or other secrets in any `EXPO_PUBLIC_*` variable.
 
 Synthetic fixture previews are disabled by default. They require both a development build and the explicit `EXPO_PUBLIC_ENABLE_MOCK_DATA=true` flag. Production builds ignore this flag and fail closed to honest empty/unavailable states; API failures never activate mock data.
 
@@ -38,4 +38,4 @@ The current dependency set is supported by Expo Go, including AsyncStorage for t
 
 Application identifiers are intentionally omitted until production values are approved. The existing Expo config uses a clearly development-oriented URL scheme and does not claim App Store readiness.
 
-Physical iPhone acceptance remains outstanding; use [the Phase 4 checklist](docs/physical-device-checklist.md) rather than treating simulator or automated tests as device approval. The approved PitchValue splash/wordmark artwork is not present, so the native splash currently uses only the canonical dark background and requires the approved asset before brand acceptance.
+Physical iPhone acceptance remains outstanding; use [the physical-device checklist](docs/physical-device-checklist.md) rather than treating simulator or automated tests as device approval. The [release-readiness matrix](docs/release-readiness.md) separates code-ready UX from external launch blockers. The approved PitchValue splash/wordmark artwork is not present, so the native splash currently uses only the canonical dark background and requires the approved asset before brand acceptance.
