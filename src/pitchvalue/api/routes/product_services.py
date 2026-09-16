@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import Connection
 
 from pitchvalue.api.dependencies import (
+    get_auth_limiter,
     get_bearer_token,
     get_connection,
     get_current_user,
@@ -38,6 +39,7 @@ from pitchvalue.api.product_models import (
 )
 from pitchvalue.operations.release_validation import validate_product_service_readiness
 from pitchvalue.prediction.repository import current_predictions, published_predictions
+from pitchvalue.product_services.abuse import AuthAction, AuthRateLimited, InMemoryAuthLimiter
 from pitchvalue.product_services.assistant import (
     CouponResult,
     CouponRisk,
@@ -90,8 +92,11 @@ def guest_session(
 @router.post("/auth/email/register", response_model=SessionResponse)
 def email_register(
     request: EmailAuthRequest,
+    http_request: Request,
+    limiter: Annotated[InMemoryAuthLimiter, Depends(get_auth_limiter)],
     connection: Annotated[Connection, Depends(get_transaction)],
 ) -> SessionResponse:
+    _guard_auth(limiter, AuthAction.REGISTER, _client(http_request))
     try:
         return _session(register_email(connection, request.email, request.password))
     except AuthError as error:
@@ -101,10 +106,17 @@ def email_register(
 @router.post("/auth/email/login", response_model=SessionResponse)
 def email_login(
     request: EmailAuthRequest,
+    http_request: Request,
+    limiter: Annotated[InMemoryAuthLimiter, Depends(get_auth_limiter)],
     connection: Annotated[Connection, Depends(get_transaction)],
 ) -> SessionResponse:
+    client = _client(http_request)
+    principal = request.email.strip().casefold()
+    _guard_auth(limiter, AuthAction.LOGIN, client, principal)
     try:
-        return _session(login_email(connection, request.email, request.password))
+        session = _session(login_email(connection, request.email, request.password))
+        limiter.reset(AuthAction.LOGIN, client, principal)
+        return session
     except AuthError as error:
         raise ApiError(401, ErrorCode.UNAUTHORIZED, "Invalid credentials") from error
 
@@ -143,8 +155,11 @@ def external_login(provider: str, request: ExternalAuthRequest) -> SessionRespon
 @router.post("/auth/refresh", response_model=SessionResponse)
 def session_refresh(
     request: RefreshRequest,
+    http_request: Request,
+    limiter: Annotated[InMemoryAuthLimiter, Depends(get_auth_limiter)],
     connection: Annotated[Connection, Depends(get_transaction)],
 ) -> SessionResponse:
+    _guard_auth(limiter, AuthAction.REFRESH, _client(http_request), request.refresh_token)
     try:
         return _session(refresh_session(connection, request.refresh_token))
     except AuthError as error:
@@ -390,6 +405,27 @@ def _require_premium(connection: Connection, user: ProductUser) -> None:
         EntitlementState.PREMIUM_TRIAL,
     }:
         raise ApiError(403, ErrorCode.FORBIDDEN, "Premium entitlement required")
+
+
+def _guard_auth(
+    limiter: InMemoryAuthLimiter,
+    action: AuthAction,
+    client: str,
+    principal: str = "",
+) -> None:
+    try:
+        limiter.check(action, client, principal)
+    except AuthRateLimited as error:
+        raise ApiError(
+            429,
+            ErrorCode.RATE_LIMITED,
+            "Too many authentication attempts",
+            headers={"Retry-After": str(error.retry_after_seconds)},
+        ) from error
+
+
+def _client(request: Request) -> str:
+    return "unknown" if request.client is None else request.client.host
 
 
 def _user(user: ProductUser) -> UserResponse:

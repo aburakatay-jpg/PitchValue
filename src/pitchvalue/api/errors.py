@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any
 
@@ -24,6 +25,7 @@ class ErrorCode(StrEnum):
     FORBIDDEN = "FORBIDDEN"
     CONFLICT = "CONFLICT"
     EXTERNAL_ACTIVATION_REQUIRED = "EXTERNAL_ACTIVATION_REQUIRED"
+    RATE_LIMITED = "RATE_LIMITED"
 
 
 class ErrorDetail(BaseModel):
@@ -39,11 +41,19 @@ class ErrorResponse(BaseModel):
 class ApiError(Exception):
     """An expected application failure with safe client-facing details."""
 
-    def __init__(self, status_code: int, code: ErrorCode, message: str) -> None:
+    def __init__(
+        self,
+        status_code: int,
+        code: ErrorCode,
+        message: str,
+        *,
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.code = code
         self.message = message
+        self.headers = dict(headers or {})
 
 
 def _request_id(request: Request) -> str:
@@ -51,7 +61,13 @@ def _request_id(request: Request) -> str:
     return value
 
 
-def _response(request: Request, status_code: int, code: ErrorCode, message: str) -> JSONResponse:
+def _response(
+    request: Request,
+    status_code: int,
+    code: ErrorCode,
+    message: str,
+    headers: Mapping[str, str] | None = None,
+) -> JSONResponse:
     request_id = _request_id(request)
     content = ErrorResponse(
         error=ErrorDetail(code=code, message=message, request_id=request_id)
@@ -59,12 +75,12 @@ def _response(request: Request, status_code: int, code: ErrorCode, message: str)
     return JSONResponse(
         status_code=status_code,
         content=content,
-        headers={"X-Request-ID": request_id},
+        headers={**dict(headers or {}), "X-Request-ID": request_id},
     )
 
 
 async def api_error_handler(request: Request, error: ApiError) -> JSONResponse:
-    return _response(request, error.status_code, error.code, error.message)
+    return _response(request, error.status_code, error.code, error.message, error.headers)
 
 
 async def validation_error_handler(request: Request, error: RequestValidationError) -> JSONResponse:
@@ -99,6 +115,7 @@ ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
     401: {"model": ErrorResponse, "description": "Authentication required"},
     403: {"model": ErrorResponse, "description": "Forbidden"},
     409: {"model": ErrorResponse, "description": "Conflict"},
+    429: {"model": ErrorResponse, "description": "Rate limited"},
     503: {"model": ErrorResponse, "description": "Service unavailable"},
     422: {"model": ErrorResponse, "description": "Validation error"},
     500: {"model": ErrorResponse, "description": "Internal error"},

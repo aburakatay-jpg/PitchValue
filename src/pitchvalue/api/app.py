@@ -16,6 +16,7 @@ from pitchvalue.api.middleware import RequestContextMiddleware
 from pitchvalue.api.routes.system import router as system_router
 from pitchvalue.api.routes.v1 import router as v1_router
 from pitchvalue.config import Settings, load_settings
+from pitchvalue.product_services.abuse import InMemoryAuthLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ def create_app(
     )
     application.state.settings = resolved_settings
     application.state.api_v1_prefix = v1_router.prefix
+    application.state.auth_limiter = InMemoryAuthLimiter()
     application.add_middleware(
         CORSMiddleware,
         allow_origins=list(resolved_settings.cors_allowed_origins),

@@ -9,9 +9,15 @@ from sqlalchemy import Connection
 
 from pitchvalue.api.database import DatabaseResourceProtocol
 from pitchvalue.api.errors import ApiError, ErrorCode
+from pitchvalue.product_services.abuse import InMemoryAuthLimiter
 from pitchvalue.product_services.auth import ProductUser, authenticate_access_token
 
 bearer = HTTPBearer(auto_error=False)
+
+
+def get_auth_limiter(request: Request) -> InMemoryAuthLimiter:
+    limiter: InMemoryAuthLimiter = request.app.state.auth_limiter
+    return limiter
 
 
 def get_database(request: Request) -> DatabaseResourceProtocol:

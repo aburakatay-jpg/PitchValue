@@ -36,6 +36,18 @@ Double Chance, and team totals. Scheduled, live, and postponed fixtures remain u
 Cancelled fixtures are void. Abandoned fixtures and corrected final results require explicit
 review; operator-specific house rules are not guessed.
 
+Settlement is never scheduled implicitly. An operator can run the bounded, transaction-backed
+command `python -m pitchvalue.operations.settle_saved --limit 500`; it selects only canonical
+terminal fixtures, uses row locks, is replay-safe, and emits a machine-readable run result with
+settled, unchanged, and review-required records.
+
+## Auth abuse controls
+
+Login, registration, and refresh endpoints use hashed-key, process-local attempt limits with a
+stable `429 RATE_LIMITED` response and `Retry-After`. Successful login clears its failure window.
+This zero-cost layer does not claim distributed enforcement; multi-instance production activation
+still requires a deployment-level shared limiter decision.
+
 ## AI and Coupon Builder
 
 AI accepts only active public prediction context and cannot create a prediction, probability, Bet
