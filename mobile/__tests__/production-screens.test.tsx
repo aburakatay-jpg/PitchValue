@@ -5,6 +5,7 @@ jest.mock('expo-router', () => ({
 }));
 
 import ExploreScreen from '@/app/(tabs)/explore';
+import AiScreen from '@/app/(tabs)/ai';
 import { TodayScreen } from '@/app/(tabs)/today';
 import { mockMatches } from '@/dev/mock-data';
 
@@ -71,5 +72,32 @@ describe('production-connected discovery screens', () => {
       expect(explore.getByText('Unable to load value signals')).toBeTruthy(),
     );
     expect(explore.queryByText(mockMatches[0]!.homeTeam)).toBeNull();
+  });
+
+  it('uses only the public prediction endpoint as AI context', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ predictions: [], count: 0 }),
+    });
+    const view = await render(<AiScreen />);
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/api\/v1\/predictions$/),
+        expect.objectContaining({ method: 'GET' }),
+      ),
+    );
+    expect(
+      view.getByText(/does not create independent predictions/i),
+    ).toBeTruthy();
+  });
+
+  it('never activates mocks or generates selections when AI context fails', async () => {
+    globalThis.fetch = jest.fn().mockRejectedValue(new Error('network failed'));
+    const view = await render(<AiScreen />);
+    await waitFor(() =>
+      expect(view.getByText('Public analysis unavailable')).toBeTruthy(),
+    );
+    expect(view.queryByText(mockMatches[0]!.homeTeam)).toBeNull();
+    expect(view.queryByText(/generated pick|winning pick/i)).toBeNull();
   });
 });

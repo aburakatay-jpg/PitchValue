@@ -23,10 +23,3 @@ export const mockMatches: MockMatch[] = [
     locked: true,
   },
 ];
-
-export const aiActions = [
-  'Coupon Builder',
-  'Today’s Best Value',
-  'Explain a Pick',
-  'Ask PitchValue',
-] as const;

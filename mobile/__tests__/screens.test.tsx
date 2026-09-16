@@ -9,7 +9,8 @@ import { AiScreen } from '@/app/(tabs)/ai';
 import { BetsScreen } from '@/app/(tabs)/bets';
 import { TodayView } from '@/app/(tabs)/today';
 import { RootLanding } from '@/app/index';
-import { aiActions, mockMatches } from '@/dev/mock-data';
+import { mockMatches } from '@/dev/mock-data';
+import { assistantFeatures } from '@/lib/assistant-contract';
 
 describe('screen foundations', () => {
   it('renders the app root loading state', async () => {
@@ -44,8 +45,13 @@ describe('screen foundations', () => {
   });
 
   it('renders all four AI actions', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ predictions: [], count: 0 }),
+    });
     const view = await render(<AiScreen />);
-    for (const action of aiActions) expect(view.getByText(action)).toBeTruthy();
+    for (const action of assistantFeatures)
+      expect(view.getByText(action)).toBeTruthy();
   });
 
   it('renders My Bets as an honest unavailable tracking workspace', async () => {
