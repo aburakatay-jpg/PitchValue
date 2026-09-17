@@ -74,6 +74,18 @@ def _load_origins(raw_value: str) -> tuple[str, ...]:
 
 def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
     """Load and validate settings from an environment-like mapping."""
+    try:
+        from pathlib import Path
+        env_path = Path(".env")
+        if env_path.is_file():
+            for line in env_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    key, _, value = line.partition("=")
+                    if key.strip() and key.strip() not in os.environ:
+                        os.environ[key.strip()] = value.strip()
+    except Exception:
+        pass
     values = os.environ if environment is None else environment
     database_url = values.get("DATABASE_URL", "").strip()
     if not database_url:
