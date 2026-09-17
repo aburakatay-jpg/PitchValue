@@ -26,6 +26,7 @@ from pitchvalue.api.product_models import (
     EntitlementResponse,
     ExplainRequest,
     ExternalAuthRequest,
+    PasswordResetConfirmRequest,
     PasswordResetRequest,
     PerformanceResponse,
     PublicContextResponse,
@@ -54,14 +55,18 @@ from pitchvalue.product_services.auth import (
     AuthError,
     IssuedSession,
     ProductUser,
-    UnconfiguredIdentityVerifier,
+    UnconfiguredAppleIdentityVerifier,
+    UnconfiguredGoogleIdentityVerifier,
     UnconfiguredPasswordResetDelivery,
+    authenticate_external,
+    confirm_password_reset,
     create_guest_session,
     login_email,
     logout,
     normalize_email,
     refresh_session,
     register_email,
+    request_password_reset,
 )
 from pitchvalue.product_services.entitlements import (
     CommerceVerificationRequest,
@@ -122,10 +127,15 @@ def email_login(
 
 
 @router.post("/auth/email/password-reset", status_code=202)
-def email_password_reset(request: PasswordResetRequest) -> Response:
+def email_password_reset(
+    request: PasswordResetRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> Response:
     try:
-        normalized = normalize_email(request.email)
-        UnconfiguredPasswordResetDelivery().request_reset(normalized)
+        raw_token = request_password_reset(connection, request.email)
+        if raw_token:
+            normalized = normalize_email(request.email)
+            UnconfiguredPasswordResetDelivery().request_reset(normalized, raw_token)
     except AuthError as error:
         raise ApiError(422, ErrorCode.VALIDATION_ERROR, "Invalid email") from error
     except RuntimeError as error:
@@ -137,12 +147,41 @@ def email_password_reset(request: PasswordResetRequest) -> Response:
     return Response(status_code=202)
 
 
+@router.post("/auth/email/password-reset/confirm", status_code=204)
+def email_password_reset_confirm(
+    request: PasswordResetConfirmRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> Response:
+    try:
+        confirm_password_reset(connection, request.token, request.new_password)
+    except AuthError as error:
+        if "password does not meet" in str(error):
+            raise ApiError(422, ErrorCode.VALIDATION_ERROR, str(error)) from error
+        raise ApiError(400, ErrorCode.VALIDATION_ERROR, str(error)) from error
+    return Response(status_code=204)
+
+
 @router.post("/auth/external/{provider}", response_model=SessionResponse)
-def external_login(provider: str, request: ExternalAuthRequest) -> SessionResponse:
-    if provider.upper() not in {"APPLE", "GOOGLE"}:
+def external_login(
+    provider: str,
+    request: ExternalAuthRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> SessionResponse:
+    provider = provider.upper()
+    if provider not in {"APPLE", "GOOGLE"}:
         raise ApiError(422, ErrorCode.VALIDATION_ERROR, "Unsupported identity provider")
     try:
-        UnconfiguredIdentityVerifier().verify(request.provider_token)
+        if provider == "APPLE":
+            identity = UnconfiguredAppleIdentityVerifier().verify(request.provider_token)
+        else:
+            identity = UnconfiguredGoogleIdentityVerifier().verify(request.provider_token)
+        return _session(
+            authenticate_external(connection, provider, identity.subject, identity.email)
+        )
+    except AuthError as error:
+        if "EMAIL_IDENTITY_COLLISION" in str(error):
+            raise ApiError(409, ErrorCode.CONFLICT, "EMAIL_IDENTITY_COLLISION") from error
+        raise ApiError(401, ErrorCode.UNAUTHORIZED, str(error)) from error
     except RuntimeError as error:
         raise ApiError(
             503,

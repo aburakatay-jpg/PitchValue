@@ -38,6 +38,11 @@ class PasswordResetRequest(BaseModel):
     email: str = Field(min_length=3, max_length=320)
 
 
+class PasswordResetConfirmRequest(BaseModel):
+    token: str = Field(min_length=10, max_length=512)
+    new_password: str = Field(min_length=10, max_length=1024)
+
+
 class ExternalAuthRequest(BaseModel):
     provider_token: str = Field(min_length=20, max_length=8192)
 

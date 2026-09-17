@@ -1,16 +1,18 @@
 {
   "expo": {
     "name": "PitchValue",
-    "slug": "pitchvalue-mobile",
+    "slug": "pitchvalue",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "pitchvalue-dev",
+    "scheme": ["pitchvalue", "pitchvalue-dev"],
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pitchvalue.app"
     },
     "android": {
+      "package": "com.pitchvalue.app",
       "adaptiveIcon": {
         "backgroundColor": "#08111F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

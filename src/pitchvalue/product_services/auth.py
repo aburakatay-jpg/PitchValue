@@ -62,20 +62,26 @@ class ExternalIdentityVerifier(Protocol):
 class PasswordResetDelivery(Protocol):
     """Boundary implemented by an approved email delivery provider."""
 
-    def request_reset(self, normalized_email: str) -> None: ...
+    def request_reset(self, normalized_email: str, raw_token: str) -> None: ...
 
 
-class UnconfiguredIdentityVerifier:
+class UnconfiguredAppleIdentityVerifier:
     def verify(self, provider_token: str) -> VerifiedExternalIdentity:
         del provider_token
-        raise RuntimeError("identity provider requires external credentials")
+        raise RuntimeError("Apple identity provider requires external credentials")
+
+
+class UnconfiguredGoogleIdentityVerifier:
+    def verify(self, provider_token: str) -> VerifiedExternalIdentity:
+        del provider_token
+        raise RuntimeError("Google identity provider requires external credentials")
 
 
 class UnconfiguredPasswordResetDelivery:
     """Fail closed without revealing whether an email identity exists."""
 
-    def request_reset(self, normalized_email: str) -> None:
-        del normalized_email
+    def request_reset(self, normalized_email: str, raw_token: str) -> None:
+        del normalized_email, raw_token
         raise RuntimeError("password reset delivery requires external activation")
 
 
@@ -355,3 +361,152 @@ def _now(value: datetime | None) -> datetime:
     if result.tzinfo is None or result.utcoffset() is None:
         raise AuthError("time must be timezone-aware")
     return result
+
+
+def authenticate_external(
+    connection: Connection,
+    provider: str,
+    subject: str,
+    email: str | None,
+    *,
+    now: datetime | None = None,
+) -> IssuedSession:
+    issued_at = _now(now)
+    normalized = normalize_email(email) if email else None
+
+    row = (
+        connection.execute(
+            text(
+                "SELECT u.user_id, u.account_kind, i.normalized_email FROM auth_identities i "
+                "JOIN app_users u ON u.user_id=i.user_id "
+                "WHERE i.provider=:provider AND i.provider_subject=:subject"
+            ),
+            {"provider": provider, "subject": subject},
+        )
+        .mappings()
+        .one_or_none()
+    )
+
+    if row is not None:
+        return _issue_session(
+            connection,
+            ProductUser(
+                str(row["user_id"]),
+                AccountKind(str(row["account_kind"])),
+                str(row["normalized_email"]) if row["normalized_email"] else None,
+            ),
+            issued_at,
+        )
+
+    if normalized:
+        collision = connection.execute(
+            text("SELECT 1 FROM auth_identities WHERE normalized_email=:email"),
+            {"email": normalized},
+        ).scalar_one_or_none()
+        if collision:
+            raise AuthError("EMAIL_IDENTITY_COLLISION")
+
+    user_id = str(uuid.uuid4())
+    connection.execute(
+        text(
+            "INSERT INTO app_users (user_id,account_kind,created_at,updated_at) "
+            "VALUES (:user_id,'AUTHENTICATED',:now,:now)"
+        ),
+        {"user_id": user_id, "now": issued_at},
+    )
+    connection.execute(
+        text(
+            "INSERT INTO auth_identities "
+            "(user_id,provider,provider_subject,normalized_email,created_at,last_verified_at) VALUES "
+            "(:user_id,:provider,:subject,:email,:now,:now)"
+        ),
+        {
+            "user_id": user_id,
+            "provider": provider,
+            "subject": subject,
+            "email": normalized,
+            "now": issued_at,
+        },
+    )
+    return _issue_session(
+        connection,
+        ProductUser(user_id, AccountKind.AUTHENTICATED, normalized),
+        issued_at,
+    )
+
+
+def request_password_reset(
+    connection: Connection,
+    email: str,
+    *,
+    now: datetime | None = None,
+) -> str | None:
+    issued_at = _now(now)
+    normalized = normalize_email(email)
+
+    user_id = connection.execute(
+        text(
+            "SELECT user_id FROM auth_identities WHERE provider='EMAIL' AND normalized_email=:email"
+        ),
+        {"email": normalized},
+    ).scalar_one_or_none()
+
+    if user_id is None:
+        return None
+
+    raw_token = secrets.token_urlsafe(32)
+    expires_at = issued_at + timedelta(hours=1)
+
+    connection.execute(
+        text(
+            "INSERT INTO auth_password_resets (token_hash, user_id, expires_at) "
+            "VALUES (:hash, :user_id, :expires)"
+        ),
+        {"hash": _token_hash(raw_token), "user_id": str(user_id), "expires": expires_at},
+    )
+    return raw_token
+
+
+def confirm_password_reset(
+    connection: Connection,
+    raw_token: str,
+    new_password: str,
+    *,
+    now: datetime | None = None,
+) -> None:
+    checked_at = _now(now)
+    token_hash = _token_hash(raw_token)
+
+    row = connection.execute(
+        text(
+            "SELECT user_id FROM auth_password_resets "
+            "WHERE token_hash=:hash AND used_at IS NULL AND expires_at > :now"
+        ),
+        {"hash": token_hash, "now": checked_at},
+    ).scalar_one_or_none()
+
+    if row is None:
+        raise AuthError("Invalid or expired reset token")
+
+    user_id = str(row)
+    password_hash = hash_password(new_password)
+
+    connection.execute(
+        text("UPDATE auth_password_resets SET used_at=:now WHERE token_hash=:hash"),
+        {"now": checked_at, "hash": token_hash},
+    )
+
+    connection.execute(
+        text(
+            "UPDATE auth_identities SET password_hash=:password_hash "
+            "WHERE user_id=:user_id AND provider='EMAIL'"
+        ),
+        {"password_hash": password_hash, "user_id": user_id},
+    )
+
+    connection.execute(
+        text(
+            "UPDATE auth_sessions SET revoked_at=:now WHERE user_id=:user_id AND revoked_at IS NULL"
+        ),
+        {"now": checked_at, "user_id": user_id},
+    )

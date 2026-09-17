@@ -183,7 +183,7 @@ def test_inventory_reports_supported_fields(db: Connection) -> None:
     }
     for source_field in SUPPORTED_SOURCE_FIELDS:
         key = ("E0", "2025/26", source_field)
-        before_present, before_missing = before[key]
+        before_present, before_missing = before.get(key, (0, 0))
         assert after[key] == (before_present + 1, before_missing)
 
 

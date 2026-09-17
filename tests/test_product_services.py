@@ -21,7 +21,7 @@ from pitchvalue.product_services.assistant import (
 )
 from pitchvalue.product_services.auth import (
     AuthError,
-    UnconfiguredIdentityVerifier,
+    UnconfiguredAppleIdentityVerifier,
     UnconfiguredPasswordResetDelivery,
     hash_password,
     normalize_email,
@@ -58,12 +58,12 @@ def test_invalid_email_is_rejected(value: str) -> None:
 
 def test_external_identity_and_commerce_boundaries_fail_closed() -> None:
     with pytest.raises(RuntimeError, match="external credentials"):
-        UnconfiguredIdentityVerifier().verify("provider-token")
+        UnconfiguredAppleIdentityVerifier().verify("provider-token")
     request = CommerceVerificationRequest("APP_STORE", "tx", "annual", "ANNUAL", "receipt")
     with pytest.raises(RuntimeError, match="external activation"):
         ExternalCommerceVerifier().verify(request)
     with pytest.raises(RuntimeError, match="external activation"):
-        UnconfiguredPasswordResetDelivery().request_reset("user@example.com")
+        UnconfiguredPasswordResetDelivery().request_reset("user@example.com", "dummy_token")
 
 
 @pytest.mark.parametrize(

@@ -11,7 +11,7 @@ from sqlalchemy import Connection, Engine, create_engine, text
 from pitchvalue.config import Settings
 
 EngineFactory = Callable[..., Engine]
-EXPECTED_ALEMBIC_REVISION = "20260916_0012"
+EXPECTED_ALEMBIC_REVISION = "ccfe1992e71e"
 
 
 class DatabaseResourceProtocol(Protocol):
