@@ -16,14 +16,14 @@ The input is exclusively a TASK 06 `MatchFeatures` instance. That contract conta
 
 The engineering defaults are:
 
-| Component | Weight | Inputs |
-| --- | ---: | --- |
-| Recent overall form | 25% | Recent PPG and goal difference per match |
-| Extended overall form | 15% | Extended-window PPG and goal difference per match |
-| Venue form | 25% | Home split for the target home team; away split for the target away team |
-| Attack performance | 15% | Recent and venue goals scored relative to league baselines |
-| Defensive performance | 15% | Recent and venue goals conceded relative to league baselines |
-| Schedule/rest context | 5% | Rest days and 7-/14-day match counts |
+| Component             | Weight | Inputs                                                                   |
+| --------------------- | -----: | ------------------------------------------------------------------------ |
+| Recent overall form   |    25% | Recent PPG and goal difference per match                                 |
+| Extended overall form |    15% | Extended-window PPG and goal difference per match                        |
+| Venue form            |    25% | Home split for the target home team; away split for the target away team |
+| Attack performance    |    15% | Recent and venue goals scored relative to league baselines               |
+| Defensive performance |    15% | Recent and venue goals conceded relative to league baselines             |
+| Schedule/rest context |     5% | Rest days and 7-/14-day match counts                                     |
 
 All component outputs and final team scores use a 0–100 strength-index scale with 50 as neutral/reference. Available component weights are re-normalized; missing components are never silently entered as zero.
 

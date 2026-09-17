@@ -45,11 +45,11 @@ The read-only evaluation used all 2,701 RAW ML OOS rows. Both source-prematch an
 closing had 2,701 complete eligible groups; there were no missing, invalid,
 quality-excluded, incomplete, or ambiguous aligned groups.
 
-| Role | Predictor | Log Loss | Brier | Accuracy | ECE-like |
-| --- | --- | ---: | ---: | ---: | ---: |
-| source_prematch | RAW ML | 1.001186878 | 0.597546781 | 50.9071% | 0.026982994 |
-| source_prematch | market no-vig | 0.966402896 | 0.574258663 | 54.2182% | 0.016604981 |
-| closing reference | RAW ML | 1.001186878 | 0.597546781 | 50.9071% | 0.026982994 |
+| Role              | Predictor     |    Log Loss |       Brier | Accuracy |    ECE-like |
+| ----------------- | ------------- | ----------: | ----------: | -------: | ----------: |
+| source_prematch   | RAW ML        | 1.001186878 | 0.597546781 | 50.9071% | 0.026982994 |
+| source_prematch   | market no-vig | 0.966402896 | 0.574258663 | 54.2182% | 0.016604981 |
+| closing reference | RAW ML        | 1.001186878 | 0.597546781 | 50.9071% | 0.026982994 |
 | closing reference | market no-vig | 0.964440105 | 0.572883707 | 54.5387% | 0.023452944 |
 
 Model-minus-market deltas were +0.034783981 Log Loss and +0.023288117 Brier for

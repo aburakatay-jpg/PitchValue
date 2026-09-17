@@ -31,13 +31,13 @@ For example, `0.56 - 0.50 = 0.06`: an edge of six percentage points, not a six-p
 
 Each available component is validated in the 0–100 range. Missing components are not assigned fabricated values. The weighted score is:
 
-| Component | Weight |
-| --- | ---: |
-| Edge Score | 35% |
-| Model Agreement | 25% |
-| Data Quality | 15% |
-| Calibration Confidence | 15% |
-| Market Stability | 10% |
+| Component              | Weight |
+| ---------------------- | -----: |
+| Edge Score             |    35% |
+| Model Agreement        |    25% |
+| Data Quality           |    15% |
+| Calibration Confidence |    15% |
+| Market Stability       |    10% |
 
 Weights are configuration values and must total exactly 1.0.
 

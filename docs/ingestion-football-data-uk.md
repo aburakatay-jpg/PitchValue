@@ -61,16 +61,16 @@ counters.
 
 ## Canonical mapping and validation
 
-| Source | Canonical target |
-| --- | --- |
-| `HomeTeam`, `AwayTeam` | `matches.home_team_id`, `matches.away_team_id` through provider aliases |
-| `Date` + optional `Time` | `matches.kickoff_at_utc`; NULL when time is absent |
-| `FTHG`, `FTAG`, `FTR` | normal-time scores and `H`/`D`/`A` result |
-| `HTHG`, `HTAG` | paired nullable half-time scores |
-| `Referee` | `matches.referee` |
-| `HS`, `AS`, `HST`, `AST` | shots and shots on target |
-| `HC`, `AC`, `HF`, `AF` | corners and fouls |
-| `HY`, `AY`, `HR`, `AR` | yellow and red cards |
+| Source                   | Canonical target                                                        |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `HomeTeam`, `AwayTeam`   | `matches.home_team_id`, `matches.away_team_id` through provider aliases |
+| `Date` + optional `Time` | `matches.kickoff_at_utc`; NULL when time is absent                      |
+| `FTHG`, `FTAG`, `FTR`    | normal-time scores and `H`/`D`/`A` result                               |
+| `HTHG`, `HTAG`           | paired nullable half-time scores                                        |
+| `Referee`                | `matches.referee`                                                       |
+| `HS`, `AS`, `HST`, `AST` | shots and shots on target                                               |
+| `HC`, `AC`, `HF`, `AF`   | corners and fouls                                                       |
+| `HY`, `AY`, `HR`, `AR`   | yellow and red cards                                                    |
 
 Rows require the registered division, date, two distinct teams, non-negative complete
 scores, and a result consistent with those scores. Half-time scores must be both

@@ -13,8 +13,7 @@ With `DATABASE_URL` configured for the existing local PostgreSQL database:
 python -m pitchvalue.operations.offline_validation --sample-size 12
 ```
 
-The command prints one canonical JSON document to stdout. The sample size must be between 1 and
-100. The command opens a repeatable-read transaction and tells PostgreSQL to enforce it as read
+The command prints one canonical JSON document to stdout. The sample size must be between 1 and 100. The command opens a repeatable-read transaction and tells PostgreSQL to enforce it as read
 only before the engine is invoked. It records protected table counts before and after execution
 and fails if they differ.
 

@@ -57,12 +57,12 @@ weight. Later temporal ensemble metrics therefore cover 2,139 identical rows.
 
 On those 2,139 rows:
 
-| Candidate | Log Loss | Brier | Accuracy | ECE-like |
-| --- | ---: | ---: | ---: | ---: |
-| Raw ML | 1.0105023510 | 0.6040749632 | 49.3221% | 0.0286645493 |
-| Raw Poisson | 1.9563299043 | 0.6875591772 | 45.8626% | 0.1063005506 |
+| Candidate         |     Log Loss |        Brier | Accuracy |     ECE-like |
+| ----------------- | -----------: | -----------: | -------: | -----------: |
+| Raw ML            | 1.0105023510 | 0.6040749632 | 49.3221% | 0.0286645493 |
+| Raw Poisson       | 1.9563299043 | 0.6875591772 | 45.8626% | 0.1063005506 |
 | Temporal ensemble | 1.0105023510 | 0.6040749632 | 49.3221% | 0.0286645493 |
-| Training prior | 1.0770238860 | 0.6516305604 | 43.3848% | 0.0137618367 |
+| Training prior    | 1.0770238860 | 0.6516305604 | 43.3848% | 0.0137618367 |
 
 Every one of the 11 weight-selected folds chose `w_ml=1.0` and
 `w_poisson=0.0`; min, median, and max ML weight were all 1.0, and all 11 solutions

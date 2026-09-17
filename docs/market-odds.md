@@ -46,14 +46,14 @@ The resulting probabilities sum to one within the configured Decimal tolerance. 
 
 The central typed registry defines canonical selection order, allowed lines, and exclusivity:
 
-| Market | Required selections | Line | Exclusive |
-| --- | --- | --- | --- |
-| Match Result | HOME, DRAW, AWAY | none | yes |
-| Total Goals | OVER, UNDER | 1.5 or 2.5 | yes |
-| BTTS | YES, NO | none | yes |
-| Double Chance | 1X, X2, 12 | none | no |
-| Home Team Total | OVER, UNDER | 0.5 or 1.5 | yes |
-| Away Team Total | OVER, UNDER | 0.5 or 1.5 | yes |
+| Market          | Required selections | Line       | Exclusive |
+| --------------- | ------------------- | ---------- | --------- |
+| Match Result    | HOME, DRAW, AWAY    | none       | yes       |
+| Total Goals     | OVER, UNDER         | 1.5 or 2.5 | yes       |
+| BTTS            | YES, NO             | none       | yes       |
+| Double Chance   | 1X, X2, 12          | none       | no        |
+| Home Team Total | OVER, UNDER         | 0.5 or 1.5 | yes       |
+| Away Team Total | OVER, UNDER         | 0.5 or 1.5 | yes       |
 
 Missing required selections produce INCOMPLETE_MARKET. Existing prices retain their odds and raw implied probabilities, while book percentage, overround, and no-vig probabilities remain unavailable. Missing selections are never fabricated.
 

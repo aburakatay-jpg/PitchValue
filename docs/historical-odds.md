@@ -15,22 +15,22 @@ All fourteen representative sources contain nonblank `B365H`, `B365D`, `B365A`, 
 `B365CD`, and `B365CA` values for every match. That is 26,760 supported values with zero missing,
 malformed, non-finite, or `<= 1` prices. The source/season row counts are:
 
-| Source | Season | Rows | Each supported field present | Missing |
-|---|---:|---:|---:|---:|
-| D1 | 2024/25 | 306 | 306 | 0 |
-| D1 | 2025/26 | 306 | 306 | 0 |
-| E0 | 2024/25 | 380 | 380 | 0 |
-| E0 | 2025/26 | 380 | 380 | 0 |
-| F1 | 2024/25 | 306 | 306 | 0 |
-| F1 | 2025/26 | 306 | 306 | 0 |
-| P1 | 2024/25 | 306 | 306 | 0 |
-| P1 | 2025/26 | 306 | 306 | 0 |
-| SC0 | 2024/25 | 228 | 228 | 0 |
-| SC0 | 2025/26 | 228 | 228 | 0 |
-| SP1 | 2024/25 | 380 | 380 | 0 |
-| SP1 | 2025/26 | 380 | 380 | 0 |
-| T1 | 2024/25 | 342 | 342 | 0 |
-| T1 | 2025/26 | 306 | 306 | 0 |
+| Source |  Season | Rows | Each supported field present | Missing |
+| ------ | ------: | ---: | ---------------------------: | ------: |
+| D1     | 2024/25 |  306 |                          306 |       0 |
+| D1     | 2025/26 |  306 |                          306 |       0 |
+| E0     | 2024/25 |  380 |                          380 |       0 |
+| E0     | 2025/26 |  380 |                          380 |       0 |
+| F1     | 2024/25 |  306 |                          306 |       0 |
+| F1     | 2025/26 |  306 |                          306 |       0 |
+| P1     | 2024/25 |  306 |                          306 |       0 |
+| P1     | 2025/26 |  306 |                          306 |       0 |
+| SC0    | 2024/25 |  228 |                          228 |       0 |
+| SC0    | 2025/26 |  228 |                          228 |       0 |
+| SP1    | 2024/25 |  380 |                          380 |       0 |
+| SP1    | 2025/26 |  380 |                          380 |       0 |
+| T1     | 2024/25 |  342 |                          342 |       0 |
+| T1     | 2025/26 |  306 |                          306 |       0 |
 
 The raw rows also expose season-varying bookmaker, exchange, source-average, and source-maximum
 fields for 1X2, 2.5 totals, and Asian handicap markets. Examples include `AvgH`, `MaxH`,
@@ -41,14 +41,14 @@ prefix identifies a bookmaker family and is not a Double Chance market.
 
 Implemented mappings are deliberately limited to:
 
-| Field | Source kind | Identity | Market | Selection | Line | Role | Timing |
-|---|---|---|---|---|---|---|---|
-| B365H | bookmaker | BET365 | match_result | home | NULL | source_prematch | role_only |
-| B365D | bookmaker | BET365 | match_result | draw | NULL | source_prematch | role_only |
-| B365A | bookmaker | BET365 | match_result | away | NULL | source_prematch | role_only |
-| B365CH | bookmaker | BET365 | match_result | home | NULL | closing | role_only |
-| B365CD | bookmaker | BET365 | match_result | draw | NULL | closing | role_only |
-| B365CA | bookmaker | BET365 | match_result | away | NULL | closing | role_only |
+| Field  | Source kind | Identity | Market       | Selection | Line | Role            | Timing    |
+| ------ | ----------- | -------- | ------------ | --------- | ---- | --------------- | --------- |
+| B365H  | bookmaker   | BET365   | match_result | home      | NULL | source_prematch | role_only |
+| B365D  | bookmaker   | BET365   | match_result | draw      | NULL | source_prematch | role_only |
+| B365A  | bookmaker   | BET365   | match_result | away      | NULL | source_prematch | role_only |
+| B365CH | bookmaker   | BET365   | match_result | home      | NULL | closing         | role_only |
+| B365CD | bookmaker   | BET365   | match_result | draw      | NULL | closing         | role_only |
+| B365CA | bookmaker   | BET365   | match_result | away      | NULL | closing         | role_only |
 
 Football-data documents its first set as collected after market opening and fields containing `C`
 as closing odds. Exact quote timestamps are not supplied in the preserved match rows.
