@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
   Stack: { Screen: () => null },
 }));
 

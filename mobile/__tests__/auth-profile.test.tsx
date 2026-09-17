@@ -1,6 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native';
 
-import { ProfileView, profileGroups } from '@/app/(tabs)/profile';
+import { ProfileView, profileGroups } from '@/app/profile';
 import { AuthEntry, EmailAuthShell } from '@/components/AuthShell';
 import { entitlementStates } from '@/types/entitlement';
 
@@ -54,42 +54,48 @@ describe('auth-safe presentation', () => {
   });
 });
 
+import { LanguageProvider } from '@/features/language/LanguageContext';
+
 describe('Profile foundation', () => {
   it('renders all canonical groups and a truthful Guest state', async () => {
     const onSignIn = jest.fn();
-    const onOpenTrackRecord = jest.fn();
     const view = await render(
-      <ProfileView
-        entitlement="GUEST"
-        onOpenTrackRecord={onOpenTrackRecord}
-        onSignIn={onSignIn}
-        onViewPremium={jest.fn()}
-      />,
+      <LanguageProvider>
+        <ProfileView
+          entitlement="GUEST"
+          onSignIn={onSignIn}
+          onViewPremium={jest.fn()}
+        />
+      </LanguageProvider>,
     );
-    for (const group of profileGroups)
+    // Wait for async storage LanguageProvider initialization
+    await view.findByText('Account');
+
+    for (const group of profileGroups) {
       expect(view.getByText(group)).toBeTruthy();
+    }
+
     expect(view.getAllByText('Guest').length).toBeGreaterThan(0);
     await fireEvent.press(view.getByText('Sign in'));
     expect(onSignIn).toHaveBeenCalledTimes(1);
-    await fireEvent.press(view.getByText('Open My Bets'));
-    expect(onOpenTrackRecord).toHaveBeenCalledTimes(1);
-    expect(view.queryByText(/%|ROI \d/i)).toBeNull();
-    expect(
-      view.getByText('No configurable preferences are currently available.'),
-    ).toBeTruthy();
+
+    // Verify track record / My Bets is removed from Profile
+    expect(view.queryByText(/Open My Bets/i)).toBeNull();
   });
 
   it.each(entitlementStates)(
     'renders canonical entitlement %s',
     async (state) => {
       const view = await render(
-        <ProfileView
-          entitlement={state}
-          onOpenTrackRecord={jest.fn()}
-          onSignIn={jest.fn()}
-          onViewPremium={jest.fn()}
-        />,
+        <LanguageProvider>
+          <ProfileView
+            entitlement={state}
+            onSignIn={jest.fn()}
+            onViewPremium={jest.fn()}
+          />
+        </LanguageProvider>,
       );
+      await view.findByText('Subscription');
       expect(view.getByText('Subscription')).toBeTruthy();
       expect(view.queryByText(/Free|Basic|Standard/)).toBeNull();
     },

@@ -2,13 +2,11 @@ import Constants from 'expo-constants';
 import { useRouter, type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Button, Screen, SectionHeader, sharedStyles } from '@/components/ui';
 import {
-  AppHeader,
-  Button,
-  Screen,
-  SectionHeader,
-  sharedStyles,
-} from '@/components/ui';
+  useLanguage,
+  type Language,
+} from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 import { colors, spacing, typography } from '@/theme/tokens';
@@ -18,7 +16,6 @@ export const profileGroups = [
   'Account',
   'Subscription',
   'Preferences',
-  'Track Record',
   'Responsible Gaming',
   'App',
 ] as const;
@@ -35,7 +32,7 @@ function ProfileGroup({
   title,
   children,
 }: {
-  title: (typeof profileGroups)[number];
+  title: string;
   children: React.ReactNode;
 }) {
   return (
@@ -61,26 +58,24 @@ function InformationRow({ label, value }: { label: string; value: string }) {
 export function ProfileView({
   entitlement,
   onSignIn,
-  onOpenTrackRecord,
   onViewPremium,
   email = null,
   onSignOut,
 }: {
   entitlement: EntitlementState;
   onSignIn: () => void;
-  onOpenTrackRecord: () => void;
   onViewPremium: () => void;
   email?: string | null;
   onSignOut?: (() => void) | undefined;
 }) {
   const guest = entitlement === 'GUEST';
+  const { t, language, setLanguage } = useLanguage();
   return (
     <Screen>
-      <AppHeader eyebrow={entitlementLabels[entitlement]} title="Profile" />
-      <ProfileGroup title="Account">
+      <ProfileGroup title={t('Account')}>
         <InformationRow
-          label="Account status"
-          value={entitlementLabels[entitlement]}
+          label={t('Account status')}
+          value={t(entitlementLabels[entitlement])}
         />
         {guest ? (
           <>
@@ -89,7 +84,7 @@ export function ProfileView({
               discovery.
             </Text>
             <Button onPress={onSignIn} variant="secondary">
-              Sign in
+              {t('Sign in')}
             </Button>
           </>
         ) : (
@@ -97,36 +92,44 @@ export function ProfileView({
             {email ? <InformationRow label="Email" value={email} /> : null}
             {onSignOut ? (
               <Button onPress={onSignOut} variant="secondary">
-                Sign out
+                {t('Sign out')}
               </Button>
             ) : null}
           </>
         )}
       </ProfileGroup>
-      <ProfileGroup title="Subscription">
-        <InformationRow label="Access" value={entitlementLabels[entitlement]} />
+      <ProfileGroup title={t('Subscription')}>
+        <InformationRow
+          label={t('Access')}
+          value={t(entitlementLabels[entitlement])}
+        />
         <Button onPress={onViewPremium} variant="secondary">
-          View Premium
+          {t('View Premium')}
         </Button>
         <Text style={styles.detail}>
           Subscription management and restoration are currently unavailable.
         </Text>
       </ProfileGroup>
-      <ProfileGroup title="Preferences">
-        <Text style={styles.detail}>
-          No configurable preferences are currently available.
-        </Text>
+      <ProfileGroup title={t('Preferences')}>
+        <View style={sharedStyles.rowBetween}>
+          <Text style={styles.label}>{t('Language')}</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Button
+              variant={language === 'en' ? 'primary' : 'secondary'}
+              onPress={() => setLanguage('en')}
+            >
+              EN
+            </Button>
+            <Button
+              variant={language === 'tr' ? 'primary' : 'secondary'}
+              onPress={() => setLanguage('tr')}
+            >
+              TR
+            </Button>
+          </View>
+        </View>
       </ProfileGroup>
-      <ProfileGroup title="Track Record">
-        <Text style={styles.detail}>
-          No verified performance record is available. PitchValue never
-          fabricates ROI.
-        </Text>
-        <Button onPress={onOpenTrackRecord} variant="secondary">
-          Open My Bets
-        </Button>
-      </ProfileGroup>
-      <ProfileGroup title="Responsible Gaming">
+      <ProfileGroup title={t('Responsible Gaming')}>
         <Text style={styles.detail}>
           18+ · Betting can involve financial loss.
         </Text>
@@ -134,10 +137,10 @@ export function ProfileView({
           Full Responsible Gambling information is not yet available.
         </Text>
       </ProfileGroup>
-      <ProfileGroup title="App">
+      <ProfileGroup title={t('App')}>
         <InformationRow
-          label="Version"
-          value={Constants.expoConfig?.version ?? 'Unavailable'}
+          label={t('Version')}
+          value={Constants.expoConfig?.version ?? t('Unavailable')}
         />
         <Text style={styles.detail}>
           Legal and support destinations are not yet available.
@@ -155,7 +158,6 @@ export default function ProfileScreen() {
     <ProfileView
       entitlement={state}
       email={session.user?.email ?? null}
-      onOpenTrackRecord={() => router.push('/(tabs)/bets')}
       onSignIn={() => router.push('/auth/index' as Href)}
       onSignOut={() => void session.signOut()}
       onViewPremium={() => router.push('/paywall')}

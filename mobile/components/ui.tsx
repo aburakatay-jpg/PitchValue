@@ -19,6 +19,9 @@ import {
   typography,
   typeScale,
 } from '@/theme/tokens';
+import { useRouter } from 'expo-router';
+import { useEntitlement } from '@/features/entitlement/EntitlementContext';
+import { SymbolView } from 'expo-symbols';
 
 export function Screen({
   children,
@@ -67,17 +70,56 @@ export const stackScreenEdges = ['bottom', 'left', 'right'] as const;
 export function AppHeader({
   eyebrow,
   title,
+  hideProfileButton = false,
 }: {
   eyebrow?: string | undefined;
   title: string;
+  hideProfileButton?: boolean;
 }) {
   return (
     <View style={styles.header}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      <Text accessibilityRole="header" style={styles.title}>
-        {title}
-      </Text>
+      <View style={styles.headerTitles}>
+        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+        <Text accessibilityRole="header" style={styles.title}>
+          {title}
+        </Text>
+      </View>
+      {!hideProfileButton && <ProfileAction />}
     </View>
+  );
+}
+
+function ProfileAction() {
+  const router = useRouter();
+  const { state } = useEntitlement();
+  const isPremium = state === 'PREMIUM_ACTIVE' || state === 'PREMIUM_TRIAL';
+
+  return (
+    <Pressable
+      accessibilityLabel={`Open Profile, ${isPremium ? 'Premium' : 'Guest'}`}
+      accessibilityRole="button"
+      onPress={() => router.push('/profile')}
+      style={({ pressed }) => [styles.profileButton, pressed && styles.pressed]}
+    >
+      <View
+        style={[styles.profileAvatar, isPremium && styles.profileAvatarPremium]}
+      >
+        <SymbolView
+          name="person.fill"
+          tintColor={isPremium ? colors.accent : colors.textSecondary}
+          fallback={
+            <Text
+              style={{
+                fontSize: 18,
+                color: isPremium ? colors.accent : colors.textSecondary,
+              }}
+            >
+              👤
+            </Text>
+          }
+        />
+      </View>
+    </Pressable>
   );
 }
 
@@ -265,7 +307,13 @@ export const sharedStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   screen: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.lg },
-  header: { gap: spacing.xs },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  headerTitles: { gap: spacing.xs, flexShrink: 1 },
   eyebrow: {
     color: colors.secondary,
     fontSize: typeScale.caption,
@@ -351,5 +399,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
+  },
+  profileButton: {
+    minWidth: touchTarget,
+    minHeight: touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatarPremium: {
+    borderColor: colors.accent,
   },
 });

@@ -1,22 +1,32 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SymbolView, SFSymbol } from 'expo-symbols';
 
 import { tabRoutes } from '@/lib/routes';
 import { colors, touchTarget, typeScale } from '@/theme/tokens';
+import { useLanguage } from '@/features/language/LanguageContext';
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
+const tabIconNames: Record<string, SFSymbol> = {
+  Today: 'calendar',
+  Explore: 'magnifyingglass',
+  AI: 'sparkles',
+  'My Bets': 'list.clipboard',
+};
+
+function TabIcon({ name, focused }: { name: SFSymbol; focused: boolean }) {
   return (
-    <Text
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={[styles.icon, focused && styles.iconFocused]}
-    >
-      {label.slice(0, 1)}
-    </Text>
+    <View style={styles.iconContainer}>
+      <SymbolView
+        name={name}
+        tintColor={focused ? colors.secondary : colors.textSecondary}
+        size={24}
+      />
+    </View>
   );
 }
 
 export default function TabLayout() {
+  const { t } = useLanguage();
   return (
     <Tabs
       screenOptions={{
@@ -38,9 +48,12 @@ export default function TabLayout() {
           key={route.name}
           name={route.name}
           options={{
-            title: route.title,
+            title: t(route.title),
             tabBarIcon: ({ focused }) => (
-              <TabIcon label={route.title} focused={focused} />
+              <TabIcon
+                name={tabIconNames[route.title] || 'square'}
+                focused={focused}
+              />
             ),
           }}
         />
@@ -50,10 +63,9 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  icon: {
-    color: colors.textSecondary,
-    fontSize: typeScale.body,
-    fontWeight: '800',
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 32,
   },
-  iconFocused: { color: colors.secondary },
 });

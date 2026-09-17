@@ -2,6 +2,7 @@ import { render, waitFor } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
 }));
 
 import ExploreScreen from '@/app/(tabs)/explore';

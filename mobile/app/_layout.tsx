@@ -6,6 +6,7 @@ import {
   ProductSessionProvider,
   useProductSession,
 } from '@/features/session/ProductSessionContext';
+import { LanguageProvider } from '@/features/language/LanguageContext';
 import { colors } from '@/theme/tokens';
 
 const pitchValueNavigationTheme = {
@@ -23,7 +24,9 @@ const pitchValueNavigationTheme = {
 export default function RootLayout() {
   return (
     <ProductSessionProvider>
-      <RootNavigation />
+      <LanguageProvider>
+        <RootNavigation />
+      </LanguageProvider>
     </ProductSessionProvider>
   );
 }
@@ -47,6 +50,10 @@ function RootNavigation() {
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="profile"
+            options={{ title: 'Profile', headerBackTitle: '' }}
+          />
           <Stack.Screen name="match/[id]" options={{ title: 'Match detail' }} />
           <Stack.Screen name="auth/index" options={{ title: 'Account' }} />
           <Stack.Screen name="auth/email" options={{ title: 'Email' }} />

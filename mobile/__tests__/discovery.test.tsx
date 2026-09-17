@@ -6,6 +6,7 @@ jest.mock('expo-router', () => ({
     capturedHrefs.push(href);
     return children;
   },
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
 }));
 
 import { ExploreView } from '@/app/(tabs)/explore';
