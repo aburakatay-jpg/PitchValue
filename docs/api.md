@@ -35,10 +35,14 @@ pitchvalue-api
 or:
 
 ```powershell
-python -m uvicorn pitchvalue.api.main:app --host 127.0.0.1 --port 8000 --reload
+python -m pitchvalue.api.cli
 ```
 
-Use reload only for local development. The default port is 8000.
+Use `API_HOST=0.0.0.0` or `API_PORT` to configure the bound IP and port:
+```powershell
+$env:API_HOST="0.0.0.0"
+pitchvalue-api
+```
 
 ## Configuration
 
