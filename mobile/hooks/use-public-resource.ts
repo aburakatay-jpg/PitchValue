@@ -51,6 +51,7 @@ export function usePublicResource<T>(
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void execute(false);
     return () => activeController.current?.abort();
   }, [execute]);
