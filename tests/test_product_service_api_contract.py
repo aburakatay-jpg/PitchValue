@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from unittest.mock import MagicMock
 
 from sqlalchemy import Connection
@@ -10,6 +12,21 @@ from pitchvalue.operations.release_validation import (
     ProductServiceReadinessState,
     validate_product_service_readiness,
 )
+
+
+def test_release_validation_can_be_imported_before_api_application() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from pitchvalue.operations.release_validation import "
+            "validate_product_service_readiness",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_product_service_openapi_exposes_only_intended_methods() -> None:

@@ -259,7 +259,7 @@ def settle_saved_selection(
     existing_fingerprint = row["result_fingerprint"]
     if row["tracking_status"] in {"SETTLED", "REVIEW_REQUIRED"}:
         if existing_fingerprint == result.fingerprint:
-            return None if row["outcome"] is None else SettlementOutcome(str(row["outcome"]))
+            return None
         connection.execute(
             text(
                 "UPDATE saved_selections SET tracking_status='REVIEW_REQUIRED' "

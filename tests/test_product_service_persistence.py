@@ -164,9 +164,7 @@ def test_finished_selection_settles_once_and_loss_remains_in_history(
             SettlementOutcome.LOST,
         }
         first = get_saved_selection(connection, user_id, saved.saved_selection_id)
-        assert (
-            settle_saved_selection(connection, saved.saved_selection_id, now=now) is first.outcome
-        )
+        assert settle_saved_selection(connection, saved.saved_selection_id, now=now) is None
         history = list_saved_selections(connection, user_id, history=True)
         metrics = performance(connection, user_id)
     assert history == (first,)
