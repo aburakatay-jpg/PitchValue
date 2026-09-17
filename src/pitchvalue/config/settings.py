@@ -76,6 +76,7 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
     """Load and validate settings from an environment-like mapping."""
     try:
         from pathlib import Path
+
         env_path = Path(".env")
         if env_path.is_file():
             for line in env_path.read_text(encoding="utf-8").splitlines():
