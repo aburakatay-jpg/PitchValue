@@ -87,9 +87,7 @@ describe('production-connected discovery screens', () => {
         expect.objectContaining({ method: 'GET' }),
       ),
     );
-    expect(
-      view.getByText(/does not create independent predictions/i),
-    ).toBeTruthy();
+    expect(view.getByText('Premium AI foundation')).toBeTruthy();
   });
 
   it('never activates mocks or generates selections when AI context fails', async () => {

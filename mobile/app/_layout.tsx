@@ -6,7 +6,10 @@ import {
   ProductSessionProvider,
   useProductSession,
 } from '@/features/session/ProductSessionContext';
-import { LanguageProvider } from '@/features/language/LanguageContext';
+import {
+  LanguageProvider,
+  useLanguage,
+} from '@/features/language/LanguageContext';
 import { colors } from '@/theme/tokens';
 
 const pitchValueNavigationTheme = {
@@ -34,6 +37,7 @@ export default function RootLayout() {
 function RootNavigation() {
   const router = useRouter();
   const session = useProductSession();
+  const { t } = useLanguage();
   return (
     <ThemeProvider value={pitchValueNavigationTheme}>
       <EntitlementProvider
@@ -49,17 +53,23 @@ function RootNavigation() {
           }}
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="(tabs)"
+            options={{ headerShown: false, title: '' }}
+          />
           <Stack.Screen
             name="profile"
-            options={{ title: 'Profile', headerBackTitle: '' }}
+            options={{ title: t('Profile'), headerBackTitle: '' }}
           />
-          <Stack.Screen name="match/[id]" options={{ title: 'Match detail' }} />
-          <Stack.Screen name="auth/index" options={{ title: 'Account' }} />
-          <Stack.Screen name="auth/email" options={{ title: 'Email' }} />
+          <Stack.Screen
+            name="match/[id]"
+            options={{ title: t('Match detail') }}
+          />
+          <Stack.Screen name="auth/index" options={{ title: t('Account') }} />
+          <Stack.Screen name="auth/email" options={{ title: t('Email') }} />
           <Stack.Screen
             name="paywall"
-            options={{ presentation: 'modal', title: 'PitchValue Premium' }}
+            options={{ presentation: 'modal', title: t('PitchValue Premium') }}
           />
         </Stack>
       </EntitlementProvider>

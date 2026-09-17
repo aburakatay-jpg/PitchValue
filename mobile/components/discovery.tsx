@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Badge, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { colors, spacing, touchTarget, typography } from '@/theme/tokens';
 import type {
   PublicFixtureSummary,
@@ -100,6 +101,7 @@ export function ExplorePredictionCard({
 }: {
   prediction: PublicPrediction;
 }) {
+  const { t } = useLanguage();
   const score = prediction.bet_score;
   return (
     <Link
@@ -115,7 +117,7 @@ export function ExplorePredictionCard({
         style={styles.card}
       >
         <View style={sharedStyles.rowBetween}>
-          <Text style={styles.competition}>Published analysis</Text>
+          <Text style={styles.competition}>{t('Published analysis')}</Text>
           <Badge
             label={prediction.policy_decision.replaceAll('_', ' ')}
             tone="accent"

@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 export const onboardingPages = [
@@ -21,13 +22,14 @@ export const onboardingPages = [
 ] as const;
 
 function BrandLockup() {
+  const { t } = useLanguage();
   return (
     <View
-      accessibilityLabel="PitchValue. Find value beyond the odds."
+      accessibilityLabel={t('PitchValue. Find value beyond the odds.')}
       style={styles.brand}
     >
       <Text style={styles.wordmark}>PitchValue</Text>
-      <Text style={styles.tagline}>Find value beyond the odds.</Text>
+      <Text style={styles.tagline}>{t('Find value beyond the odds.')}</Text>
     </View>
   );
 }
@@ -41,43 +43,46 @@ export function AgeConfirmation({
   onExit: () => void;
   storageError?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <FirstLaunchPage>
       <BrandLockup />
       <View style={styles.card}>
         <Text accessibilityRole="header" style={styles.title}>
-          For adults 18+
+          {t('For adults 18+')}
         </Text>
         <Text style={styles.body}>
-          PitchValue is a decision-support product, not a sportsbook. Betting
-          can involve financial loss. You are responsible for following the laws
-          that apply where you live.
+          {t(
+            'PitchValue is a decision-support product, not a sportsbook. Betting can involve financial loss. You are responsible for following the laws that apply where you live.',
+          )}
         </Text>
         <View
-          accessibilityLabel="Legal information pending approved content"
+          accessibilityLabel={t('Legal information pending approved content')}
           style={styles.legal}
         >
-          <Text style={styles.legalTitle}>Before continuing</Text>
+          <Text style={styles.legalTitle}>{t('Before continuing')}</Text>
           <Text style={styles.secondary}>
-            Terms · Privacy · Responsible Gambling
+            {t('Terms · Privacy · Responsible Gambling')}
           </Text>
           <Text style={styles.caption}>
-            Full legal information and destinations are not yet available.
+            {t(
+              'Full legal information and destinations are not yet available.',
+            )}
           </Text>
         </View>
         <Button
-          accessibilityLabel="Confirm I am 18 or older"
+          accessibilityLabel={t('Confirm I am 18 or older')}
           onPress={onAccept}
         >
-          I’m 18 or older
+          {t('I’m 18 or older')}
         </Button>
         {storageError ? <StorageError /> : null}
         <Button
-          accessibilityLabel="Exit PitchValue"
+          accessibilityLabel={t('Exit PitchValue')}
           onPress={onExit}
           variant="secondary"
         >
-          Exit
+          {t('Exit')}
         </Button>
       </View>
     </FirstLaunchPage>
@@ -85,19 +90,21 @@ export function AgeConfirmation({
 }
 
 export function ExitConfirmation({ onReview }: { onReview: () => void }) {
+  const { t } = useLanguage();
   return (
     <FirstLaunchPage>
       <BrandLockup />
       <View style={styles.card}>
         <Text accessibilityRole="header" style={styles.title}>
-          PitchValue remains locked
+          {t('PitchValue remains locked')}
         </Text>
         <Text style={styles.body}>
-          Close the app to exit. PitchValue will not enter the product unless
-          the 18+ confirmation is completed.
+          {t(
+            'Close the app to exit. PitchValue will not enter the product unless the 18+ confirmation is completed.',
+          )}
         </Text>
         <Button onPress={onReview} variant="secondary">
-          Review age requirement
+          {t('Review age requirement')}
         </Button>
       </View>
     </FirstLaunchPage>
@@ -111,6 +118,7 @@ export function OnboardingFlow({
   onComplete: () => void;
   storageError?: boolean;
 }) {
+  const { t } = useLanguage();
   const [page, setPage] = useState(0);
   const content = onboardingPages[page] ?? onboardingPages[0];
   const lastPage = page === onboardingPages.length - 1;
@@ -118,13 +126,13 @@ export function OnboardingFlow({
     <FirstLaunchPage>
       <BrandLockup />
       <View style={styles.card}>
-        <Text style={styles.eyebrow}>GET STARTED</Text>
+        <Text style={styles.eyebrow}>{t('GET STARTED')}</Text>
         <Text accessibilityRole="header" style={styles.title}>
-          {content.title}
+          {t(content.title)}
         </Text>
-        <Text style={styles.body}>{content.body}</Text>
+        <Text style={styles.body}>{t(content.body)}</Text>
         <View
-          accessibilityLabel={`Onboarding page ${page + 1} of ${onboardingPages.length}`}
+          accessibilityLabel={`${t('Onboarding page')} ${page + 1} ${t('of')} ${onboardingPages.length}`}
           style={styles.dots}
         >
           {onboardingPages.map((item, index) => (
@@ -140,7 +148,7 @@ export function OnboardingFlow({
               onPress={() => setPage((current) => current - 1)}
               variant="secondary"
             >
-              Back
+              {t('Back')}
             </Button>
           ) : null}
           <Button
@@ -148,16 +156,16 @@ export function OnboardingFlow({
               lastPage ? onComplete : () => setPage((current) => current + 1)
             }
           >
-            {lastPage ? 'Explore PitchValue' : 'Next'}
+            {lastPage ? t('Explore PitchValue') : t('Next')}
           </Button>
         </View>
         {!lastPage ? (
           <Button
-            accessibilityLabel="Skip onboarding and open Today"
+            accessibilityLabel={t('Skip onboarding and open Today')}
             onPress={onComplete}
             variant="quiet"
           >
-            Skip
+            {t('Skip')}
           </Button>
         ) : null}
         {storageError ? <StorageError /> : null}
@@ -167,9 +175,10 @@ export function OnboardingFlow({
 }
 
 function StorageError() {
+  const { t } = useLanguage();
   return (
     <Text accessibilityLiveRegion="polite" style={styles.error}>
-      First-launch progress could not be saved. Please try again.
+      {t('First-launch progress could not be saved. Please try again.')}
     </Text>
   );
 }

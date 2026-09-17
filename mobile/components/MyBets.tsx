@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SkeletonBlock } from '@/components/feedback';
 import { SectionHeader, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import {
   colors,
   radii,
@@ -95,6 +96,7 @@ export function MyBetsView({
   initialTab?: MyBetsTab;
   sectionStates?: Readonly<Record<MyBetsTab, MyBetsSectionState>>;
 }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState<MyBetsTab>(initialTab);
   const [remoteState, setRemoteState] = useState<MyBetsSectionState>('LOADING');
   const [records, setRecords] = useState<readonly SavedSelection[]>([]);
@@ -152,7 +154,7 @@ export function MyBetsView({
                 selected === tab && styles.tabTextSelected,
               ]}
             >
-              {tab}
+              {t(tab)}
             </Text>
           </Pressable>
         ))}
@@ -178,19 +180,30 @@ function MyBetsSection({
   records: readonly SavedSelection[];
   metrics: TrackingPerformance | null;
 }) {
+  const { t } = useLanguage();
   if (state === 'LOADING') return <MyBetsSkeleton tab={tab} />;
   if (state === 'READY') {
     if (tab === 'Performance' && metrics) {
       return (
         <View style={sharedStyles.card}>
-          <SectionHeader title="Track record" />
-          <Text style={styles.note}>Tracked: {metrics.tracked}</Text>
-          <Text style={styles.note}>Won: {metrics.wins}</Text>
-          <Text style={styles.note}>Lost: {metrics.losses}</Text>
-          <Text style={styles.note}>Void: {metrics.voids}</Text>
-          <Text style={styles.note}>Withdrawn: {metrics.withdrawn}</Text>
+          <SectionHeader title={t('Track record')} />
           <Text style={styles.note}>
-            ROI: {metrics.roi === null ? 'Unavailable' : `${metrics.roi}%`}
+            {t('Tracked')}: {metrics.tracked}
+          </Text>
+          <Text style={styles.note}>
+            {t('Won')}: {metrics.wins}
+          </Text>
+          <Text style={styles.note}>
+            {t('Lost')}: {metrics.losses}
+          </Text>
+          <Text style={styles.note}>
+            {t('Void')}: {metrics.voids}
+          </Text>
+          <Text style={styles.note}>
+            {t('Withdrawn')}: {metrics.withdrawn}
+          </Text>
+          <Text style={styles.note}>
+            ROI: {metrics.roi === null ? t('Unavailable') : `${metrics.roi}%`}
           </Text>
         </View>
       );
@@ -200,12 +213,12 @@ function MyBetsSection({
         {records.map((record) => (
           <View key={record.saved_selection_id} style={sharedStyles.card}>
             <Text style={styles.recordTitle}>
-              {record.market.replaceAll('_', ' ')} ·{' '}
-              {record.selection.replaceAll('_', ' ')}
+              {t(record.market.replaceAll('_', ' '))} ·{' '}
+              {t(record.selection.replaceAll('_', ' '))}
             </Text>
             <Text style={styles.note}>
-              {record.tracking_status}
-              {record.outcome ? ` · ${record.outcome}` : ''}
+              {t(record.tracking_status)}
+              {record.outcome ? ` · ${t(record.outcome)}` : ''}
             </Text>
           </View>
         ))}
@@ -215,11 +228,12 @@ function MyBetsSection({
   const copy = sectionCopy[tab][state];
   return (
     <View accessibilityLiveRegion="polite" style={sharedStyles.card}>
-      <SectionHeader title={copy.title} detail={copy.detail} />
+      <SectionHeader title={t(copy.title)} detail={t(copy.detail)} />
       {tab === 'Performance' ? (
         <Text style={styles.note}>
-          No default stake, unit stake, payout, profit, win rate, or financial
-          metric is inferred.
+          {t(
+            'No default stake, unit stake, payout, profit, win rate, or financial metric is inferred.',
+          )}
         </Text>
       ) : null}
     </View>

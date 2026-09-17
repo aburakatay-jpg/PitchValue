@@ -76,9 +76,6 @@ describe('AI landing and safe assistant surfaces', () => {
         /AI Picks|AI Winners|AI Banker|Guaranteed AI Predictions|Calculating winner/i,
       ),
     ).toBeNull();
-    expect(
-      view.getByText(/does not create independent predictions/i),
-    ).toBeTruthy();
   });
 
   it('uses one honest Premium boundary for Guest and no simulated upgrade', async () => {

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { TrialEligibility } from '@/types/entitlement';
 
@@ -19,11 +20,14 @@ export const plans = [
   { id: 'annual', name: 'Annual' },
 ] as const;
 
-export function annualPlanDetail(eligibility: TrialEligibility): string {
+export function annualPlanDetail(
+  eligibility: TrialEligibility,
+  t: (k: string) => string,
+): string {
   if (eligibility === 'eligible') {
-    return 'A trial may be offered after App Store eligibility is verified.';
+    return t('A trial may be offered after App Store eligibility is verified.');
   }
-  return 'Trial eligibility and localized pricing require the App Store.';
+  return t('Trial eligibility and localized pricing require the App Store.');
 }
 
 function PaywallPlanCard({
@@ -35,20 +39,24 @@ function PaywallPlanCard({
   annual: boolean;
   trialEligibility: TrialEligibility;
 }) {
+  const { t } = useLanguage();
   return (
     <View style={[sharedStyles.card, annual && styles.highlighted]}>
       <View style={sharedStyles.rowBetween}>
-        <Text style={styles.name}>{name}</Text>
-        {annual ? <Badge label="Annual option" tone="accent" /> : null}
+        <Text style={styles.name}>{t(name)}</Text>
+        {annual ? <Badge label={t('Annual option')} tone="accent" /> : null}
       </View>
-      <Text style={styles.price}>Localized price unavailable</Text>
+      <Text style={styles.price}>{t('Localized price unavailable')}</Text>
       <Text style={styles.detail}>
         {annual
-          ? annualPlanDetail(trialEligibility)
-          : 'Pricing will be supplied by the App Store.'}
+          ? annualPlanDetail(trialEligibility, t)
+          : t('Pricing will be supplied by the App Store.')}
       </Text>
-      <Button accessibilityLabel={`${name} purchase unavailable`} disabled>
-        Purchase unavailable
+      <Button
+        accessibilityLabel={`${t(name)} ${t('purchase unavailable')}`}
+        disabled
+      >
+        {t('Purchase unavailable')}
       </Button>
     </View>
   );
@@ -59,16 +67,19 @@ export function PaywallShell({
 }: {
   trialEligibility?: TrialEligibility;
 }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.stack}>
       <SectionHeader
-        title="Unlock full PitchValue analysis"
-        detail="Review the planned Premium experience. Store purchases are not available yet."
+        title={t('Unlock full PitchValue analysis')}
+        detail={t(
+          'Review the planned Premium experience. Store purchases are not available yet.',
+        )}
       />
       <View style={sharedStyles.card}>
         {premiumBenefits.map((benefit) => (
           <Text key={benefit} style={styles.benefit}>
-            • {benefit}
+            • {t(benefit)}
           </Text>
         ))}
       </View>
@@ -81,29 +92,31 @@ export function PaywallShell({
         />
       ))}
       <Button
-        accessibilityLabel="Restore purchases unavailable"
+        accessibilityLabel={t('Restore purchases unavailable')}
         disabled
         variant="quiet"
       >
-        Restore Purchases · Unavailable
+        {t('Restore Purchases')} · {t('Unavailable')}
       </Button>
       <Text style={styles.footnote}>
-        Payment, restoration, trial confirmation, and entitlement changes are
-        currently unavailable.
+        {t(
+          'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.',
+        )}
       </Text>
     </View>
   );
 }
 
 export function PaywallPresentation({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.stack}>
       <Button
-        accessibilityLabel="Close Premium options"
+        accessibilityLabel={t('Close Premium options')}
         onPress={onClose}
         variant="quiet"
       >
-        Close
+        {t('Close')}
       </Button>
       <PaywallShell trialEligibility="unknown" />
     </View>

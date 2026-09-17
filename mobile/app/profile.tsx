@@ -3,10 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, Screen, SectionHeader, sharedStyles } from '@/components/ui';
-import {
-  useLanguage,
-  type Language,
-} from '@/features/language/LanguageContext';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 import { colors, spacing, typography } from '@/theme/tokens';
@@ -80,8 +77,9 @@ export function ProfileView({
         {guest ? (
           <>
             <Text style={styles.detail}>
-              Guest access includes public Today, Explore, and Match Detail
-              discovery.
+              {t(
+                'Guest access includes public Today, Explore, and Match Detail discovery.',
+              )}
             </Text>
             <Button onPress={onSignIn} variant="secondary">
               {t('Sign in')}
@@ -107,7 +105,9 @@ export function ProfileView({
           {t('View Premium')}
         </Button>
         <Text style={styles.detail}>
-          Subscription management and restoration are currently unavailable.
+          {t(
+            'Subscription management and restoration are currently unavailable.',
+          )}
         </Text>
       </ProfileGroup>
       <ProfileGroup title={t('Preferences')}>
@@ -131,10 +131,10 @@ export function ProfileView({
       </ProfileGroup>
       <ProfileGroup title={t('Responsible Gaming')}>
         <Text style={styles.detail}>
-          18+ · Betting can involve financial loss.
+          {t('18+ · Betting can involve financial loss.')}
         </Text>
         <Text style={styles.detail}>
-          Full Responsible Gambling information is not yet available.
+          {t('Full Responsible Gambling information is not yet available.')}
         </Text>
       </ProfileGroup>
       <ProfileGroup title={t('App')}>
@@ -143,7 +143,7 @@ export function ProfileView({
           value={Constants.expoConfig?.version ?? t('Unavailable')}
         />
         <Text style={styles.detail}>
-          Legal and support destinations are not yet available.
+          {t('Legal and support destinations are not yet available.')}
         </Text>
       </ProfileGroup>
     </Screen>

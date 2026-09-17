@@ -65,7 +65,7 @@ describe('first-launch state and persistence', () => {
         stage="LOADING"
       />,
     );
-    expect(view.getByLabelText('Loading PitchValue')).toBeTruthy();
+    expect(view.getByLabelText('Loading...')).toBeTruthy();
     expect(view.queryByText('For adults 18+')).toBeNull();
   });
 
@@ -127,7 +127,7 @@ describe('first-launch state and persistence', () => {
       [firstLaunchStorageKeys.tutorialComplete, 'complete'],
     ]);
     const view = await render(<IndexScreen />);
-    expect(view.getByLabelText('Loading PitchValue')).toBeTruthy();
+    expect(view.getByLabelText('Loading...')).toBeTruthy();
     await waitFor(() =>
       expect(mockReplace).toHaveBeenCalledWith('/(tabs)/today'),
     );

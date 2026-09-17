@@ -21,6 +21,7 @@ import {
 } from '@/theme/tokens';
 import { useRouter } from 'expo-router';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { SymbolView } from 'expo-symbols';
 
 export function Screen({
@@ -228,29 +229,31 @@ export function EmptyState({
 }
 
 export function LoadingState() {
+  const { t } = useLanguage();
   return (
     <View
-      accessibilityLabel="Loading PitchValue"
+      accessibilityLabel={t('Loading')}
       accessibilityLiveRegion="polite"
       accessibilityRole="progressbar"
       style={styles.centered}
     >
       <ActivityIndicator color={colors.secondary} size="large" />
-      <Text style={styles.secondary}>Loading PitchValue…</Text>
+      <Text style={styles.secondary}>{t('Loading')}</Text>
     </View>
   );
 }
 
 export function ErrorState({ retry }: { retry?: () => void }) {
+  const { t } = useLanguage();
   return (
     <View
       accessibilityLiveRegion="polite"
       accessibilityRole="alert"
       style={styles.stateCard}
     >
-      <Text style={styles.stateTitle}>Something went wrong</Text>
-      <Text style={styles.secondary}>Please try again when you are ready.</Text>
-      {retry ? <Button onPress={retry}>Try again</Button> : null}
+      <Text style={styles.stateTitle}>{t('Unavailable')}</Text>
+      <Text style={styles.secondary}>{t('Not enough reliable data')}</Text>
+      {retry ? <Button onPress={retry}>{t('Retry')}</Button> : null}
     </View>
   );
 }
@@ -264,13 +267,14 @@ export function UnavailableState({
   detail: string;
   retry?: (() => void) | undefined;
 }) {
+  const { t } = useLanguage();
   return (
     <View accessibilityLiveRegion="polite" style={styles.stateCard}>
       <Text style={styles.stateTitle}>{title}</Text>
       <Text style={styles.secondary}>{detail}</Text>
       {retry ? (
-        <Button accessibilityLabel={`Retry: ${title}`} onPress={retry}>
-          Retry
+        <Button accessibilityLabel={`${t('Retry')}: ${title}`} onPress={retry}>
+          {t('Retry')}
         </Button>
       ) : null}
     </View>

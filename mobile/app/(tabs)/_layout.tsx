@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SymbolView, SFSymbol } from 'expo-symbols';
 
 import { tabRoutes } from '@/lib/routes';

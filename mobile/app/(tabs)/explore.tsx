@@ -14,6 +14,8 @@ import { config } from '@/lib/config';
 import { getExplorePredictions, type PublicApiError } from '@/lib/public-api';
 import type { PredictionListResponse } from '@/types/public-api';
 
+import { useLanguage } from '@/features/language/LanguageContext';
+
 export function ExploreView({
   data,
   error,
@@ -27,13 +29,15 @@ export function ExploreView({
   onRefresh: () => void;
   refreshing: boolean;
 }) {
+  const { t } = useLanguage();
+
   if (initialLoading && data === null) {
     return (
       <Screen>
-        <AppHeader title="Explore" />
+        <AppHeader title={t('Explore')} />
         <SectionHeader
-          title="Published analysis"
-          detail="Loading value signals"
+          title={t('Published analysis')}
+          detail={t('Loading value signals')}
         />
         <PredictionCardSkeleton />
         <PredictionCardSkeleton />
@@ -43,10 +47,10 @@ export function ExploreView({
   if (!data && error) {
     return (
       <Screen>
-        <AppHeader title="Explore" />
+        <AppHeader title={t('Explore')} />
         <UnavailableState
-          title="Unable to load value signals"
-          detail="Please try again shortly."
+          title={t('Unable to load value signals')}
+          detail={t('Please try again shortly.')}
           retry={onRefresh}
         />
       </Screen>
@@ -54,22 +58,26 @@ export function ExploreView({
   }
   return (
     <Screen onRefresh={onRefresh} refreshing={refreshing}>
-      <AppHeader title="Explore" />
+      <AppHeader title={t('Explore')} />
       <SectionHeader
-        title="Published analysis"
-        detail="Only analyses that meet PitchValue publication criteria appear here."
+        title={t('Published analysis')}
+        detail={t(
+          'Only analyses that meet PitchValue publication criteria appear here.',
+        )}
       />
       {error ? (
         <InlineNotice
-          title="Could not refresh value signals"
-          detail="Showing the last available published analyses."
+          title={t('Could not refresh value signals')}
+          detail={t('Showing the last available published analyses.')}
           tone="negative"
         />
       ) : null}
       {(data?.predictions.length ?? 0) === 0 ? (
         <EmptyState
-          title="No publishable signals right now"
-          detail="PitchValue only surfaces analyses that meet its publication criteria."
+          title={t('No publishable signals right now')}
+          detail={t(
+            'PitchValue only surfaces analyses that meet its publication criteria.',
+          )}
         />
       ) : (
         data?.predictions.map((prediction, index) => (
@@ -91,12 +99,13 @@ function ExploreProductionScreen() {
 }
 
 function ExplorePreviewScreen() {
+  const { t } = useLanguage();
   return (
     <Screen>
-      <AppHeader eyebrow="Synthetic selections" title="Explore" />
+      <AppHeader eyebrow={t('Synthetic selections')} title={t('Explore')} />
       <SectionHeader
-        title="Development preview"
-        detail="Explicit mock mode is enabled."
+        title={t('Development preview')}
+        detail={t('Explicit mock mode is enabled.')}
       />
       {mockMatches.map((match) => (
         <MatchCard key={match.id} match={match} />

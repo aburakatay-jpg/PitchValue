@@ -21,6 +21,8 @@ import type {
   TodayFixturesResponse,
 } from '@/types/public-api';
 
+import { useLanguage } from '@/features/language/LanguageContext';
+
 export function chronologicalFixtures(
   fixtures: readonly PublicFixtureSummary[],
 ): readonly PublicFixtureSummary[] {
@@ -31,14 +33,20 @@ export function chronologicalFixtures(
   });
 }
 
-function dateLabel(value: string): string {
+function dateLabel(value: string, language: string): string {
   const parsed = new Date(`${value}T12:00:00Z`);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    weekday: 'long',
-  }).format(parsed);
+  const formatted = new Intl.DateTimeFormat(
+    language === 'tr' ? 'tr-TR' : 'en-GB',
+    {
+      day: 'numeric',
+      month: 'long',
+      weekday: 'long',
+    },
+  ).format(parsed);
+  return language === 'tr'
+    ? formatted.toLocaleUpperCase('tr-TR')
+    : formatted.toUpperCase();
 }
 
 export function TodayView({
@@ -54,13 +62,15 @@ export function TodayView({
   onRefresh: () => void;
   refreshing: boolean;
 }) {
+  const { t, language } = useLanguage();
+
   if (initialLoading && data === null) {
     return (
       <Screen>
-        <AppHeader title="Today" />
+        <AppHeader title={t('Today')} />
         <SectionHeader
-          title="Football programme"
-          detail="Loading today’s fixtures"
+          title={t('Football programme')}
+          detail={t('Loading today’s fixtures')}
         />
         <FixtureCardSkeleton />
         <FixtureCardSkeleton />
@@ -71,10 +81,10 @@ export function TodayView({
   if (!data && error) {
     return (
       <Screen>
-        <AppHeader title="Today" />
+        <AppHeader title={t('Today')} />
         <UnavailableState
-          title="Match data is temporarily unavailable"
-          detail="Please try again shortly."
+          title={t('Match data is temporarily unavailable')}
+          detail={t('Please try again shortly.')}
           retry={onRefresh}
         />
       </Screen>
@@ -84,40 +94,44 @@ export function TodayView({
   return (
     <Screen onRefresh={onRefresh} refreshing={refreshing}>
       <AppHeader
-        eyebrow={data ? dateLabel(data.fixture_date) : undefined}
-        title="Today"
+        eyebrow={data ? dateLabel(data.fixture_date, language) : undefined}
+        title={t('Today')}
       />
       <SectionHeader
-        title="Football programme"
-        detail="Fixtures are ordered by kickoff."
+        title={t('Football programme')}
+        detail={t('Fixtures are ordered by kickoff.')}
       />
       {error ? (
         <InlineNotice
-          title="Could not refresh match data"
-          detail="Showing the last available fixture list."
+          title={t('Could not refresh match data')}
+          detail={t('Showing the last available fixture list.')}
           tone="negative"
         />
       ) : null}
       {data?.state === 'STALE_FIXTURE_DATA' ||
       fixtures.some((fixture) => fixture.freshness.state === 'STALE') ? (
-        <StaleIndicator detail="Freshness is based on the latest persisted source evidence." />
+        <StaleIndicator
+          detail={t(
+            'Freshness is based on the latest persisted source evidence.',
+          )}
+        />
       ) : null}
       {data?.state === 'PROVIDER_UNAVAILABLE' && !error ? (
         <InlineNotice
-          title="Fixture service is currently unavailable"
+          title={t('Fixture service is currently unavailable')}
           tone="warning"
         />
       ) : null}
       {fixtures.length === 0 && data?.state === 'PROVIDER_UNAVAILABLE' ? (
         <UnavailableState
-          title="Match data is temporarily unavailable"
-          detail="The fixture service could not confirm today’s programme."
+          title={t('Match data is temporarily unavailable')}
+          detail={t('The fixture service could not confirm today’s programme.')}
           retry={onRefresh}
         />
       ) : fixtures.length === 0 ? (
         <EmptyState
-          title="No matches scheduled"
-          detail="There are no fixtures available for this day."
+          title={t('No matches scheduled')}
+          detail={t('There are no fixtures available for this day.')}
         />
       ) : (
         fixtures.map((fixture) => (
@@ -138,12 +152,13 @@ function TodayProductionScreen() {
 }
 
 function TodayPreviewScreen() {
+  const { t } = useLanguage();
   return (
     <Screen>
-      <AppHeader eyebrow="Development preview" title="Today" />
+      <AppHeader eyebrow={t('Development preview')} title={t('Today')} />
       <SectionHeader
-        title="Football programme"
-        detail="Synthetic fixtures arranged by kickoff."
+        title={t('Football programme')}
+        detail={t('Synthetic fixtures arranged by kickoff.')}
       />
       {mockMatches.map((match) => (
         <MatchCard key={match.id} match={match} />

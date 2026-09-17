@@ -21,7 +21,7 @@ describe('screen foundations', () => {
         stage="LOADING"
       />,
     );
-    expect(view.getByLabelText('Loading PitchValue')).toBeTruthy();
+    expect(view.getByLabelText('Loading...')).toBeTruthy();
   });
 
   it('renders Today as a safe fixture empty state without mock fallback', async () => {

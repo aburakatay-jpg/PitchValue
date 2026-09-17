@@ -15,3 +15,21 @@ jest.mock('expo-router', () => ({
   Tabs: Object.assign(() => null, { Screen: () => null }),
   Stack: Object.assign(() => null, { Screen: () => null }),
 }));
+
+jest.mock('@testing-library/react-native', () => {
+  const actual = jest.requireActual('@testing-library/react-native');
+  const React = require('react');
+  const { LanguageProvider } = jest.requireActual(
+    '@/features/language/LanguageContext',
+  );
+  return {
+    ...actual,
+    render: (ui: any, options: any) => {
+      return actual.render(ui, {
+        wrapper: ({ children }: any) =>
+          React.createElement(LanguageProvider, null, children),
+        ...options,
+      });
+    },
+  };
+});

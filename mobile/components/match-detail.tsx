@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { lifecycleLabel, lifecycleTone } from '@/components/discovery';
 import { InlineNotice, StaleIndicator } from '@/components/feedback';
 import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import {
   colors,
   radii,
@@ -52,9 +53,9 @@ export const marketStateCopy: Readonly<Record<PublicMarketState, string>> = {
   NOT_PUBLISHED: 'Not published',
 };
 
-function formatDateTime(value: string): string {
+function formatDateTime(value: string, t: (k: string) => string): string {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Time unavailable';
+  if (Number.isNaN(date.getTime())) return t('Time unavailable');
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     hour: '2-digit',
@@ -66,16 +67,17 @@ function formatDateTime(value: string): string {
 }
 
 export function MatchHeader({ detail }: { detail: MatchDetailResponse }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.headerCard}>
       <View style={sharedStyles.rowBetween}>
         <Text style={styles.competition}>{detail.competition}</Text>
         <Badge
-          label={lifecycleLabel(detail.fixture_status)}
+          label={t(lifecycleLabel(detail.fixture_status))}
           tone={lifecycleTone(detail.fixture_status)}
         />
       </View>
-      <Text style={styles.kickoff}>{formatDateTime(detail.kickoff)}</Text>
+      <Text style={styles.kickoff}>{formatDateTime(detail.kickoff, t)}</Text>
       <View
         accessibilityLabel={`${detail.home_team.name} versus ${detail.away_team.name}`}
         style={styles.teams}
@@ -111,6 +113,7 @@ function PublicPredictionRow({
   prediction: PublicPrediction;
   onSave?: ((prediction: PublicPrediction) => void) | undefined;
 }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.analysisRow}>
       <View style={sharedStyles.rowBetween}>
@@ -129,32 +132,34 @@ function PublicPredictionRow({
       </View>
       <View style={styles.metrics}>
         <AnalysisMetric
-          label="BET SCORE"
+          label={t('BET SCORE')}
           value={
             prediction.bet_score === null
-              ? 'Score unavailable'
+              ? t('Score unavailable')
               : `${prediction.bet_score} / 100`
           }
         />
-        <AnalysisMetric label="PROBABILITY EDGE" value={prediction.edge} />
+        <AnalysisMetric label={t('PROBABILITY EDGE')} value={prediction.edge} />
       </View>
       <Text style={styles.explainer}>
-        Bet Score is a PitchValue quality score, not win probability.
+        {t('Bet Score is a PitchValue quality score, not win probability.')}
       </Text>
       <View style={styles.probabilities}>
         <Text style={styles.metadata}>
-          Model probability {prediction.model_probability}
+          {t('Model probability')} {prediction.model_probability}
         </Text>
         <Text style={styles.metadata}>
-          Market probability {prediction.no_vig_market_probability}
+          {t('Market probability')} {prediction.no_vig_market_probability}
         </Text>
       </View>
       <Text style={styles.explainer}>
-        Edge is the server-provided probability difference, not expected profit.
+        {t(
+          'Edge is the server-provided probability difference, not expected profit.',
+        )}
       </Text>
       {onSave ? (
         <Button onPress={() => onSave(prediction)} variant="secondary">
-          Save to My Bets
+          {t('Save to My Bets')}
         </Button>
       ) : null}
     </View>
@@ -168,6 +173,7 @@ export function PublicAnalysisSection({
   detail: MatchDetailResponse;
   onSave?: ((prediction: PublicPrediction) => void) | undefined;
 }) {
+  const { t } = useLanguage();
   if (
     detail.public_analysis === 'DATA_INSUFFICIENT' ||
     detail.publication_state === 'DATA_INSUFFICIENT'
@@ -175,8 +181,10 @@ export function PublicAnalysisSection({
     return (
       <View style={sharedStyles.card}>
         <SectionHeader
-          title="Not enough reliable data"
-          detail="PitchValue does not publish analysis when the available evidence is insufficient."
+          title={t('Not enough reliable data')}
+          detail={t(
+            'PitchValue does not publish analysis when the available evidence is insufficient.',
+          )}
         />
       </View>
     );
@@ -185,8 +193,10 @@ export function PublicAnalysisSection({
     return (
       <View style={sharedStyles.card}>
         <SectionHeader
-          title="No analysis published"
-          detail="This fixture remains available even when no analysis meets publication criteria."
+          title={t('No analysis published')}
+          detail={t(
+            'This fixture remains available even when no analysis meets publication criteria.',
+          )}
         />
       </View>
     );
@@ -194,8 +204,8 @@ export function PublicAnalysisSection({
   return (
     <View style={styles.sectionCard}>
       <SectionHeader
-        title="Current public analysis"
-        detail={`${detail.public_predictions.length} published selection${detail.public_predictions.length === 1 ? '' : 's'}`}
+        title={t('Current public analysis')}
+        detail={`${detail.public_predictions.length} ${detail.public_predictions.length === 1 ? t('published selection') : t('published selections')}`}
       />
       {detail.public_predictions.map((prediction, index) => (
         <PublicPredictionRow
@@ -209,23 +219,26 @@ export function PublicAnalysisSection({
 }
 
 export function MarketRow({ market }: { market: PublicMarketAvailability }) {
+  const { t } = useLanguage();
   const score = market.score;
   return (
     <View
-      accessibilityLabel={`${market.market}: ${marketStateCopy[market.state]}`}
+      accessibilityLabel={`${market.market}: ${t(marketStateCopy[market.state])}`}
       style={styles.marketRow}
     >
       <View style={styles.flexible}>
         <Text style={styles.marketName}>{market.market}</Text>
-        <Text style={styles.marketState}>{marketStateCopy[market.state]}</Text>
+        <Text style={styles.marketState}>
+          {t(marketStateCopy[market.state])}
+        </Text>
       </View>
       {score !== null ? (
         <View style={styles.marketScore}>
-          <Text style={styles.metricLabel}>SCORE</Text>
+          <Text style={styles.metricLabel}>{t('SCORE')}</Text>
           <Text style={styles.metricValue}>{score}</Text>
         </View>
       ) : market.state === 'SCORE_INCOMPLETE' ? (
-        <Text style={styles.marketUnavailable}>Score unavailable</Text>
+        <Text style={styles.marketUnavailable}>{t('Score unavailable')}</Text>
       ) : null}
     </View>
   );
@@ -240,17 +253,18 @@ function MarketGroup({
   markets: readonly PublicMarketAvailability[];
   initiallyExpanded: boolean;
 }) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   return (
     <View style={styles.marketGroup}>
       <Pressable
-        accessibilityLabel={`${definition.title} markets`}
+        accessibilityLabel={`${t(definition.title)} markets`}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={styles.marketGroupButton}
       >
-        <Text style={styles.marketGroupTitle}>{definition.title}</Text>
+        <Text style={styles.marketGroupTitle}>{t(definition.title)}</Text>
         <Text
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
@@ -273,11 +287,12 @@ export function AllMarkets({
 }: {
   markets: readonly PublicMarketAvailability[];
 }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.sectionCard}>
       <SectionHeader
-        title="All markets"
-        detail="Availability reflects the current public analysis state."
+        title={t('All markets')}
+        detail={t('Availability reflects the current public analysis state.')}
       />
       {marketGroups.map((definition, index) => {
         const grouped = markets.filter((market) =>
@@ -329,18 +344,19 @@ const finalCheckContent: Readonly<
 };
 
 export function FinalCheckSection({ state }: { state: FinalCheckState }) {
+  const { t } = useLanguage();
   const content = finalCheckContent[state];
   return (
     <View
-      accessibilityLabel={content.title}
+      accessibilityLabel={t(content.title)}
       accessibilityLiveRegion="polite"
       style={sharedStyles.card}
     >
       <View style={sharedStyles.rowBetween}>
-        <Text style={styles.sectionTitle}>Final Check</Text>
-        <Badge label={content.title} tone={content.tone} />
+        <Text style={styles.sectionTitle}>{t('Final Check')}</Text>
+        <Badge label={t(content.title)} tone={content.tone} />
       </View>
-      <Text style={styles.body}>{content.detail}</Text>
+      <Text style={styles.body}>{t(content.detail)}</Text>
     </View>
   );
 }
@@ -352,6 +368,7 @@ type StatisticRow = Readonly<{
 }>;
 
 export function StatisticsSection({ detail }: { detail: MatchDetailResponse }) {
+  const { t } = useLanguage();
   if (detail.statistics === null) return null;
   const statistics: readonly StatisticRow[] = [
     {
@@ -379,14 +396,14 @@ export function StatisticsSection({ detail }: { detail: MatchDetailResponse }) {
   return (
     <View style={styles.sectionCard}>
       <SectionHeader
-        title="Match statistics"
-        detail="Persisted match evidence"
+        title={t('Match statistics')}
+        detail={t('Persisted match evidence')}
       />
       {statistics.map((item) => (
         <View key={item.label} style={styles.statRow}>
-          <Text style={styles.statValue}>{item.home ?? 'Unavailable'}</Text>
-          <Text style={styles.statLabel}>{item.label}</Text>
-          <Text style={styles.statValue}>{item.away ?? 'Unavailable'}</Text>
+          <Text style={styles.statValue}>{item.home ?? t('Unavailable')}</Text>
+          <Text style={styles.statLabel}>{t(item.label)}</Text>
+          <Text style={styles.statValue}>{item.away ?? t('Unavailable')}</Text>
         </View>
       ))}
     </View>
@@ -394,17 +411,18 @@ export function StatisticsSection({ detail }: { detail: MatchDetailResponse }) {
 }
 
 export function FreshnessSection({ detail }: { detail: MatchDetailResponse }) {
+  const { t } = useLanguage();
   const timestamp =
     detail.freshness.source_last_seen_at ?? detail.freshness.fixture_refresh_at;
   const timestampDetail = timestamp
-    ? `Source evidence: ${formatDateTime(timestamp)}`
+    ? `${t('Source evidence')}: ${formatDateTime(timestamp, t)}`
     : undefined;
   if (detail.freshness.state === 'STALE')
     return <StaleIndicator detail={timestampDetail} />;
   if (detail.freshness.state === 'FAILED') {
     return (
       <InlineNotice
-        title="Fixture refresh failed"
+        title={t('Fixture refresh failed')}
         detail={timestampDetail}
         tone="warning"
       />
@@ -413,7 +431,9 @@ export function FreshnessSection({ detail }: { detail: MatchDetailResponse }) {
   if (detail.freshness.state === 'UNAVAILABLE') {
     return (
       <View style={sharedStyles.card}>
-        <Text style={styles.metadata}>Freshness information unavailable</Text>
+        <Text style={styles.metadata}>
+          {t('Freshness information unavailable')}
+        </Text>
       </View>
     );
   }

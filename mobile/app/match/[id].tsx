@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '@/features/language/LanguageContext';
 
 import { InlineNotice, MatchDetailSkeleton } from '@/components/feedback';
 import {
@@ -162,16 +163,17 @@ function ProductionMatchDetail({ matchId }: { matchId: number }) {
 
 function DevelopmentMatchDetail({ id }: { id: string }) {
   const match = mockMatches.find((item) => item.id === id);
+  const { t } = useLanguage();
   if (!match) return <InvalidMatchState />;
   return (
     <Screen safeAreaEdges={stackScreenEdges}>
       <View style={sharedStyles.card}>
         <SectionHeader
           title={`${match.homeTeam} vs ${match.awayTeam}`}
-          detail={`Development preview · ${match.competition} · ${match.kickoff}`}
+          detail={`${t('Development preview')} · ${match.competition} · ${match.kickoff}`}
         />
         <Text style={styles.preview}>
-          Synthetic fixture preview. No public analysis is attached.
+          {t('Synthetic fixture preview. No public analysis is attached.')}
         </Text>
       </View>
     </Screen>

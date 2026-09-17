@@ -2,14 +2,17 @@ import { AppHeader, Screen } from '@/components/ui';
 import { MyBetsView } from '@/components/MyBets';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 
+import { useLanguage } from '@/features/language/LanguageContext';
+
 export function BetsScreen({
   accessToken,
 }: {
   accessToken?: string | null;
 } = {}) {
+  const { t } = useLanguage();
   return (
     <Screen>
-      <AppHeader eyebrow="Personal workspace" title="My Bets" />
+      <AppHeader title={t('My Bets')} />
       <MyBetsView {...(accessToken === undefined ? {} : { accessToken })} />
     </Screen>
   );

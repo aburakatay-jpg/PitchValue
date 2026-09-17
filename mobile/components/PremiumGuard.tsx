@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { hasPremiumAccess } from '@/lib/entitlement';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 import type { EntitlementState } from '@/types/entitlement';
@@ -18,12 +19,20 @@ export function LockedPremiumSection({
   detail?: string;
   cta?: string;
 }) {
+  const { t } = useLanguage();
   return (
-    <View accessibilityLabel="Premium content locked" style={styles.locked}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.detail}>{detail}</Text>
-      <Button accessibilityLabel={cta} onPress={onUnlock} variant="secondary">
-        {cta}
+    <View
+      accessibilityLabel={t('Premium content locked')}
+      style={styles.locked}
+    >
+      <Text style={styles.title}>{t(title)}</Text>
+      <Text style={styles.detail}>{t(detail)}</Text>
+      <Button
+        accessibilityLabel={t(cta)}
+        onPress={onUnlock}
+        variant="secondary"
+      >
+        {t(cta)}
       </Button>
     </View>
   );

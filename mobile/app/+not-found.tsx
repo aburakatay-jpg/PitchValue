@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { stackScreenEdges } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import {
   colors,
   radii,
@@ -12,23 +13,24 @@ import {
 } from '@/theme/tokens';
 
 export default function NotFoundScreen() {
+  const { t } = useLanguage();
   return (
     <SafeAreaView edges={stackScreenEdges} style={styles.safe}>
-      <Stack.Screen options={{ title: 'Not found' }} />
+      <Stack.Screen options={{ title: t('Not found') }} />
       <View style={styles.container}>
         <Text accessibilityRole="header" style={styles.title}>
-          This screen is unavailable
+          {t('This screen is unavailable')}
         </Text>
         <Text style={styles.detail}>
-          Return to Today to continue browsing published PitchValue data.
+          {t('Return to Today to continue browsing published PitchValue data.')}
         </Text>
         <Link href="/(tabs)/today" asChild>
           <Pressable
-            accessibilityLabel="Return to Today"
+            accessibilityLabel={t('Return to Today')}
             accessibilityRole="button"
             style={styles.action}
           >
-            <Text style={styles.actionText}>Return to Today</Text>
+            <Text style={styles.actionText}>{t('Return to Today')}</Text>
           </Pressable>
         </Link>
       </View>

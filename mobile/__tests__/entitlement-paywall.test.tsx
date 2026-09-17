@@ -70,11 +70,13 @@ describe('premium UI foundation', () => {
   it('does not promise a trial without store eligibility', async () => {
     const view = await render(<PaywallShell trialEligibility="unknown" />);
     expect(view.queryByText(/3-day|free trial/i)).toBeNull();
-    expect(annualPlanDetail('unknown')).toMatch(/require the App Store/i);
+    expect(annualPlanDetail('unknown', (k) => k)).toMatch(
+      /require the App Store/i,
+    );
   });
 
   it('does not claim even eligible presentation has verified a trial', () => {
-    expect(annualPlanDetail('eligible')).toMatch(/may be offered/i);
+    expect(annualPlanDetail('eligible', (k) => k)).toMatch(/may be offered/i);
   });
 
   it('keeps purchase and restore actions honestly disabled', async () => {

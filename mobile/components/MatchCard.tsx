@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Badge, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { colors, spacing, touchTarget, typeScale } from '@/theme/tokens';
 
 export type FixtureCardModel = Readonly<{
@@ -15,6 +16,7 @@ export type FixtureCardModel = Readonly<{
 }>;
 
 export function MatchCard({ match }: { match: FixtureCardModel }) {
+  const { t } = useLanguage();
   return (
     <Link href={{ pathname: '/match/[id]', params: { id: match.id } }} asChild>
       <Pressable
@@ -30,11 +32,13 @@ export function MatchCard({ match }: { match: FixtureCardModel }) {
         <Text style={styles.teams}>{match.awayTeam}</Text>
         <View style={sharedStyles.rowBetween}>
           <Badge
-            label={match.quality}
+            label={t(match.quality)}
             tone={match.quality === 'Value' ? 'accent' : 'primary'}
           />
           <Text style={styles.state}>
-            {match.locked ? 'Premium insight locked' : 'Preview available'}
+            {match.locked
+              ? t('Premium insight locked')
+              : t('Preview available')}
           </Text>
         </View>
       </Pressable>
