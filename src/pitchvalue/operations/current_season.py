@@ -67,7 +67,7 @@ def persist_current_season_payloads(
     connection: Connection,
     payloads: Sequence[Mapping[str, object]],
     *,
-    run_id: str,
+    logical_run_id: str,
     window_start: datetime,
     window_end: datetime,
     prediction_as_of: datetime,
@@ -242,7 +242,9 @@ def persist_current_season_payloads(
         else RunStatus.SUCCEEDED
     )
     run = EngineRun(
-        run_id,
+        "",  # Will be assigned by persist_run
+        logical_run_id,
+        0,  # Will be assigned by persist_run
         RunType.SHADOW,
         prediction_as_of,
         prediction_as_of,
@@ -264,7 +266,8 @@ def persist_current_season_payloads(
         "task11_proportional_no_vig_v1",
         MAPPING_CONTRACT_VERSION,
     )
-    persist_run(connection, run)
+    run = persist_run(connection, run)
+    run_id = run.run_id
     connection.execute(
         text("UPDATE engine_runs SET provider_id=:provider_id WHERE run_id=:run_id"),
         {"provider_id": provider_id, "run_id": run_id},

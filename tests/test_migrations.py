@@ -9,4 +9,4 @@ def test_migration_framework_discovers_baseline() -> None:
     config = Config(project_root / "alembic.ini")
     scripts = ScriptDirectory.from_config(config)
 
-    assert scripts.get_current_head() == "ccfe1992e71e"
+    assert scripts.get_current_head() == "8c612d37a88b"

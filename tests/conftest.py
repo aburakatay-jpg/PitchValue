@@ -56,11 +56,11 @@ def guard_against_dev_database() -> None:
             conn.execute(
                 text(
                     "INSERT INTO engine_runs("
-                    "run_id, run_type, status, scheduled_for, started_at, "
+                    "run_id, logical_run_id, attempt_number, run_type, status, scheduled_for, started_at, "
                     "schedule_version, fixture_horizon, model_version, feature_profile, "
                     "orchestrator_version, policy_version, dq_version, market_stability_version, "
                     "calibration_confidence_version, no_vig_version, provider_contract_version) "
-                    "SELECT 'test-dummy-run-id', 'SHADOW', 'RUNNING', :now, :now, "
+                    "SELECT 'test-dummy-run-id', 'test-dummy-run-id', 1, 'SHADOW', 'RUNNING', :now, :now, "
                     "'{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}' "
                     "WHERE NOT EXISTS (SELECT 1 FROM engine_runs WHERE run_id = 'test-dummy-run-id')"
                 ),

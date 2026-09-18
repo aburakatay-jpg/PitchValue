@@ -139,11 +139,11 @@ def _insert_running_test_run(engine: Engine, run_id: str) -> None:
         connection.execute(
             text(
                 """INSERT INTO engine_runs(
-                run_id,run_type,scheduled_for,started_at,status,schedule_version,
+                run_id,logical_run_id,attempt_number,run_type,scheduled_for,started_at,status,schedule_version,
                 fixture_horizon,model_version,feature_profile,orchestrator_version,
                 policy_version,dq_version,market_stability_version,
                 calibration_confidence_version,no_vig_version,provider_contract_version)
-                SELECT :run,'SHADOW',:scheduled,:started,'RUNNING',schedule_version,
+                SELECT :run,:run,1,'SHADOW',:scheduled,:started,'RUNNING',schedule_version,
                 fixture_horizon,model_version,feature_profile,orchestrator_version,
                 policy_version,dq_version,market_stability_version,
                 calibration_confidence_version,no_vig_version,provider_contract_version

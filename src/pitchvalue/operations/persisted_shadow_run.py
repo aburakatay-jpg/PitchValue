@@ -169,7 +169,7 @@ def _persist_materialized_shadow(
     report_root: Path,
 ) -> PersistedShadowResult:
     materialized = replay.payloads
-    run_id = deterministic_run_id(materialized, prediction_as_of)
+    logical_run_id = deterministic_run_id(materialized, prediction_as_of)
     engine = create_engine(database_url, pool_pre_ping=True)
     lock_connection: Connection | None = None
     lock_context: Any = None
@@ -177,14 +177,14 @@ def _persist_materialized_shadow(
     sync: CurrentSeasonPersistenceResult | None = None
     try:
         lock_connection = engine.connect()
-        lock_context = run_lock(lock_connection, run_id)
+        lock_context = run_lock(lock_connection, logical_run_id)
         lock_context.__enter__()
         lock_acquired = True
         with engine.begin() as connection:
             sync = persist_current_season_payloads(
                 connection,
                 materialized,
-                run_id=run_id,
+                logical_run_id=logical_run_id,
                 window_start=start_time,
                 window_end=end_time,
                 prediction_as_of=prediction_as_of,
@@ -209,7 +209,8 @@ def _persist_materialized_shadow(
                 created = persist_shadow_analysis(
                     connection,
                     ShadowAnalysisWrite(
-                        run_id,
+                        sync.run_id,
+                        logical_run_id,
                         match_id,
                         prediction_as_of,
                         "raw_multinomial_logistic_v1",
@@ -234,7 +235,7 @@ def _persist_materialized_shadow(
                     persist_evaluation(
                         connection,
                         _quality_evaluation(
-                            match_id, run_id, prediction_as_of, fixture.history_rows
+                            match_id, sync.run_id, prediction_as_of, fixture.history_rows
                         ),
                     )
                 )
@@ -434,7 +435,27 @@ def _persist_odds(
             line,
         )
     )
-    created = connection.execute(
+    # Fetch latest observation for this market
+    latest = connection.execute(
+        text(
+            """SELECT decimal_odds, line FROM odds_snapshots
+            WHERE provider_id=:provider_id AND provider_market_id=:identity
+              AND normalization_version=:normalization_version
+              AND observation_origin='live_source'
+            ORDER BY created_at DESC, odds_snapshot_id DESC LIMIT 1"""
+        ),
+        {
+            "provider_id": provider_id,
+            "identity": identity,
+            "normalization_version": item.normalization_version,
+        },
+    ).first()
+
+    if latest is not None:
+        if latest.decimal_odds == item.decimal_odds and latest.line == item.line:
+            return False
+
+    connection.execute(
         text(
             """INSERT INTO odds_snapshots (
                 match_id,provider_id,bookmaker,market,selection,line,decimal_odds,
@@ -446,10 +467,7 @@ def _persist_odds(
                 :identity,NULL,:role,'live_source','bookmaker','role_only','eligible',
                 ARRAY['timestamp_semantics_unproven'],:source_field,
                 'five_dfa_free_mapping_v1',:normalization_version,'five_dfa_free_quality_v1'
-            ) ON CONFLICT (provider_id,provider_market_id,normalization_version)
-            WHERE observation_origin='live_source' AND provider_id IS NOT NULL
-              AND provider_market_id IS NOT NULL AND normalization_version IS NOT NULL
-            DO NOTHING RETURNING odds_snapshot_id"""
+            )"""
         ),
         {
             "match_id": match_id,
@@ -466,25 +484,8 @@ def _persist_odds(
             ),
             "normalization_version": item.normalization_version,
         },
-    ).scalar_one_or_none()
-    if created is not None:
-        return True
-    existing = connection.execute(
-        text(
-            """SELECT decimal_odds FROM odds_snapshots
-            WHERE provider_id=:provider_id AND provider_market_id=:identity
-              AND normalization_version=:normalization_version
-              AND observation_origin='live_source'"""
-        ),
-        {
-            "provider_id": provider_id,
-            "identity": identity,
-            "normalization_version": item.normalization_version,
-        },
-    ).scalar_one()
-    if existing != item.decimal_odds:
-        raise ValueError("live odds identity has a conflicting role-only price")
-    return False
+    )
+    return True
 
 
 def _aware(value: str) -> datetime:

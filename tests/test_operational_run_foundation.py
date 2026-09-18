@@ -23,6 +23,8 @@ def _run() -> EngineRun:
     scheduled = datetime(2026, 9, 15, 8, tzinfo=UTC)
     return EngineRun(
         run_id="run-2026-09-15",
+        logical_run_id="run-2026-09-15",
+        attempt_number=1,
         run_type=RunType.FULL,
         scheduled_for=scheduled,
         started_at=None,

@@ -10,16 +10,42 @@ from pitchvalue.operations.contracts import EngineRun, Quarantine
 from pitchvalue.operations.events import DeliveryStatus, OperationalEvent
 
 
-def persist_run(connection: Connection, run: EngineRun) -> bool:
+import hashlib
+
+def _lock_key(logical_run_id: str) -> int:
+    h = hashlib.sha256(logical_run_id.encode()).digest()
+    return int.from_bytes(h[:8], byteorder="big", signed=True)
+
+def persist_run(connection: Connection, run: EngineRun) -> EngineRun:
+    """Persist an engine run, allocating a new attempt number and physical run_id."""
+    lock_key = _lock_key(run.logical_run_id)
+    connection.execute(text("SELECT pg_advisory_xact_lock(:lock_key)"), {"lock_key": lock_key})
+    
+    # Check if a SUCCESSFUL run already exists for this logical_run_id?
+    # Wait, the prompt says "Repeat After Success Policy... avoid creating duplicate semantic snapshots...
+    # A new execution attempt may still exist for audit if current orchestration requires it."
+    # So we always allocate a new attempt.
+    
+    max_attempt = connection.execute(
+        text("SELECT COALESCE(MAX(attempt_number), 0) FROM engine_runs WHERE logical_run_id = :logical_run_id"),
+        {"logical_run_id": run.logical_run_id}
+    ).scalar_one()
+    
+    new_attempt = max_attempt + 1
+    new_run_id = f"{run.logical_run_id}-attempt-{new_attempt}"
+    
+    from dataclasses import replace
+    run = replace(run, run_id=new_run_id, attempt_number=new_attempt)
+
     result = connection.execute(
         text(
             """INSERT INTO engine_runs (
-                run_id, run_type, scheduled_for, started_at, finished_at, status,
+                run_id, logical_run_id, attempt_number, run_type, scheduled_for, started_at, finished_at, status,
                 schedule_version, fixture_horizon, model_version, feature_profile,
                 orchestrator_version, policy_version, dq_version, market_stability_version,
                 calibration_confidence_version, no_vig_version, provider_contract_version
             ) VALUES (
-                :run_id, :run_type, :scheduled_for, :started_at, :finished_at, :status,
+                :run_id, :logical_run_id, :attempt_number, :run_type, :scheduled_for, :started_at, :finished_at, :status,
                 :schedule_version, CAST(:fixture_horizon AS jsonb), :model_version,
                 :feature_profile, :orchestrator_version, :policy_version, :dq_version,
                 :market_stability_version, :calibration_confidence_version, :no_vig_version,
@@ -41,7 +67,9 @@ def persist_run(connection: Connection, run: EngineRun) -> bool:
             ),
         },
     )
-    return result.scalar_one_or_none() is not None
+    if result.scalar_one_or_none() is None:
+        raise ValueError("failed to persist run")
+    return run
 
 
 def persist_quarantine(connection: Connection, quarantine: Quarantine) -> bool:

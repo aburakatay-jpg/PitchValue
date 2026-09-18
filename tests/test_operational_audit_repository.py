@@ -34,8 +34,10 @@ def test_run_quarantine_event_and_delivery_are_durable_and_retry_safe() -> None:
             _clean_fixture_data(connection)
             match_id = int(_request(connection).decision.match_id)
             run = _run()
-            assert persist_run(connection, run)
-            assert not persist_run(connection, run)
+            run = persist_run(connection, run)
+            assert run.attempt_number == 1
+            run2 = persist_run(connection, run)
+            assert run2.attempt_number == 2
             quarantine = Quarantine(
                 Quarantine.deterministic_id(
                     run.run_id,
@@ -123,8 +125,8 @@ def test_run_quarantine_event_and_delivery_are_durable_and_retry_safe() -> None:
                 {"run_id": run.run_id},
             )
             connection.execute(
-                text("DELETE FROM engine_runs WHERE run_id=:run_id"),
-                {"run_id": run.run_id},
+                text("DELETE FROM engine_runs WHERE logical_run_id=:logical_run_id"),
+                {"logical_run_id": run.logical_run_id},
             )
             _clean_fixture_data(connection)
     finally:

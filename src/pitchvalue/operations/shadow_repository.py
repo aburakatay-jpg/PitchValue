@@ -15,6 +15,7 @@ from sqlalchemy import Connection, text
 @dataclass(frozen=True)
 class ShadowAnalysisWrite:
     run_id: str
+    logical_run_id: str
     match_id: int
     prediction_as_of: datetime
     model_version: str
@@ -38,10 +39,12 @@ class ShadowAnalysisWrite:
             raise ValueError("shadow analysis can never be publication eligible")
         if self.prediction_as_of.tzinfo is None or self.prediction_as_of.utcoffset() is None:
             raise ValueError("prediction_as_of must be timezone-aware")
+        if not self.logical_run_id.strip():
+            raise ValueError("logical_run_id must be nonblank")
 
     def canonical_payload(self) -> dict[str, object]:
         return {
-            "run_id": self.run_id,
+            "logical_run_id": self.logical_run_id,
             "match_id": self.match_id,
             "prediction_as_of": self.prediction_as_of.isoformat(),
             "model_version": self.model_version,
@@ -69,27 +72,28 @@ def persist_shadow_analysis(connection: Connection, value: ShadowAnalysisWrite) 
     serialized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     fingerprint = hashlib.sha256(serialized.encode()).hexdigest()
     analysis_id = hashlib.sha256(
-        f"{value.run_id}|{value.match_id}|{value.model_version}|{value.feature_version}".encode()
+        f"{value.logical_run_id}|{value.match_id}|{value.model_version}|{value.feature_version}".encode()
     ).hexdigest()
     result = connection.execute(
         text(
             """INSERT INTO shadow_analysis_snapshots (
-                shadow_analysis_id, run_id, match_id, prediction_as_of, model_version,
+                shadow_analysis_id, run_id, logical_run_id, match_id, prediction_as_of, model_version,
                 feature_version, raw_ml_probabilities, elo_output, poisson_output,
                 form_output, agreement_output, odds_mode, dq_state, market_stability,
                 calibration_confidence, bet_score, bet_score_completeness,
                 publication_eligible, diagnostics, payload_hash
             ) VALUES (
-                :analysis_id,:run_id,:match_id,:prediction_as_of,:model_version,
+                :analysis_id,:run_id,:logical_run_id,:match_id,:prediction_as_of,:model_version,
                 :feature_version,CAST(:raw_ml AS jsonb),CAST(:elo AS jsonb),
                 CAST(:poisson AS jsonb),CAST(:form AS jsonb),CAST(:agreement AS jsonb),
                 :odds_mode,:dq_state,:market_stability,:calibration_confidence,
                 :bet_score,:completeness,false,:diagnostics,:payload_hash
-            ) ON CONFLICT (shadow_analysis_id) DO NOTHING RETURNING shadow_analysis_id"""
+            ) ON CONFLICT DO NOTHING RETURNING shadow_analysis_id"""
         ),
         {
             "analysis_id": analysis_id,
             "run_id": value.run_id,
+            "logical_run_id": value.logical_run_id,
             "match_id": value.match_id,
             "prediction_as_of": value.prediction_as_of,
             "model_version": value.model_version,
@@ -114,9 +118,9 @@ def persist_shadow_analysis(connection: Connection, value: ShadowAnalysisWrite) 
     existing = connection.execute(
         text(
             """SELECT payload_hash FROM shadow_analysis_snapshots
-            WHERE shadow_analysis_id=:id"""
+            WHERE logical_run_id=:logical_run_id AND match_id=:match_id"""
         ),
-        {"id": analysis_id},
+        {"logical_run_id": value.logical_run_id, "match_id": value.match_id},
     ).scalar_one()
     if existing != fingerprint:
         raise ValueError("shadow semantic identity has conflicting payload")

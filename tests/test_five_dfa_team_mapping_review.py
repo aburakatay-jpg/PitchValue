@@ -242,7 +242,7 @@ def test_reviewed_mapping_allows_a_previously_unresolved_fixture(
     result = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=deterministic_run_id((payload,), NOW),
+        logical_run_id=deterministic_run_id((payload,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=101),
         prediction_as_of=NOW,
@@ -296,7 +296,7 @@ def test_failed_analysis_marks_running_sync_failed_once(db: Connection) -> None:
     result = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=deterministic_run_id((payload,), NOW + timedelta(seconds=1)),
+        logical_run_id=deterministic_run_id((payload,), NOW + timedelta(seconds=1)),
         window_start=NOW,
         window_end=NOW + timedelta(days=102),
         prediction_as_of=NOW + timedelta(seconds=1),

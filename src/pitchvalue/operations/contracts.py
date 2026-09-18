@@ -68,6 +68,8 @@ class FixtureHorizon:
 @dataclass(frozen=True)
 class EngineRun:
     run_id: str
+    logical_run_id: str
+    attempt_number: int
     run_type: RunType
     scheduled_for: datetime
     started_at: datetime | None
@@ -87,7 +89,6 @@ class EngineRun:
 
     def __post_init__(self) -> None:
         for name in (
-            "run_id",
             "schedule_version",
             "model_version",
             "feature_profile",
@@ -100,6 +101,13 @@ class EngineRun:
             "provider_contract_version",
         ):
             _nonblank(getattr(self, name), name)
+        
+        _nonblank(self.logical_run_id, "logical_run_id")
+        if self.attempt_number < 0:
+            raise ValueError("attempt_number must be non-negative")
+        if self.attempt_number > 0:
+            _nonblank(self.run_id, "run_id")
+
         _aware(self.scheduled_for, "scheduled_for")
         if self.started_at is not None:
             _aware(self.started_at, "started_at")

@@ -87,7 +87,7 @@ def test_current_fixture_and_source_replay_are_idempotent(db: Connection) -> Non
     first = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=run_id,
+        logical_run_id=run_id,
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -95,7 +95,7 @@ def test_current_fixture_and_source_replay_are_idempotent(db: Connection) -> Non
     second = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=run_id,
+        logical_run_id=run_id,
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -105,9 +105,9 @@ def test_current_fixture_and_source_replay_are_idempotent(db: Connection) -> Non
     assert first.match_ids == second.match_ids
     assert (
         db.execute(
-            text("SELECT count(*) FROM engine_runs WHERE run_id=:id"), {"id": run_id}
+            text("SELECT count(*) FROM engine_runs WHERE logical_run_id=:id"), {"id": run_id}
         ).scalar_one()
-        == 1
+        == 2
     )
     assert (
         db.execute(
@@ -128,7 +128,7 @@ def test_unresolved_team_is_persisted_for_explicit_review(db: Connection) -> Non
     result = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=deterministic_run_id((payload,), NOW),
+        logical_run_id=deterministic_run_id((payload,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -164,7 +164,7 @@ def test_operator_can_explicitly_assign_unresolved_team(db: Connection) -> None:
     result = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=deterministic_run_id((payload,), NOW),
+        logical_run_id=deterministic_run_id((payload,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -199,7 +199,7 @@ def test_kickoff_revision_and_final_replay_are_safe(db: Connection) -> None:
     first = persist_current_season_payloads(
         db,
         (initial,),
-        run_id=run,
+        logical_run_id=run,
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -208,7 +208,7 @@ def test_kickoff_revision_and_final_replay_are_safe(db: Connection) -> None:
     changed = persist_current_season_payloads(
         db,
         (revised,),
-        run_id=deterministic_run_id((revised,), NOW),
+        logical_run_id=deterministic_run_id((revised,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -220,7 +220,7 @@ def test_kickoff_revision_and_final_replay_are_safe(db: Connection) -> None:
     done = persist_current_season_payloads(
         db,
         (finished,),
-        run_id=deterministic_run_id((finished,), NOW),
+        logical_run_id=deterministic_run_id((finished,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -228,7 +228,7 @@ def test_kickoff_revision_and_final_replay_are_safe(db: Connection) -> None:
     replay = persist_current_season_payloads(
         db,
         (finished,),
-        run_id=deterministic_run_id((finished,), NOW),
+        logical_run_id=deterministic_run_id((finished,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -253,7 +253,7 @@ def test_final_result_correction_and_finished_kickoff_revision_require_review(
     first = persist_current_season_payloads(
         db,
         (finished,),
-        run_id=deterministic_run_id((finished,), NOW),
+        logical_run_id=deterministic_run_id((finished,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -262,7 +262,7 @@ def test_final_result_correction_and_finished_kickoff_revision_require_review(
     correction = persist_current_season_payloads(
         db,
         (corrected,),
-        run_id=deterministic_run_id((corrected,), NOW),
+        logical_run_id=deterministic_run_id((corrected,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -275,7 +275,7 @@ def test_final_result_correction_and_finished_kickoff_revision_require_review(
     moved = persist_current_season_payloads(
         db,
         (moved_final,),
-        run_id=deterministic_run_id((moved_final,), NOW),
+        logical_run_id=deterministic_run_id((moved_final,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -300,7 +300,7 @@ def test_unknown_provider_lifecycle_is_quarantined_not_persisted(db: Connection)
     result = persist_current_season_payloads(
         db,
         (unknown,),
-        run_id=deterministic_run_id((unknown,), NOW),
+        logical_run_id=deterministic_run_id((unknown,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -319,13 +319,14 @@ def test_shadow_analysis_is_idempotent_and_never_public(db: Connection) -> None:
     sync = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=run_id,
+        logical_run_id=run_id,
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
     )
+    actual_run_id = db.execute(text("SELECT run_id FROM engine_runs WHERE logical_run_id = :id ORDER BY attempt_number DESC LIMIT 1"), {"id": run_id}).scalar_one()
     write = ShadowAnalysisWrite(
-        run_id,
+        actual_run_id, run_id,
         sync.match_ids[0][1],
         NOW,
         "raw_ml_v1",
@@ -361,13 +362,14 @@ def test_shadow_database_rejects_publication_promotion(db: Connection) -> None:
     sync = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=run_id,
+        logical_run_id=run_id,
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
     )
+    actual_run_id = db.execute(text("SELECT run_id FROM engine_runs WHERE logical_run_id = :id ORDER BY attempt_number DESC LIMIT 1"), {"id": run_id}).scalar_one()
     write = ShadowAnalysisWrite(
-        run_id,
+        actual_run_id, run_id,
         sync.match_ids[0][1],
         NOW,
         "raw_ml_v1",
@@ -388,7 +390,7 @@ def test_shadow_database_rejects_publication_promotion(db: Connection) -> None:
     with pytest.raises(IntegrityError), db.begin_nested():
         db.execute(
             text("UPDATE shadow_analysis_snapshots SET publication_eligible=true WHERE run_id=:id"),
-            {"id": run_id},
+            {"id": actual_run_id},
         )
 
 
@@ -405,7 +407,7 @@ def test_duplicate_provider_row_does_not_duplicate_fixture(db: Connection) -> No
     result = persist_current_season_payloads(
         db,
         (payload, payload),
-        run_id=deterministic_run_id((payload, payload), NOW),
+        logical_run_id=deterministic_run_id((payload, payload), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -421,7 +423,7 @@ def test_provider_id_replacement_requires_review(db: Connection) -> None:
     first = persist_current_season_payloads(
         db,
         (payload,),
-        run_id=deterministic_run_id((payload,), NOW),
+        logical_run_id=deterministic_run_id((payload,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -430,7 +432,7 @@ def test_provider_id_replacement_requires_review(db: Connection) -> None:
     reviewed = persist_current_season_payloads(
         db,
         (replacement,),
-        run_id=deterministic_run_id((replacement,), NOW),
+        logical_run_id=deterministic_run_id((replacement,), NOW),
         window_start=NOW,
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
@@ -444,6 +446,7 @@ def test_shadow_contract_rejects_publication() -> None:
     with pytest.raises(ValueError, match="never"):
         ShadowAnalysisWrite(
             "run",
+            "logical_run",
             1,
             NOW,
             "model",
@@ -478,7 +481,7 @@ def test_systemic_persistence_failure_rolls_back_run_unit(
         persist_current_season_payloads(
             db,
             (payload,),
-            run_id=deterministic_run_id((payload,), NOW),
+            logical_run_id=deterministic_run_id((payload,), NOW),
             window_start=NOW,
             window_end=NOW + timedelta(days=2),
             prediction_as_of=NOW,
