@@ -56,6 +56,8 @@ export function MatchDetailView({
   onSavePrediction?: ((prediction: PublicPrediction) => void) | undefined;
   saveMessage?: string | null;
 }) {
+  const { t } = useLanguage();
+
   if (initialLoading && data === null) {
     return (
       <Screen safeAreaEdges={stackScreenEdges}>
@@ -70,13 +72,13 @@ export function MatchDetailView({
         <UnavailableState
           title={
             missing
-              ? 'Match not found'
-              : 'Match data is temporarily unavailable'
+              ? t('Match not found')
+              : t('Match data is temporarily unavailable')
           }
           detail={
             missing
-              ? 'This match is not available.'
-              : 'Please try again shortly.'
+              ? t('This match is not available.')
+              : t('Please try again shortly.')
           }
           retry={missing ? undefined : onRefresh}
         />
@@ -92,8 +94,8 @@ export function MatchDetailView({
     >
       {error ? (
         <InlineNotice
-          title="Could not refresh match detail"
-          detail="Showing the last available public match data."
+          title={t('Could not refresh match detail')}
+          detail={t('Showing the last available public match data.')}
           tone="negative"
         />
       ) : null}
@@ -114,11 +116,12 @@ export function MatchDetailView({
 }
 
 function InvalidMatchState() {
+  const { t } = useLanguage();
   return (
     <Screen safeAreaEdges={stackScreenEdges}>
       <UnavailableState
-        title="Match not found"
-        detail="A valid match is required."
+        title={t('Match not found')}
+        detail={t('A valid match is required.')}
       />
     </Screen>
   );
