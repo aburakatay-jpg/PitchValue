@@ -417,7 +417,8 @@ def authenticate_external(
     connection.execute(
         text(
             "INSERT INTO auth_identities "
-            "(user_id,provider,provider_subject,normalized_email,created_at,last_verified_at) VALUES "
+            "(user_id,provider,provider_subject,normalized_email,"
+            "created_at,last_verified_at) VALUES "
             "(:user_id,:provider,:subject,:email,:now,:now)"
         ),
         {
