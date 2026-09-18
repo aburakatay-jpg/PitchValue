@@ -11,6 +11,7 @@ const tabIconNames: Record<string, SFSymbol> = {
   Explore: 'magnifyingglass',
   AI: 'sparkles',
   'My Bets': 'list.clipboard',
+  Profile: 'person.crop.circle',
 };
 
 function TabIcon({ name, focused }: { name: SFSymbol; focused: boolean }) {
@@ -49,6 +50,7 @@ export default function TabLayout() {
           name={route.name}
           options={{
             title: t(route.title),
+            href: route.name === 'profile' ? '/profile' : null,
             tabBarIcon: ({ focused }) => (
               <TabIcon
                 name={tabIconNames[route.title] || 'square'}

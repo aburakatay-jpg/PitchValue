@@ -14,6 +14,7 @@ describe('mobile foundation', () => {
       'Explore',
       'AI',
       'My Bets',
+      'Profile',
     ]);
   });
 

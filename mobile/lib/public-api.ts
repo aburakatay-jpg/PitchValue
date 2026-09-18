@@ -37,7 +37,8 @@ async function request<T>(
   validator: Validator<T>,
 ): Promise<T> {
   if (config.apiBaseUrl === null) {
-    if (__DEV__) console.log(`[API] ${path} blocked: API_UNAVAILABLE (No valid base URL)`);
+    if (__DEV__)
+      console.log(`[API] ${path} blocked: API_UNAVAILABLE (No valid base URL)`);
     throw new PublicApiError('API_UNAVAILABLE');
   }
   let response: Response;
@@ -54,7 +55,10 @@ async function request<T>(
       if (__DEV__) console.log(`[API] ${path} CANCELLED`);
       throw new PublicApiError('CANCELLED');
     }
-    if (__DEV__) console.log(`[API] ${path} NETWORK FAILURE: ${error instanceof Error ? error.message : 'Unknown'}`);
+    if (__DEV__)
+      console.log(
+        `[API] ${path} NETWORK FAILURE: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
     throw new PublicApiError('API_UNAVAILABLE');
   }
   if (!response.ok) {
@@ -67,11 +71,13 @@ async function request<T>(
   try {
     payload = await response.json();
   } catch {
-    if (__DEV__) console.log(`[API] ${path} INVALID_RESPONSE (JSON parse failed)`);
+    if (__DEV__)
+      console.log(`[API] ${path} INVALID_RESPONSE (JSON parse failed)`);
     throw new PublicApiError('INVALID_RESPONSE');
   }
   if (!validator(payload)) {
-    if (__DEV__) console.log(`[API] ${path} INVALID_RESPONSE (Schema validation failed)`);
+    if (__DEV__)
+      console.log(`[API] ${path} INVALID_RESPONSE (Schema validation failed)`);
     throw new PublicApiError('INVALID_RESPONSE');
   }
   return payload;
