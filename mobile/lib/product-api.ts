@@ -391,3 +391,34 @@ function isCouponExecution(value: unknown): value is CouponExecution {
 function isVoid(value: unknown): value is void {
   return value === undefined;
 }
+
+export function verifyPurchase(
+  token: string,
+  evidence: Readonly<{
+    provider: string;
+    external_transaction_id: string;
+    receipt_data: string;
+  }>,
+  signal: AbortSignal,
+): Promise<ServerEntitlement> {
+  return productRequest(
+    '/api/v1/commerce/verify',
+    { method: 'POST', token, body: evidence, signal },
+    isEntitlement,
+  );
+}
+
+export function restorePurchases(
+  token: string,
+  evidence: Readonly<{
+    provider: string;
+    receipt_data: string;
+  }>,
+  signal: AbortSignal,
+): Promise<ServerEntitlement> {
+  return productRequest(
+    '/api/v1/commerce/restore',
+    { method: 'POST', token, body: evidence, signal },
+    isEntitlement,
+  );
+}

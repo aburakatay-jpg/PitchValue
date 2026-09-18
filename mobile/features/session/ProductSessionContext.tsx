@@ -37,6 +37,7 @@ type ProductSessionContextValue = Readonly<{
   signInEmail: (email: string, password: string) => Promise<void>;
   signUpEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshEntitlement: () => Promise<void>;
 }>;
 
 const ProductSessionContext = createContext<ProductSessionContextValue | null>(
@@ -165,6 +166,19 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
     setState('GUEST');
   }, [accessToken]);
 
+  const refreshEntitlement = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      const currentEntitlement = await getServerEntitlement(
+        accessToken,
+        new AbortController().signal,
+      );
+      setEntitlement(currentEntitlement.state);
+    } catch {
+      // Retain current entitlement if fetch fails
+    }
+  }, [accessToken]);
+
   const value = useMemo(
     () => ({
       state,
@@ -174,8 +188,18 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
       signInEmail,
       signUpEmail,
       signOut,
+      refreshEntitlement,
     }),
-    [state, accessToken, user, entitlement, signInEmail, signUpEmail, signOut],
+    [
+      state,
+      accessToken,
+      user,
+      entitlement,
+      signInEmail,
+      signUpEmail,
+      signOut,
+      refreshEntitlement,
+    ],
   );
   return (
     <ProductSessionContext.Provider value={value}>
@@ -199,6 +223,7 @@ export function useProductSession(): ProductSessionContextValue {
         throw new ProductServiceError('UNAVAILABLE');
       },
       signOut: async () => undefined,
+      refreshEntitlement: async () => undefined,
     }
   );
 }

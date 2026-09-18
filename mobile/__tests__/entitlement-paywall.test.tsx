@@ -5,11 +5,56 @@ import {
   PaywallPresentation,
   PaywallShell,
   annualPlanDetail,
-  plans,
 } from '@/components/Paywall';
 import { LockedPremiumSection, PremiumGuard } from '@/components/PremiumGuard';
+import * as CommerceContext from '@/features/entitlement/CommerceContext';
+
+jest.mock('@/features/entitlement/CommerceContext', () => ({
+  useCommerce: jest.fn(),
+  CommerceProvider: ({ children }: any) => children,
+}));
 
 describe('premium UI foundation', () => {
+  const mockProducts = [
+    {
+      id: 'monthly' as const,
+      externalId: 'a',
+      provider: 'UNCONFIGURED' as const,
+      localizedPrice: null,
+      currencyCode: null,
+      isTrialAvailable: false,
+    },
+    {
+      id: 'quarterly' as const,
+      externalId: 'b',
+      provider: 'UNCONFIGURED' as const,
+      localizedPrice: null,
+      currencyCode: null,
+      isTrialAvailable: false,
+    },
+    {
+      id: 'annual' as const,
+      externalId: 'c',
+      provider: 'UNCONFIGURED' as const,
+      localizedPrice: null,
+      currencyCode: null,
+      isTrialAvailable: false,
+    },
+  ];
+
+  beforeEach(() => {
+    (CommerceContext.useCommerce as jest.Mock).mockReturnValue({
+      isConfigured: false,
+      products: mockProducts,
+      isFetchingProducts: false,
+      isPurchasing: false,
+      isRestoring: false,
+      error: null,
+      purchase: jest.fn(),
+      restore: jest.fn(),
+    });
+  });
+
   it('uses a contextual, accessible premium boundary for guests', async () => {
     const onUnlock = jest.fn();
     const view = await render(
@@ -56,11 +101,6 @@ describe('premium UI foundation', () => {
   });
 
   it('presents all three plan concepts without hardcoded store prices', async () => {
-    expect(plans.map((plan) => plan.name)).toEqual([
-      'Monthly',
-      '3 Months',
-      'Annual',
-    ]);
     const view = await render(<PaywallShell />);
     expect(view.getAllByText('Localized price unavailable')).toHaveLength(3);
     expect(view.queryByText(/TL|\$|€|£/)).toBeNull();
@@ -81,12 +121,13 @@ describe('premium UI foundation', () => {
 
   it('keeps purchase and restore actions honestly disabled', async () => {
     const view = await render(<PaywallShell />);
-    for (const plan of plans) {
+    const names = ['Monthly', '3 Months', 'Annual'];
+    for (const name of names) {
       expect(
-        view.getByLabelText(`${plan.name} purchase unavailable`),
+        view.getByLabelText(`${name} purchase unavailable`),
       ).toBeDisabled();
     }
-    expect(view.getByLabelText('Restore purchases unavailable')).toBeDisabled();
+    expect(view.getByLabelText('Restore purchases')).toBeDisabled();
   });
 
   it('contains no casino or urgency copy', async () => {

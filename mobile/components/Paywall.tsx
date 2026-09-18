@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
+import { useCommerce } from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
+import { CanonicalPlan } from '@/lib/commerce';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { TrialEligibility } from '@/types/entitlement';
 
@@ -12,12 +14,6 @@ export const premiumBenefits = [
   'Final Check',
   'AI explanations',
   'Coupon Builder',
-] as const;
-
-export const plans = [
-  { id: 'monthly', name: 'Monthly' },
-  { id: 'quarterly', name: '3 Months' },
-  { id: 'annual', name: 'Annual' },
 ] as const;
 
 export function annualPlanDetail(
@@ -31,13 +27,23 @@ export function annualPlanDetail(
 }
 
 function PaywallPlanCard({
+  id,
   name,
   annual,
   trialEligibility,
+  localizedPrice,
+  disabled,
+  isPurchasing,
+  onPurchase,
 }: {
+  id: CanonicalPlan;
   name: string;
   annual: boolean;
   trialEligibility: TrialEligibility;
+  localizedPrice: string | null;
+  disabled: boolean;
+  isPurchasing: boolean;
+  onPurchase: (id: CanonicalPlan) => void;
 }) {
   const { t } = useLanguage();
   return (
@@ -46,17 +52,22 @@ function PaywallPlanCard({
         <Text style={styles.name}>{t(name)}</Text>
         {annual ? <Badge label={t('Annual option')} tone="accent" /> : null}
       </View>
-      <Text style={styles.price}>{t('Localized price unavailable')}</Text>
+      <Text style={styles.price}>
+        {localizedPrice ?? t('Localized price unavailable')}
+      </Text>
       <Text style={styles.detail}>
         {annual
           ? annualPlanDetail(trialEligibility, t)
           : t('Pricing will be supplied by the App Store.')}
       </Text>
       <Button
-        accessibilityLabel={`${t(name)} ${t('purchase unavailable')}`}
-        disabled
+        accessibilityLabel={`${t(name)} ${
+          disabled ? t('purchase unavailable') : ''
+        }`}
+        disabled={disabled || isPurchasing}
+        onPress={() => onPurchase(id)}
       >
-        {t('Purchase unavailable')}
+        {disabled ? t('Purchase unavailable') : t('Purchase')}
       </Button>
     </View>
   );
@@ -68,6 +79,8 @@ export function PaywallShell({
   trialEligibility?: TrialEligibility;
 }) {
   const { t } = useLanguage();
+  const commerce = useCommerce();
+
   return (
     <View style={styles.stack}>
       <SectionHeader
@@ -83,25 +96,40 @@ export function PaywallShell({
           </Text>
         ))}
       </View>
-      {plans.map((plan) => (
+      {commerce.products.map((plan) => (
         <PaywallPlanCard
-          annual={plan.id === 'annual'}
           key={plan.id}
-          name={plan.name}
+          id={plan.id}
+          name={
+            plan.id === 'quarterly'
+              ? '3 Months'
+              : plan.id.charAt(0).toUpperCase() + plan.id.slice(1)
+          }
+          annual={plan.id === 'annual'}
           trialEligibility={trialEligibility}
+          localizedPrice={plan.localizedPrice}
+          disabled={!commerce.isConfigured}
+          isPurchasing={commerce.isPurchasing}
+          onPurchase={commerce.purchase}
         />
       ))}
       <Button
-        accessibilityLabel={t('Restore purchases unavailable')}
-        disabled
+        accessibilityLabel={t('Restore purchases')}
+        disabled={!commerce.isConfigured || commerce.isRestoring}
         variant="quiet"
+        onPress={commerce.restore}
       >
-        {t('Restore Purchases')} · {t('Unavailable')}
+        {t('Restore Purchases')}{' '}
+        {!commerce.isConfigured ? `· ${t('Unavailable')}` : ''}
       </Button>
       <Text style={styles.footnote}>
-        {t(
-          'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.',
-        )}
+        {commerce.isConfigured
+          ? t(
+              'Payment, restoration, and trial confirmation will use the App Store.',
+            )
+          : t(
+              'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.',
+            )}
       </Text>
     </View>
   );
