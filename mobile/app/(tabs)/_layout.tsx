@@ -50,7 +50,6 @@ export default function TabLayout() {
           name={route.name}
           options={{
             title: t(route.title),
-            href: route.name === 'profile' ? '/profile' : null,
             tabBarIcon: ({ focused }) => (
               <TabIcon
                 name={tabIconNames[route.title] || 'square'}

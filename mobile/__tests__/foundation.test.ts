@@ -8,13 +8,12 @@ import { tabRoutes } from '@/lib/routes';
 import { colors, theme } from '@/theme/tokens';
 
 describe('mobile foundation', () => {
-  it('defines all five canonical tab routes', () => {
+  it('defines exactly four canonical tab routes', () => {
     expect(tabRoutes.map((route) => route.title)).toEqual([
       'Today',
       'Explore',
       'AI',
       'My Bets',
-      'Profile',
     ]);
   });
 
