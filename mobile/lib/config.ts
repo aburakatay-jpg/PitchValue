@@ -1,12 +1,16 @@
-const fallbackApiBaseUrl = 'http://localhost:8000';
+import Constants from 'expo-constants';
 
 export function resolveApiBaseUrl(
   isDevelopment: boolean,
   configuredValue: string | undefined,
+  hostUri?: string | undefined,
 ): string | null {
   const configured = configuredValue?.trim();
   if (configured) return configured;
-  return isDevelopment ? fallbackApiBaseUrl : null;
+  if (!isDevelopment) return null;
+  
+  const debuggerHost = hostUri?.split(':')[0];
+  return debuggerHost ? `http://${debuggerHost}:8000` : 'http://localhost:8000';
 }
 
 export function isDevelopmentPreviewEnabled(
@@ -17,7 +21,7 @@ export function isDevelopmentPreviewEnabled(
 }
 
 export const config = {
-  apiBaseUrl: resolveApiBaseUrl(__DEV__, process.env.EXPO_PUBLIC_API_BASE_URL),
+  apiBaseUrl: resolveApiBaseUrl(__DEV__, process.env.EXPO_PUBLIC_API_BASE_URL, Constants.expoConfig?.hostUri),
   developmentPreviewEnabled: isDevelopmentPreviewEnabled(
     __DEV__,
     process.env.EXPO_PUBLIC_ENABLE_MOCK_DATA,
