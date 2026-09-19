@@ -1,27 +1,32 @@
+# ruff: noqa: E501
 from __future__ import annotations
-import pytest
-import os
-import typing
-import time
-from datetime import datetime, UTC, timezone
-from decimal import Decimal
-from concurrent.futures import ThreadPoolExecutor
 
-from sqlalchemy import create_engine, text, Engine
-from pitchvalue.operations.contracts import EngineRun, FixtureHorizon, RunType, RunStatus
+import os
+import time
+import typing
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
+from decimal import Decimal
+
+import pytest
+from sqlalchemy import Engine, create_engine, text
+
+from pitchvalue.config import load_settings
 from pitchvalue.markets.history.contracts import ObservationRole, TimingSemantics
+from pitchvalue.operations.contracts import EngineRun, FixtureHorizon, RunStatus, RunType
+from pitchvalue.operations.persisted_shadow_run import _persist_odds
+from pitchvalue.operations.repository import persist_run
+from pitchvalue.operations.shadow_repository import ShadowAnalysisWrite, persist_shadow_analysis
 from pitchvalue.prediction.contracts import MarketFamily, Selection
 from pitchvalue.providers.five_dfa.odds import LiveOddsObservation
-from pitchvalue.operations.repository import persist_run
-from pitchvalue.operations.shadow_repository import persist_shadow_analysis, ShadowAnalysisWrite
-from pitchvalue.operations.persisted_shadow_run import _persist_odds
-from pitchvalue.config import load_settings
 
 NOW = datetime(2026, 9, 13, 12, 0, tzinfo=UTC)
+
 
 @pytest.fixture
 def engine() -> Engine:
     return create_engine(load_settings(os.environ).database_url)
+
 
 @pytest.fixture(autouse=True)
 def clean_db(engine: Engine) -> typing.Generator[None, None, None]:
@@ -30,6 +35,7 @@ def clean_db(engine: Engine) -> typing.Generator[None, None, None]:
         conn.execute(text("DELETE FROM shadow_analysis_snapshots"))
         conn.execute(text("DELETE FROM engine_runs"))
         conn.execute(text("DELETE FROM odds_snapshots"))
+
 
 def _create_engine_run(logical_id: str) -> EngineRun:
     return EngineRun(
@@ -54,13 +60,13 @@ def _create_engine_run(logical_id: str) -> EngineRun:
         provider_contract_version="1",
     )
 
+
 @pytest.mark.integration
 def test_odds_persistence_proofs(engine: Engine) -> None:
-    logical_id = "odds-proof-1"
     match_id = 1
     provider_id = 1
     unique_fix = f"fix-{datetime.now().timestamp()}"
-    
+
     obs1 = LiveOddsObservation(
         provider_fixture_id=unique_fix,
         bookmaker="B1",
@@ -77,7 +83,7 @@ def test_odds_persistence_proofs(engine: Engine) -> None:
     with engine.begin() as conn:
         inserted1 = _persist_odds(conn, provider_id, match_id, obs1)
         assert inserted1 is True
-    
+
     time.sleep(0.01)
     with engine.begin() as conn:
         inserted2 = _persist_odds(conn, provider_id, match_id, obs1)
@@ -105,9 +111,13 @@ def test_odds_persistence_proofs(engine: Engine) -> None:
     with engine.begin() as conn:
         inserted4 = _persist_odds(conn, provider_id, match_id, obs1)
         assert inserted4 is True
-    
+
     with engine.begin() as conn:
-        count = conn.execute(text(f"SELECT COUNT(*) FROM odds_snapshots WHERE provider_market_id LIKE '{unique_fix}%' AND decimal_odds IN (2.10, 2.20)")).scalar()
+        count = conn.execute(
+            text(
+                f"SELECT COUNT(*) FROM odds_snapshots WHERE provider_market_id LIKE '{unique_fix}%' AND decimal_odds IN (2.10, 2.20)"
+            )
+        ).scalar()
         assert count == 3
 
     obs_other = LiveOddsObservation(
@@ -129,8 +139,13 @@ def test_odds_persistence_proofs(engine: Engine) -> None:
         assert inserted_other is True
 
     with engine.begin() as conn:
-        row = conn.execute(text(f"SELECT observed_at FROM odds_snapshots WHERE provider_market_id LIKE '{unique_fix}%' LIMIT 1")).fetchone()
+        row = conn.execute(
+            text(
+                f"SELECT observed_at FROM odds_snapshots WHERE provider_market_id LIKE '{unique_fix}%' LIMIT 1"
+            )
+        ).fetchone()
         assert row is not None and row[0] is None
+
 
 @pytest.mark.integration
 def test_snapshot_same_payload_concurrency(engine: Engine) -> None:
@@ -147,12 +162,20 @@ def test_snapshot_same_payload_concurrency(engine: Engine) -> None:
         model_version="1",
         feature_version="1",
         raw_ml_probabilities={"home": Decimal("0.5")},
-        elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
+
         def insert_payload() -> bool:
             with engine.begin() as conn:
                 return persist_shadow_analysis(conn, payload)
@@ -162,8 +185,12 @@ def test_snapshot_same_payload_concurrency(engine: Engine) -> None:
     assert results.count(True) == 1
     assert results.count(False) == 1
     with engine.begin() as conn:
-        count = conn.execute(text("SELECT COUNT(*) FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid"), {"lrid": logical_id}).scalar()
+        count = conn.execute(
+            text("SELECT COUNT(*) FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid"),
+            {"lrid": logical_id},
+        ).scalar()
         assert count == 1
+
 
 @pytest.mark.integration
 def test_snapshot_conflicting_payload_concurrency(engine: Engine) -> None:
@@ -173,21 +200,46 @@ def test_snapshot_conflicting_payload_concurrency(engine: Engine) -> None:
         res = persist_run(conn, run)
 
     payload1 = ShadowAnalysisWrite(
-        run_id=res.run_id, logical_run_id=logical_id, match_id=1,
-        prediction_as_of=NOW, model_version="1", feature_version="1",
-        raw_ml_probabilities={"home": Decimal("0.5")}, elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        run_id=res.run_id,
+        logical_run_id=logical_id,
+        match_id=1,
+        prediction_as_of=NOW,
+        model_version="1",
+        feature_version="1",
+        raw_ml_probabilities={"home": Decimal("0.5")},
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
     payload2 = ShadowAnalysisWrite(
-        run_id=res.run_id, logical_run_id=logical_id, match_id=1,
-        prediction_as_of=NOW, model_version="1", feature_version="1",
-        raw_ml_probabilities={"home": Decimal("0.9")}, elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        run_id=res.run_id,
+        logical_run_id=logical_id,
+        match_id=1,
+        prediction_as_of=NOW,
+        model_version="1",
+        feature_version="1",
+        raw_ml_probabilities={"home": Decimal("0.9")},
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
+
         def insert_payload(p: ShadowAnalysisWrite) -> typing.Any:
             with engine.begin() as conn:
                 try:
@@ -200,31 +252,67 @@ def test_snapshot_conflicting_payload_concurrency(engine: Engine) -> None:
     assert results.count(True) == 1
     assert any("shadow semantic identity has conflicting payload" in str(r) for r in results)
     with engine.begin() as conn:
-        count = conn.execute(text("SELECT COUNT(*) FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid"), {"lrid": logical_id}).scalar()
+        count = conn.execute(
+            text("SELECT COUNT(*) FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid"),
+            {"lrid": logical_id},
+        ).scalar()
         assert count == 1
+
 
 @pytest.mark.integration
 def test_partial_retry(engine: Engine) -> None:
     logical_id = f"partial-retry-{datetime.now().timestamp()}"
-    
+
     with engine.begin() as conn:
-        conn.execute(text("INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (20002, 1, 1, 1, 2, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"))
-        conn.execute(text("INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (20003, 1, 1, 1, 2, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"))
+        conn.execute(
+            text(
+                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (20002, 1, 1, 1, 2, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (20003, 1, 1, 1, 2, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"
+            )
+        )
         res1 = persist_run(conn, _create_engine_run(logical_id))
-    
+
     payload_a = ShadowAnalysisWrite(
-        run_id=res1.run_id, logical_run_id=logical_id, match_id=1,
-        prediction_as_of=NOW, model_version="1", feature_version="1",
-        raw_ml_probabilities={"home": Decimal("0.5")}, elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        run_id=res1.run_id,
+        logical_run_id=logical_id,
+        match_id=1,
+        prediction_as_of=NOW,
+        model_version="1",
+        feature_version="1",
+        raw_ml_probabilities={"home": Decimal("0.5")},
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
     payload_b = ShadowAnalysisWrite(
-        run_id=res1.run_id, logical_run_id=logical_id, match_id=20002,
-        prediction_as_of=NOW, model_version="1", feature_version="1",
-        raw_ml_probabilities={"home": Decimal("0.5")}, elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        run_id=res1.run_id,
+        logical_run_id=logical_id,
+        match_id=20002,
+        prediction_as_of=NOW,
+        model_version="1",
+        feature_version="1",
+        raw_ml_probabilities={"home": Decimal("0.5")},
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
     with engine.begin() as conn:
         assert persist_shadow_analysis(conn, payload_a) is True
@@ -233,34 +321,65 @@ def test_partial_retry(engine: Engine) -> None:
     # Attempt 2
     with engine.begin() as conn:
         res2 = persist_run(conn, _create_engine_run(logical_id))
-    
+
     payload_c = ShadowAnalysisWrite(
-        run_id=res2.run_id, logical_run_id=logical_id, match_id=20003,
-        prediction_as_of=NOW, model_version="1", feature_version="1",
-        raw_ml_probabilities={"home": Decimal("0.5")}, elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        run_id=res2.run_id,
+        logical_run_id=logical_id,
+        match_id=20003,
+        prediction_as_of=NOW,
+        model_version="1",
+        feature_version="1",
+        raw_ml_probabilities={"home": Decimal("0.5")},
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
 
     with engine.begin() as conn:
         payload_a2 = ShadowAnalysisWrite(**{**payload_a.__dict__, "run_id": res2.run_id})
         payload_b2 = ShadowAnalysisWrite(**{**payload_b.__dict__, "run_id": res2.run_id})
 
-        assert persist_shadow_analysis(conn, payload_a2) is False 
-        assert persist_shadow_analysis(conn, payload_b2) is False 
-        assert persist_shadow_analysis(conn, payload_c) is True 
+        assert persist_shadow_analysis(conn, payload_a2) is False
+        assert persist_shadow_analysis(conn, payload_b2) is False
+        assert persist_shadow_analysis(conn, payload_c) is True
 
     with engine.begin() as conn:
-        count = conn.execute(text("SELECT COUNT(*) FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid"), {"lrid": logical_id}).scalar()
+        count = conn.execute(
+            text("SELECT COUNT(*) FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid"),
+            {"lrid": logical_id},
+        ).scalar()
         assert count == 3
-        
-        r1 = conn.execute(text("SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=1"), {"lrid": logical_id}).scalar()
-        r2 = conn.execute(text("SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=20002"), {"lrid": logical_id}).scalar()
-        r3 = conn.execute(text("SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=20003"), {"lrid": logical_id}).scalar()
-        
+
+        r1 = conn.execute(
+            text(
+                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=1"
+            ),
+            {"lrid": logical_id},
+        ).scalar()
+        r2 = conn.execute(
+            text(
+                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=20002"
+            ),
+            {"lrid": logical_id},
+        ).scalar()
+        r3 = conn.execute(
+            text(
+                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=20003"
+            ),
+            {"lrid": logical_id},
+        ).scalar()
+
         assert r1 == res1.run_id
         assert r2 == res1.run_id
         assert r3 == res2.run_id
+
 
 @pytest.mark.integration
 def test_repeat_after_success_policy(engine: Engine) -> None:
@@ -268,13 +387,25 @@ def test_repeat_after_success_policy(engine: Engine) -> None:
     logical_id = f"repeat-success-{datetime.now().timestamp()}"
     with engine.begin() as conn:
         res1 = persist_run(conn, _create_engine_run(logical_id))
-        
+
     payload = ShadowAnalysisWrite(
-        run_id=res1.run_id, logical_run_id=logical_id, match_id=1,
-        prediction_as_of=NOW, model_version="1", feature_version="1",
-        raw_ml_probabilities={"home": Decimal("0.5")}, elo=None, poisson=None, form=None, agreement=None,
-        odds_mode="MARKET_REFERENCE_ONLY", dq_state="CLEAN", market_stability="STABLE", calibration_confidence="HIGH",
-        bet_score=None, bet_score_completeness="UNAVAILABLE",
+        run_id=res1.run_id,
+        logical_run_id=logical_id,
+        match_id=1,
+        prediction_as_of=NOW,
+        model_version="1",
+        feature_version="1",
+        raw_ml_probabilities={"home": Decimal("0.5")},
+        elo=None,
+        poisson=None,
+        form=None,
+        agreement=None,
+        odds_mode="MARKET_REFERENCE_ONLY",
+        dq_state="CLEAN",
+        market_stability="STABLE",
+        calibration_confidence="HIGH",
+        bet_score=None,
+        bet_score_completeness="UNAVAILABLE",
     )
     with engine.begin() as conn:
         assert persist_shadow_analysis(conn, payload) is True
@@ -283,7 +414,7 @@ def test_repeat_after_success_policy(engine: Engine) -> None:
     with engine.begin() as conn:
         res2 = persist_run(conn, _create_engine_run(logical_id))
         assert res2.attempt_number == res1.attempt_number + 1
-        
+
     payload2 = ShadowAnalysisWrite(**{**payload.__dict__, "run_id": res2.run_id})
     with engine.begin() as conn:
         # semantic snapshot REUSED

@@ -451,9 +451,8 @@ def _persist_odds(
         },
     ).first()
 
-    if latest is not None:
-        if latest.decimal_odds == item.decimal_odds and latest.line == item.line:
-            return False
+    if latest is not None and latest.decimal_odds == item.decimal_odds and latest.line == item.line:
+        return False
 
     connection.execute(
         text(

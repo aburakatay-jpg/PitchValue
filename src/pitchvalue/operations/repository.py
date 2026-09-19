@@ -1,7 +1,9 @@
+# ruff: noqa: E501
 """SQLAlchemy Core persistence for operations and durable event delivery."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 from sqlalchemy import Connection, text
@@ -10,31 +12,33 @@ from pitchvalue.operations.contracts import EngineRun, Quarantine
 from pitchvalue.operations.events import DeliveryStatus, OperationalEvent
 
 
-import hashlib
-
 def _lock_key(logical_run_id: str) -> int:
     h = hashlib.sha256(logical_run_id.encode()).digest()
     return int.from_bytes(h[:8], byteorder="big", signed=True)
+
 
 def persist_run(connection: Connection, run: EngineRun) -> EngineRun:
     """Persist an engine run, allocating a new attempt number and physical run_id."""
     lock_key = _lock_key(run.logical_run_id)
     connection.execute(text("SELECT pg_advisory_xact_lock(:lock_key)"), {"lock_key": lock_key})
-    
+
     # Check if a SUCCESSFUL run already exists for this logical_run_id?
     # Wait, the prompt says "Repeat After Success Policy... avoid creating duplicate semantic snapshots...
     # A new execution attempt may still exist for audit if current orchestration requires it."
     # So we always allocate a new attempt.
-    
+
     max_attempt = connection.execute(
-        text("SELECT COALESCE(MAX(attempt_number), 0) FROM engine_runs WHERE logical_run_id = :logical_run_id"),
-        {"logical_run_id": run.logical_run_id}
+        text(
+            "SELECT COALESCE(MAX(attempt_number), 0) FROM engine_runs WHERE logical_run_id = :logical_run_id"
+        ),
+        {"logical_run_id": run.logical_run_id},
     ).scalar_one()
-    
+
     new_attempt = max_attempt + 1
     new_run_id = f"{run.logical_run_id}-attempt-{new_attempt}"
-    
+
     from dataclasses import replace
+
     run = replace(run, run_id=new_run_id, attempt_number=new_attempt)
 
     result = connection.execute(

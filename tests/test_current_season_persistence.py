@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from __future__ import annotations
 
 import os
@@ -324,9 +325,15 @@ def test_shadow_analysis_is_idempotent_and_never_public(db: Connection) -> None:
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
     )
-    actual_run_id = db.execute(text("SELECT run_id FROM engine_runs WHERE logical_run_id = :id ORDER BY attempt_number DESC LIMIT 1"), {"id": run_id}).scalar_one()
+    actual_run_id = db.execute(
+        text(
+            "SELECT run_id FROM engine_runs WHERE logical_run_id = :id ORDER BY attempt_number DESC LIMIT 1"
+        ),
+        {"id": run_id},
+    ).scalar_one()
     write = ShadowAnalysisWrite(
-        actual_run_id, run_id,
+        actual_run_id,
+        run_id,
         sync.match_ids[0][1],
         NOW,
         "raw_ml_v1",
@@ -367,9 +374,15 @@ def test_shadow_database_rejects_publication_promotion(db: Connection) -> None:
         window_end=NOW + timedelta(days=2),
         prediction_as_of=NOW,
     )
-    actual_run_id = db.execute(text("SELECT run_id FROM engine_runs WHERE logical_run_id = :id ORDER BY attempt_number DESC LIMIT 1"), {"id": run_id}).scalar_one()
+    actual_run_id = db.execute(
+        text(
+            "SELECT run_id FROM engine_runs WHERE logical_run_id = :id ORDER BY attempt_number DESC LIMIT 1"
+        ),
+        {"id": run_id},
+    ).scalar_one()
     write = ShadowAnalysisWrite(
-        actual_run_id, run_id,
+        actual_run_id,
+        run_id,
         sync.match_ids[0][1],
         NOW,
         "raw_ml_v1",

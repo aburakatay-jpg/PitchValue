@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """engine_data_integrity
 
 Revision ID: 8c612d37a88b
@@ -9,8 +10,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = '8c612d37a88b'
-down_revision: str | None = 'ccfe1992e71e'
+revision: str = "8c612d37a88b"
+down_revision: str | None = "ccfe1992e71e"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -68,6 +69,7 @@ def upgrade() -> None:
         ALTER TABLE shadow_analysis_snapshots ADD CONSTRAINT uq_shadow_run_match UNIQUE (logical_run_id, match_id);
         """
     )
+
 
 def downgrade() -> None:
     # Downgrade guard for shadow

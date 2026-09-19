@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Durable provider-neutral storage for internal, never-public shadow evidence."""
 
 from __future__ import annotations
