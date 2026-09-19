@@ -11,7 +11,7 @@ from sqlalchemy import Connection, Engine, create_engine, text
 from pitchvalue.config import Settings
 
 EngineFactory = Callable[..., Engine]
-EXPECTED_ALEMBIC_REVISION = "8c612d37a88b"
+EXPECTED_ALEMBIC_REVISION = "754c63cfcf58"
 
 
 class DatabaseResourceProtocol(Protocol):
@@ -46,6 +46,7 @@ class DatabaseResource:
                 self._database_url,
                 pool_pre_ping=True,
                 pool_recycle=1800,
+                pool_timeout=5,
             )
 
     def check(self) -> None:

@@ -23,6 +23,9 @@ from pitchvalue.api.product_models import (
     CouponRequest,
     CouponResponse,
     EmailAuthRequest,
+    EmailRegistrationRequest,
+    EmailRegistrationResponse,
+    EmailVerificationConfirmRequest,
     EntitlementResponse,
     ExplainRequest,
     ExternalAuthRequest,
@@ -59,6 +62,7 @@ from pitchvalue.product_services.auth import (
     UnconfiguredGoogleIdentityVerifier,
     UnconfiguredPasswordResetDelivery,
     authenticate_external,
+    confirm_email_verification,
     confirm_password_reset,
     create_guest_session,
     login_email,
@@ -94,16 +98,24 @@ def guest_session(
     return _session(create_guest_session(connection))
 
 
-@router.post("/auth/email/register", response_model=SessionResponse)
+@router.post("/auth/email/register", response_model=EmailRegistrationResponse)
 def email_register(
-    request: EmailAuthRequest,
+    request: EmailRegistrationRequest,
     http_request: Request,
     limiter: Annotated[InMemoryAuthLimiter, Depends(get_auth_limiter)],
     connection: Annotated[Connection, Depends(get_transaction)],
-) -> SessionResponse:
+) -> EmailRegistrationResponse:
     _guard_auth(limiter, AuthAction.REGISTER, _client(http_request))
+    if not request.age_18_acknowledged:
+        raise ApiError(422, ErrorCode.VALIDATION_ERROR, "18+ acknowledgement is required")
     try:
-        return _session(register_email(connection, request.email, request.password))
+        session, delivery_state = register_email(
+            connection, request.email, request.password, request.country_code
+        )
+        return EmailRegistrationResponse(
+            session=_session(session),
+            delivery_state=delivery_state,
+        )
     except AuthError as error:
         raise ApiError(409, ErrorCode.CONFLICT, str(error)) from error
 
@@ -157,6 +169,18 @@ def email_password_reset_confirm(
     except AuthError as error:
         if "password does not meet" in str(error):
             raise ApiError(422, ErrorCode.VALIDATION_ERROR, str(error)) from error
+        raise ApiError(400, ErrorCode.VALIDATION_ERROR, str(error)) from error
+    return Response(status_code=204)
+
+
+@router.post("/auth/email/verification/confirm", status_code=204)
+def email_verification_confirm(
+    request: EmailVerificationConfirmRequest,
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> Response:
+    try:
+        confirm_email_verification(connection, request.token)
+    except AuthError as error:
         raise ApiError(400, ErrorCode.VALIDATION_ERROR, str(error)) from error
     return Response(status_code=204)
 

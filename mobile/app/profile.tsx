@@ -158,7 +158,7 @@ export default function ProfileScreen() {
     <ProfileView
       entitlement={state}
       email={session.user?.email ?? null}
-      onSignIn={() => router.push('/auth/index' as Href)}
+      onSignIn={() => router.push('/auth' as Href)}
       onSignOut={() => void session.signOut()}
       onViewPremium={() => router.push('/paywall')}
     />

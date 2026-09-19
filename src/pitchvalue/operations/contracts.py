@@ -101,7 +101,7 @@ class EngineRun:
             "provider_contract_version",
         ):
             _nonblank(getattr(self, name), name)
-        
+
         _nonblank(self.logical_run_id, "logical_run_id")
         if self.attempt_number < 0:
             raise ValueError("attempt_number must be non-negative")

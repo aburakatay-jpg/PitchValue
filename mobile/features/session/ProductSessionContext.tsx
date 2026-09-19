@@ -35,7 +35,12 @@ type ProductSessionContextValue = Readonly<{
   user: ProductUser | null;
   entitlement: ServerEntitlement['state'];
   signInEmail: (email: string, password: string) => Promise<void>;
-  signUpEmail: (email: string, password: string) => Promise<void>;
+  signUpEmail: (
+    email: string,
+    password: string,
+    countryCode: string,
+    ageAcknowledged: boolean,
+  ) => Promise<{ deliveryState: string }>;
   signOut: () => Promise<void>;
   refreshEntitlement: () => Promise<void>;
 }>;
@@ -141,13 +146,21 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
     [activate],
   );
   const signUpEmail = useCallback(
-    async (email: string, password: string) => {
-      const session = await registerEmail(
+    async (
+      email: string,
+      password: string,
+      countryCode: string,
+      ageAcknowledged: boolean,
+    ) => {
+      const response = await registerEmail(
         email,
         password,
+        countryCode,
+        ageAcknowledged,
         new AbortController().signal,
       );
-      await activate(session);
+      await activate(response.session);
+      return { deliveryState: response.delivery_state };
     },
     [activate],
   );

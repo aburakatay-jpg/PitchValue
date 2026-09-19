@@ -13,6 +13,11 @@ export type ProductSession = Readonly<{
   refresh_expires_at: string;
 }>;
 
+export type RegistrationResponse = Readonly<{
+  session: ProductSession;
+  delivery_state: string;
+}>;
+
 export type ServerEntitlement = Readonly<{
   state:
     | 'GUEST'

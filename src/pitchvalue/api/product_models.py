@@ -25,9 +25,22 @@ class SessionResponse(BaseModel):
     refresh_expires_at: datetime
 
 
+class EmailRegistrationResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    session: SessionResponse
+    delivery_state: str
+
+
 class EmailAuthRequest(BaseModel):
     email: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=10, max_length=1024)
+    password: str = Field(min_length=8, max_length=1024)
+
+
+class EmailRegistrationRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=8, max_length=1024)
+    country_code: str = Field(min_length=2, max_length=2)
+    age_18_acknowledged: bool
 
 
 class RefreshRequest(BaseModel):
@@ -40,7 +53,11 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirmRequest(BaseModel):
     token: str = Field(min_length=10, max_length=512)
-    new_password: str = Field(min_length=10, max_length=1024)
+    new_password: str = Field(min_length=8, max_length=1024)
+
+
+class EmailVerificationConfirmRequest(BaseModel):
+    token: str = Field(min_length=10, max_length=512)
 
 
 class ExternalAuthRequest(BaseModel):

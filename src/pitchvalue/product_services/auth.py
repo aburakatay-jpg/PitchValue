@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import hmac
+import json
 import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from pathlib import Path
 from typing import Protocol
 
 from sqlalchemy import Connection, text
@@ -19,6 +22,10 @@ REFRESH_TTL = timedelta(days=30)
 SCRYPT_N = 2**14
 SCRYPT_R = 8
 SCRYPT_P = 1
+
+_COUNTRIES_PATH = Path(__file__).parent.parent / "data" / "countries.json"
+with open(_COUNTRIES_PATH) as f:
+    VALID_COUNTRIES = frozenset(json.load(f))
 
 
 class AuthError(ValueError):
@@ -65,6 +72,12 @@ class PasswordResetDelivery(Protocol):
     def request_reset(self, normalized_email: str, raw_token: str) -> None: ...
 
 
+class EmailVerificationDelivery(Protocol):
+    """Boundary implemented by an approved email delivery provider."""
+
+    def request_verification(self, normalized_email: str, raw_token: str) -> None: ...
+
+
 class UnconfiguredAppleIdentityVerifier:
     def verify(self, provider_token: str) -> VerifiedExternalIdentity:
         del provider_token
@@ -85,6 +98,14 @@ class UnconfiguredPasswordResetDelivery:
         raise RuntimeError("password reset delivery requires external activation")
 
 
+class UnconfiguredEmailVerificationDelivery:
+    """Fail closed without revealing whether an email identity exists."""
+
+    def request_verification(self, normalized_email: str, raw_token: str) -> None:
+        del normalized_email, raw_token
+        raise RuntimeError("email verification delivery requires external activation")
+
+
 def normalize_email(value: str) -> str:
     normalized = value.strip().casefold()
     if not normalized or "@" not in normalized or normalized.startswith("@"):
@@ -96,8 +117,14 @@ def normalize_email(value: str) -> str:
 
 
 def hash_password(password: str, *, salt: bytes | None = None) -> str:
-    if len(password) < 10 or len(password) > 1024:
+    if len(password) < 8 or len(password) > 1024:
         raise AuthError("password does not meet length requirements")
+    if not any(c.isupper() for c in password):
+        raise AuthError("password must contain an uppercase letter")
+    if not any(c.islower() for c in password):
+        raise AuthError("password must contain a lowercase letter")
+    if not any(c.isdigit() for c in password):
+        raise AuthError("password must contain a number")
     actual_salt = salt or secrets.token_bytes(16)
     derived = hashlib.scrypt(
         password.encode("utf-8"),
@@ -164,11 +191,18 @@ def register_email(
     connection: Connection,
     email: str,
     password: str,
-    *,
+    country_code: str,
     now: datetime | None = None,
-) -> IssuedSession:
+) -> tuple[IssuedSession, str]:
     issued_at = _now(now)
     normalized = normalize_email(email)
+
+    country_code = country_code.strip().upper()
+    if country_code not in VALID_COUNTRIES:
+        raise AuthError("invalid country code")
+
+    if password.casefold() == normalized:
+        raise AuthError("password cannot be the same as email")
     password_hash = hash_password(password)
     user_id = str(uuid.uuid4())
     existing = connection.execute(
@@ -179,17 +213,18 @@ def register_email(
         raise AuthError("email identity already exists")
     connection.execute(
         text(
-            "INSERT INTO app_users (user_id,account_kind,created_at,updated_at) "
-            "VALUES (:user_id,'AUTHENTICATED',:now,:now)"
+            "INSERT INTO app_users "
+            "(user_id,account_kind,created_at,updated_at,country_code,age_18_acknowledged_at) "
+            "VALUES (:user_id,'AUTHENTICATED',:now,:now,:country_code,:now)"
         ),
-        {"user_id": user_id, "now": issued_at},
+        {"user_id": user_id, "now": issued_at, "country_code": country_code},
     )
     connection.execute(
         text(
             "INSERT INTO auth_identities "
             "(user_id,provider,provider_subject,normalized_email,password_hash,"
             "created_at,last_verified_at) VALUES "
-            "(:user_id,'EMAIL',:email,:email,:password_hash,:now,:now)"
+            "(:user_id,'EMAIL',:email,:email,:password_hash,:now,NULL)"
         ),
         {
             "user_id": user_id,
@@ -198,11 +233,30 @@ def register_email(
             "now": issued_at,
         },
     )
+
+    raw_token = secrets.token_urlsafe(32)
+    expires_at = issued_at + timedelta(days=1)
+    connection.execute(
+        text(
+            "INSERT INTO auth_email_verifications (token_hash, user_id, expires_at) "
+            "VALUES (:hash, :user_id, :expires)"
+        ),
+        {"hash": _token_hash(raw_token), "user_id": user_id, "expires": expires_at},
+    )
+
+    from pitchvalue.product_services.email_delivery import ResendEmailVerificationDelivery
+
+    delivery_state = "VERIFICATION_EMAIL_SENT"
+    try:
+        ResendEmailVerificationDelivery().request_verification(normalized, raw_token)
+    except RuntimeError:
+        delivery_state = "VERIFICATION_DELIVERY_UNAVAILABLE"
+
     return _issue_session(
         connection,
         ProductUser(user_id, AccountKind.AUTHENTICATED, normalized),
         issued_at,
-    )
+    ), delivery_state
 
 
 def login_email(
@@ -508,6 +562,42 @@ def confirm_password_reset(
     connection.execute(
         text(
             "UPDATE auth_sessions SET revoked_at=:now WHERE user_id=:user_id AND revoked_at IS NULL"
+        ),
+        {"now": checked_at, "user_id": user_id},
+    )
+
+
+def confirm_email_verification(
+    connection: Connection,
+    raw_token: str,
+    *,
+    now: datetime | None = None,
+) -> None:
+    checked_at = _now(now)
+    token_hash = _token_hash(raw_token)
+
+    row = connection.execute(
+        text(
+            "SELECT user_id FROM auth_email_verifications "
+            "WHERE token_hash=:hash AND used_at IS NULL AND expires_at > :now"
+        ),
+        {"hash": token_hash, "now": checked_at},
+    ).scalar_one_or_none()
+
+    if row is None:
+        raise AuthError("Invalid or expired verification token")
+
+    user_id = str(row)
+
+    connection.execute(
+        text("UPDATE auth_email_verifications SET used_at=:now WHERE token_hash=:hash"),
+        {"now": checked_at, "hash": token_hash},
+    )
+
+    connection.execute(
+        text(
+            "UPDATE auth_identities SET last_verified_at=:now "
+            "WHERE user_id=:user_id AND provider='EMAIL'"
         ),
         {"now": checked_at, "user_id": user_id},
     )

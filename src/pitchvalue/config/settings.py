@@ -26,6 +26,12 @@ class Settings:
     )
     log_level: str = "INFO"
 
+    # Email Delivery Configuration
+    resend_api_key: str | None = None
+    auth_email_from: str | None = None
+    auth_verification_public_base_url: str | None = None
+    resend_api_base_url: str = "https://api.resend.com"
+
     def __repr__(self) -> str:
         return (
             "Settings("
@@ -109,6 +115,14 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
     log_level = values.get("LOG_LEVEL", "INFO").strip().upper()
     if log_level not in _LOG_LEVELS:
         raise ConfigurationError("LOG_LEVEL must be a standard Python logging level")
+
+    resend_api_key = values.get("RESEND_API_KEY", "").strip() or None
+    auth_email_from = values.get("AUTH_EMAIL_FROM", "").strip() or None
+    auth_verification_public_base_url = (
+        values.get("AUTH_VERIFICATION_PUBLIC_BASE_URL", "").strip() or None
+    )
+    resend_api_base_url = values.get("RESEND_API_BASE_URL", "https://api.resend.com").strip()
+
     return Settings(
         database_url=database_url,
         environment_name=environment_name,
@@ -116,6 +130,10 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
         api_port=api_port,
         cors_allowed_origins=cors_allowed_origins,
         log_level=log_level,
+        resend_api_key=resend_api_key,
+        auth_email_from=auth_email_from,
+        auth_verification_public_base_url=auth_verification_public_base_url,
+        resend_api_base_url=resend_api_base_url,
     )
 
 

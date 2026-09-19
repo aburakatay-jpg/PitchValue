@@ -58,7 +58,7 @@ def test_external_identity_email_collision(db_connection):
     # Register email identity
     from pitchvalue.product_services.auth import register_email
 
-    register_email(db_connection, "collide@test.com", "password12345!")
+    register_email(db_connection, "collide@test.com", "Password12345!", "US")
 
     # Attempt to authenticate with same email via external provider
     with pytest.raises(AuthError, match="EMAIL_IDENTITY_COLLISION"):

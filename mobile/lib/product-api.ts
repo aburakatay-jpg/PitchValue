@@ -4,6 +4,7 @@ import type {
   CouponExecution,
   ProductServiceReadiness,
   ProductSession,
+  RegistrationResponse,
   ProductUser,
   SavedSelection,
   SavedSelectionList,
@@ -84,12 +85,29 @@ export function createGuestSession(
 export function registerEmail(
   email: string,
   password: string,
+  countryCode: string,
+  ageAcknowledged: boolean,
   signal: AbortSignal,
-): Promise<ProductSession> {
+): Promise<RegistrationResponse> {
   return productRequest(
     '/api/v1/auth/email/register',
-    { method: 'POST', body: { email, password }, signal },
-    isSession,
+    {
+      method: 'POST',
+      body: { email, password, country_code: countryCode, age_18_acknowledged: ageAcknowledged },
+      signal,
+    },
+    isRegistrationResponse,
+  );
+}
+
+export function confirmEmailVerification(
+  token: string,
+  signal: AbortSignal,
+): Promise<void> {
+  return productRequest(
+    '/api/v1/auth/email/verification/confirm',
+    { method: 'POST', body: { token }, signal },
+    isVoid,
   );
 }
 
@@ -260,6 +278,15 @@ function isUser(value: unknown): value is ProductUser {
     (value.account_kind === 'GUEST' ||
       value.account_kind === 'AUTHENTICATED') &&
     nullableString(value.email)
+  );
+}
+
+function isRegistrationResponse(value: unknown): value is RegistrationResponse {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    isSession(obj.session) &&
+    typeof obj.delivery_state === 'string'
   );
 }
 

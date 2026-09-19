@@ -67,10 +67,12 @@ def test_guest_email_session_refresh_expiry_and_logout(product_engine: Engine) -
     now = datetime(2026, 9, 16, tzinfo=UTC)
     with product_engine.begin() as connection:
         guest = create_guest_session(connection, now=now)
-        email = register_email(connection, "Person@Example.com", "very secure password", now=now)
+        email, _ = register_email(
+            connection, "Person@Example.com", "VerySecurePassword1!", "US", now=now
+        )
     with product_engine.begin() as connection:
         assert authenticate_access_token(connection, guest.access_token, now=now) == guest.user
-        login = login_email(connection, "person@example.com", "very secure password", now=now)
+        login = login_email(connection, "person@example.com", "VerySecurePassword1!", now=now)
         refreshed = refresh_session(connection, login.refresh_token, now=now + timedelta(minutes=1))
         assert authenticate_access_token(connection, login.access_token, now=now) is None
         assert authenticate_access_token(connection, refreshed.access_token, now=now) == email.user

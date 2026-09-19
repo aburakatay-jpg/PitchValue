@@ -44,12 +44,12 @@ describe('auth-safe presentation', () => {
     );
     await fireEvent.changeText(
       view.getByLabelText('Password'),
-      'secure password',
+      'SecurePassword1!',
     );
     await fireEvent.press(view.getByLabelText('Sign in'));
     expect(onSignIn).toHaveBeenCalledWith(
       'user@example.com',
-      'secure password',
+      'SecurePassword1!',
     );
   });
 });

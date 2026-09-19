@@ -45,15 +45,28 @@ async function request<T>(
   const fullUrl = `${config.apiBaseUrl.replace(/\/$/, '')}${path}`;
   if (__DEV__) console.log(`[API] Fetching ${fullUrl}`);
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    signal.addEventListener('abort', () => {
+      clearTimeout(timeout);
+      controller.abort();
+    });
+
     response = await fetch(fullUrl, {
       headers: { Accept: 'application/json' },
       method: 'GET',
-      signal,
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      if (__DEV__) console.log(`[API] ${path} CANCELLED`);
-      throw new PublicApiError('CANCELLED');
+      if (signal.aborted) {
+        if (__DEV__) console.log(`[API] ${path} CANCELLED`);
+        throw new PublicApiError('CANCELLED');
+      } else {
+        if (__DEV__) console.log(`[API] ${path} NETWORK TIMEOUT`);
+        throw new PublicApiError('API_UNAVAILABLE');
+      }
     }
     if (__DEV__)
       console.log(

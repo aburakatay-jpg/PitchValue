@@ -31,7 +31,7 @@ def db_connection(product_engine: Engine):
 
 def test_password_reset_lifecycle(db_connection):
     # Setup
-    session = register_email(db_connection, "reset@test.com", "oldpassword123!")
+    session, _ = register_email(db_connection, "reset@test.com", "OldPassword123!", "US")
     user_id = session.user.user_id
 
     # Request
@@ -51,12 +51,12 @@ def test_password_reset_lifecycle(db_connection):
     assert row["used_at"] is None
 
     # Confirm
-    confirm_password_reset(db_connection, raw_token, "newpassword456!")
+    confirm_password_reset(db_connection, raw_token, "NewPassword123!")
 
     # Verify used_at set
     row = (
         db_connection.execute(
-            text("SELECT used_at FROM auth_password_resets WHERE token_hash=:hash"),
+            text("SELECT * FROM auth_password_resets WHERE token_hash=:hash"),
             {"hash": _token_hash(raw_token)},
         )
         .mappings()
@@ -65,19 +65,19 @@ def test_password_reset_lifecycle(db_connection):
     assert row["used_at"] is not None
 
     # Login with new password works
-    new_session = login_email(db_connection, "reset@test.com", "newpassword456!")
+    new_session = login_email(db_connection, "reset@test.com", "NewPassword123!")
     assert new_session.user.user_id == user_id
 
     # Login with old password fails
-    with pytest.raises(AuthError):
-        login_email(db_connection, "reset@test.com", "oldpassword123!")
+    with pytest.raises(AuthError, match="credentials"):
+        login_email(db_connection, "reset@test.com", "OldPassword123!")
 
 
 def test_password_reset_invalid_token(db_connection):
-    register_email(db_connection, "badtoken@test.com", "oldpassword123!")
+    register_email(db_connection, "badtoken@test.com", "OldPassword123!", "US")
 
     with pytest.raises(AuthError, match="Invalid or expired reset token"):
-        confirm_password_reset(db_connection, "invalid_token_123", "newpassword456!")
+        confirm_password_reset(db_connection, "bad_token_value", "NewPassword123!")
 
 
 def test_password_reset_anti_enumeration(db_connection):

@@ -43,10 +43,10 @@ D = Decimal
 
 def test_email_normalization_and_scrypt_password_verification() -> None:
     assert normalize_email(" User@Example.COM ") == "user@example.com"
-    encoded = hash_password("correct horse battery staple", salt=b"0123456789abcdef")
+    encoded = hash_password("CorrectHorseBatteryStaple1", salt=b"0123456789abcdef")
     assert encoded.startswith("scrypt$")
     assert "correct horse" not in encoded
-    assert verify_password("correct horse battery staple", encoded)
+    assert verify_password("CorrectHorseBatteryStaple1", encoded)
     assert not verify_password("wrong password", encoded)
 
 
