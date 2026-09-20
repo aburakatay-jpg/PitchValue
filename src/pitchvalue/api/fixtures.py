@@ -199,7 +199,11 @@ def _summary(
     effective = source_seen or refresh.last_success_at
     if refresh.state is FreshnessState.FAILED:
         availability = DataAvailabilityState.PROVIDER_UNAVAILABLE
-    elif effective is not None and effective < checked_at - FIXTURE_STALE_AFTER:
+    elif (
+        effective is not None and effective < checked_at - FIXTURE_STALE_AFTER
+    ) or (
+        row["status"] == "SCHEDULED" and row["kickoff_at_utc"] < checked_at - timedelta(minutes=15)
+    ):
         availability = DataAvailabilityState.STALE
     else:
         availability = DataAvailabilityState.AVAILABLE
