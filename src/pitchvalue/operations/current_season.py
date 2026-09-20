@@ -63,24 +63,25 @@ class CurrentSeasonPersistenceResult:
     terminal_status: RunStatus
 
 
-def persist_current_season_payloads(
+def _process_payloads(
     connection: Connection,
     payloads: Sequence[Mapping[str, object]],
-    *,
-    logical_run_id: str,
-    window_start: datetime,
-    window_end: datetime,
+    provider_id: int,
     prediction_as_of: datetime,
-    plan: str = "FREE",
-) -> CurrentSeasonPersistenceResult:
-    """Persist source identities and safe resolved fixtures as one run transaction."""
-    provider_id = ensure_provider(connection, PROVIDER_NAME, plan=plan)
+) -> tuple[
+    list[ProviderFixture],
+    list[FixtureWriteResult],
+    dict[str, int],
+    Counter[str],
+    int,
+    list[tuple[int, str]],
+    int,
+]:
     mappings = resolve_explicit_team_mappings(connection, provider_id)
     reference_counts: Counter[str] = Counter()
     malformed = 0
     observed_competition_ids: set[int] = set()
 
-    # First pass records every observable competition/team source identity.
     for payload in payloads:
         league = payload.get("league")
         teams = payload.get("teams")
@@ -235,6 +236,50 @@ def persist_current_season_payloads(
         if write.status.value.endswith("REVIEW"):
             pending_quarantines.append((write.source_entity_ref_id, write.status.value))
         reference_counts["FIXTURE_RESOLVED"] += int(write.match_id is not None)
+
+    return (
+        parsed,
+        writes,
+        match_ids,
+        reference_counts,
+        seasons_inserted,
+        pending_quarantines,
+        malformed,
+    )
+
+
+def persist_on_demand_payloads(
+    connection: Connection,
+    payloads: Sequence[Mapping[str, object]],
+    *,
+    prediction_as_of: datetime,
+    plan: str = "FREE",
+) -> None:
+    provider_id = ensure_provider(connection, PROVIDER_NAME, plan=plan)
+    _process_payloads(connection, payloads, provider_id, prediction_as_of)
+
+
+def persist_current_season_payloads(
+    connection: Connection,
+    payloads: Sequence[Mapping[str, object]],
+    *,
+    logical_run_id: str,
+    window_start: datetime,
+    window_end: datetime,
+    prediction_as_of: datetime,
+    plan: str = "FREE",
+) -> CurrentSeasonPersistenceResult:
+    """Persist source identities and safe resolved fixtures as one run transaction."""
+    provider_id = ensure_provider(connection, PROVIDER_NAME, plan=plan)
+    (
+        parsed,
+        writes,
+        match_ids,
+        reference_counts,
+        seasons_inserted,
+        pending_quarantines,
+        malformed,
+    ) = _process_payloads(connection, payloads, provider_id, prediction_as_of)
 
     status = (
         RunStatus.PARTIAL_WITH_QUARANTINES

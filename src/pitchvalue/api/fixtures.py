@@ -58,6 +58,53 @@ m.home_score,m.away_score,m.result,m.updated_at,
  WHERE ser.entity_type='FIXTURE' AND ser.canonical_match_id=m.match_id) AS source_last_seen_at
 """
 
+_refresh_attempts: dict[date, datetime] = {}
+
+
+def _refresh_stale_date(connection: Connection, fixture_date: date, checked_at: datetime) -> bool:
+    if _refresh_attempts.get(
+        fixture_date, datetime.min.replace(tzinfo=UTC)
+    ) > checked_at - timedelta(minutes=15):
+        return False
+
+    start_time = datetime(fixture_date.year, fixture_date.month, fixture_date.day, tzinfo=UTC)
+    lock_id1 = 1001
+    lock_id2 = int(start_time.timestamp())
+    locked = connection.execute(
+        text("SELECT pg_try_advisory_xact_lock(:id1, :id2)"),
+        {"id1": lock_id1, "id2": lock_id2},
+    ).scalar()
+    if not locked:
+        return False
+
+    import os
+
+    from pitchvalue.operations.current_season import persist_on_demand_payloads
+    from pitchvalue.providers.five_dfa.adapter import FiveDfaFreeAdapter
+    from pitchvalue.providers.five_dfa.client import FiveDfaClient
+    from pitchvalue.providers.five_dfa.config import load_five_dfa_project_config
+
+    config = load_five_dfa_project_config(os.environ)
+    client = FiveDfaClient(config)
+    adapter = FiveDfaFreeAdapter(client)
+    end_time = start_time + timedelta(days=1)
+
+    try:
+        payloads, _ = adapter.fixture_payloads(start_time=start_time, end_time=end_time)
+        _refresh_attempts[fixture_date] = checked_at
+        if not payloads:
+            return False
+        persist_on_demand_payloads(
+            connection,
+            payloads,
+            prediction_as_of=checked_at,
+        )
+        connection.commit()
+        return True
+    except Exception:
+        _refresh_attempts[fixture_date] = checked_at
+        return False
+
 
 def today_fixtures(
     connection: Connection,
@@ -69,18 +116,25 @@ def today_fixtures(
     zone = _zone(timezone_name)
     checked_at = now or datetime.now(UTC)
     _aware(checked_at)
-    rows = connection.execute(
-        text(
-            f"""SELECT {_FIXTURE_COLUMNS} FROM matches m
-            JOIN competitions c ON c.competition_id=m.competition_id
-            JOIN teams ht ON ht.team_id=m.home_team_id
-            JOIN teams at ON at.team_id=m.away_team_id
-            WHERE (m.kickoff_at_utc AT TIME ZONE :timezone)::date=:fixture_date
-            ORDER BY m.kickoff_at_utc,m.match_id"""
-        ),
-        {"timezone": zone.key, "fixture_date": fixture_date},
-    ).mappings()
+    query = text(
+        f"""SELECT {_FIXTURE_COLUMNS} FROM matches m
+        JOIN competitions c ON c.competition_id=m.competition_id
+        JOIN teams ht ON ht.team_id=m.home_team_id
+        JOIN teams at ON at.team_id=m.away_team_id
+        WHERE (m.kickoff_at_utc AT TIME ZONE :timezone)::date=:fixture_date
+        ORDER BY m.kickoff_at_utc,m.match_id"""
+    )
+    params = {"timezone": zone.key, "fixture_date": fixture_date}
+    rows = connection.execute(query, params).mappings()
     materialized = tuple(rows)
+
+    if any(
+        row["status"] == "SCHEDULED" and row["kickoff_at_utc"] < checked_at - timedelta(minutes=15)
+        for row in materialized
+    ):
+        if _refresh_stale_date(connection, fixture_date, checked_at):
+            rows = connection.execute(query, params).mappings()
+            materialized = tuple(rows)
     match_ids = [int(row["match_id"]) for row in materialized]
     public = current_predictions(connection, match_ids, publication_only=True)
     grouped = _group_predictions(public)
@@ -200,9 +254,13 @@ def _summary(
     if refresh.state is FreshnessState.FAILED:
         availability = DataAvailabilityState.PROVIDER_UNAVAILABLE
     elif (
-        effective is not None and effective < checked_at - FIXTURE_STALE_AFTER
-    ) or (
-        row["status"] == "SCHEDULED" and row["kickoff_at_utc"] < checked_at - timedelta(minutes=15)
+        effective is not None
+        and effective < checked_at - FIXTURE_STALE_AFTER
+        or (
+            row["status"] == "SCHEDULED"
+            and row["kickoff_at_utc"] < checked_at - timedelta(minutes=15)
+            and (effective is None or effective < checked_at - timedelta(minutes=15))
+        )
     ):
         availability = DataAvailabilityState.STALE
     else:
