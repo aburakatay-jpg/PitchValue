@@ -110,6 +110,8 @@ class FixtureSummaryResponse(BaseModel):
     home_team: TeamResponse
     away_team: TeamResponse
     fixture_status: str
+    home_score: int | None = None
+    away_score: int | None = None
     data_availability: DataAvailabilityState
     public_analysis: PublicAnalysisState
     publication_state: PublicationState

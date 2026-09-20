@@ -79,10 +79,21 @@ export function TodayFixtureCard({
           </Text>
         </View>
         <View
-          accessibilityLabel={`${fixture.home_team.name}, ${fixture.away_team.name}`}
+          accessibilityLabel={`${fixture.home_team.name}${fixture.home_score != null ? ' ' + fixture.home_score : ''}, ${fixture.away_team.name}${fixture.away_score != null ? ' ' + fixture.away_score : ''}`}
+          style={{ gap: 4 }}
         >
-          <Text style={styles.team}>{fixture.home_team.name}</Text>
-          <Text style={styles.team}>{fixture.away_team.name}</Text>
+          <View style={sharedStyles.rowBetween}>
+            <Text style={styles.team}>{fixture.home_team.name}</Text>
+            {fixture.home_score != null && (
+              <Text style={styles.team}>{fixture.home_score}</Text>
+            )}
+          </View>
+          <View style={sharedStyles.rowBetween}>
+            <Text style={styles.team}>{fixture.away_team.name}</Text>
+            {fixture.away_score != null && (
+              <Text style={styles.team}>{fixture.away_score}</Text>
+            )}
+          </View>
         </View>
         <View style={sharedStyles.rowBetween}>
           <Badge

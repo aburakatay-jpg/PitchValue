@@ -218,6 +218,8 @@ def _summary(
         home_team=TeamResponse(name=str(row["home_team"])),
         away_team=TeamResponse(name=str(row["away_team"])),
         fixture_status=str(row["status"]),
+        home_score=row["home_score"],
+        away_score=row["away_score"],
         data_availability=availability,
         public_analysis=public_state,
         publication_state=publication,

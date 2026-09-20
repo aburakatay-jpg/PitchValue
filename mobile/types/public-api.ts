@@ -41,6 +41,8 @@ export type PublicFixtureSummary = Readonly<{
   home_team: Readonly<{ name: string }>;
   away_team: Readonly<{ name: string }>;
   fixture_status: string;
+  home_score?: number | null;
+  away_score?: number | null;
   data_availability:
     'AVAILABLE' | 'DATA_INSUFFICIENT' | 'STALE' | 'PROVIDER_UNAVAILABLE';
   public_analysis:
