@@ -42,7 +42,9 @@ class ResendEmailVerificationDelivery:
                 <p>Hesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın:</p>
                 <p>Please click the link below to verify your account:</p>
                 <p>
-                    <a href="{verification_url}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+                    <a href="{verification_url}" style="display: inline-block; padding: 10px 20px; 
+                        background-color: #007bff; color: white; text-decoration: none; 
+                        border-radius: 5px;">
                         Doğrula / Verify
                     </a>
                 </p>

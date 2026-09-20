@@ -23,6 +23,7 @@ from pitchvalue.providers.lifecycle import (
 class FixtureWriteStatus(StrEnum):
     INSERTED = "INSERTED"
     UNCHANGED = "UNCHANGED"
+    IN_PLAY = "IN_PLAY"
     KICKOFF_REVISED = "KICKOFF_REVISED"
     FINISHED = "FINISHED"
     RESULT_REVISION_REVIEW = "RESULT_REVISION_REVIEW"
@@ -346,6 +347,26 @@ def persist_fixture(
                     },
                 )
                 write_status = FixtureWriteStatus.FINISHED
+            elif status == "IN_PLAY" and (
+                existing["status"] != "IN_PLAY"
+                or existing["home_score"] != fixture.home_score
+                or existing["away_score"] != fixture.away_score
+                or kickoff_changed
+            ):
+                connection.execute(
+                    text(
+                        """UPDATE matches SET kickoff_at_utc=:kickoff,status='IN_PLAY',
+                        home_score=:home_score,away_score=:away_score,updated_at=now()
+                        WHERE match_id=:match_id"""
+                    ),
+                    {
+                        "kickoff": fixture.kickoff_utc,
+                        "home_score": fixture.home_score,
+                        "away_score": fixture.away_score,
+                        "match_id": match_id,
+                    },
+                )
+                write_status = FixtureWriteStatus.IN_PLAY
             elif kickoff_changed:
                 connection.execute(
                     text(
@@ -438,7 +459,7 @@ def _persist_statistics(
 def _canonical_status(status: FixtureStatus) -> str:
     return {
         FixtureStatus.SCHEDULED: "SCHEDULED",
-        FixtureStatus.IN_PLAY: "SCHEDULED",
+        FixtureStatus.IN_PLAY: "IN_PLAY",
         FixtureStatus.FINISHED: "FINISHED",
         FixtureStatus.UNKNOWN: "SCHEDULED",
     }[status]

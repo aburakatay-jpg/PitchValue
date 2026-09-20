@@ -58,15 +58,8 @@ m.home_score,m.away_score,m.result,m.updated_at,
  WHERE ser.entity_type='FIXTURE' AND ser.canonical_match_id=m.match_id) AS source_last_seen_at
 """
 
-_refresh_attempts: dict[date, datetime] = {}
-
 
 def _refresh_stale_date(connection: Connection, fixture_date: date, checked_at: datetime) -> bool:
-    if _refresh_attempts.get(
-        fixture_date, datetime.min.replace(tzinfo=UTC)
-    ) > checked_at - timedelta(minutes=15):
-        return False
-
     start_time = datetime(fixture_date.year, fixture_date.month, fixture_date.day, tzinfo=UTC)
     lock_id1 = 1001
     lock_id2 = int(start_time.timestamp())
@@ -91,7 +84,6 @@ def _refresh_stale_date(connection: Connection, fixture_date: date, checked_at: 
 
     try:
         payloads, _ = adapter.fixture_payloads(start_time=start_time, end_time=end_time)
-        _refresh_attempts[fixture_date] = checked_at
         if not payloads:
             return False
         persist_on_demand_payloads(
@@ -101,8 +93,12 @@ def _refresh_stale_date(connection: Connection, fixture_date: date, checked_at: 
         )
         connection.commit()
         return True
-    except Exception:
-        _refresh_attempts[fixture_date] = checked_at
+    except Exception as e:
+        import sys
+        import traceback
+
+        print(f"REFRESH EXCEPTION: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
         return False
 
 
@@ -128,13 +124,23 @@ def today_fixtures(
     rows = connection.execute(query, params).mappings()
     materialized = tuple(rows)
 
-    if any(
-        row["status"] == "SCHEDULED" and row["kickoff_at_utc"] < checked_at - timedelta(minutes=15)
-        for row in materialized
+    import typing
+
+    def is_refresh_eligible(row: typing.Any) -> bool:
+        status = row["status"]
+        if status not in ("SCHEDULED", "IN_PLAY"):
+            return False
+        kickoff: datetime = row["kickoff_at_utc"]
+        if status == "SCHEDULED" and kickoff > checked_at:
+            return False
+        last_seen: datetime | None = row["source_last_seen_at"]
+        return not (last_seen is not None and last_seen > checked_at - timedelta(minutes=15))
+
+    if any(is_refresh_eligible(row) for row in materialized) and _refresh_stale_date(
+        connection, fixture_date, checked_at
     ):
-        if _refresh_stale_date(connection, fixture_date, checked_at):
-            rows = connection.execute(query, params).mappings()
-            materialized = tuple(rows)
+        rows = connection.execute(query, params).mappings()
+        materialized = tuple(rows)
     match_ids = [int(row["match_id"]) for row in materialized]
     public = current_predictions(connection, match_ids, publication_only=True)
     grouped = _group_predictions(public)

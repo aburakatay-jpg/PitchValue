@@ -25,6 +25,7 @@ class FixtureStatus(StrEnum):
 class RefreshAction(StrEnum):
     ADD = "ADD"
     UNCHANGED = "UNCHANGED"
+    IN_PLAY = "IN_PLAY"
     KICKOFF_CHANGED = "KICKOFF_CHANGED"
     FINISHED = "FINISHED"
     UNKNOWN_REVIEW = "UNKNOWN_REVIEW"
@@ -255,6 +256,10 @@ def build_sync_plan(
             refreshes.append(
                 _refresh(fixture, current.match_id, RefreshAction.FINISHED, quarantined=False)
             )
+        elif fixture.status is FixtureStatus.IN_PLAY and current.status != "IN_PLAY":
+            refreshes.append(
+                _refresh(fixture, current.match_id, RefreshAction.IN_PLAY, quarantined=False)
+            )
         else:
             refreshes.append(
                 _refresh(fixture, current.match_id, RefreshAction.UNCHANGED, quarantined=False)
@@ -263,6 +268,7 @@ def build_sync_plan(
     normal = {
         RefreshAction.ADD,
         RefreshAction.UNCHANGED,
+        RefreshAction.IN_PLAY,
         RefreshAction.KICKOFF_CHANGED,
         RefreshAction.FINISHED,
     }
