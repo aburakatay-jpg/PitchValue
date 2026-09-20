@@ -152,12 +152,12 @@ def test_today_returns_final_score_if_finished(
     assert response.status_code == 200
     body = response.json()
     fixtures = {item["match_id"]: item for item in body["fixtures"]}
-    
+
     finished_fixture = fixtures[match_id]
     assert finished_fixture["fixture_status"] == "FINISHED"
     assert finished_fixture["home_score"] == 2
     assert finished_fixture["away_score"] == 1
-    
+
     scheduled_fixture = fixtures[scheduled_id]
     assert scheduled_fixture["fixture_status"] == "SCHEDULED"
     assert scheduled_fixture["home_score"] is None

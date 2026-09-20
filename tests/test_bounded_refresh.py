@@ -40,6 +40,7 @@ def fixture_client(fixture_api_engine: Engine) -> Iterator[TestClient]:
 
 def _clean_extended(connection: Connection) -> None:
     from sqlalchemy import text
+
     connection.execute(text("DELETE FROM competition_provider_refs"))
     connection.execute(text("DELETE FROM shadow_analysis_snapshots"))
     connection.execute(text("DELETE FROM match_statistics"))
@@ -77,9 +78,8 @@ def _mark_fresh(engine, match_id: int, fresh_at) -> None:
                 "1, 'FIXTURE', 'mock', 'mock', 'RESOLVED', 'v1', 'mock', :match_id, :fresh_at, :fresh_at"
                 ")"
             ),
-            {"match_id": match_id, "fresh_at": fresh_at}
+            {"match_id": match_id, "fresh_at": fresh_at},
         )
-
 
 
 def test_today_executes_exactly_one_provider_fetch_if_stale(
@@ -143,16 +143,18 @@ def test_today_does_not_fetch_if_not_stale(
     assert response.status_code == 200
     mock_payloads.assert_not_called()
 
+
 def test_today_live_transition_and_score_persistence(
     fixture_client: TestClient, fixture_api_engine: Engine
 ) -> None:
     kickoff = (datetime.now(UTC) - timedelta(minutes=5)).replace(microsecond=0)
     fixture_date = kickoff.date()
     match_id = _fixture(fixture_api_engine, kickoff=kickoff, finished=False)
-    
+
     with fixture_api_engine.connect() as connection:
-        row = connection.execute(
-            text("""
+        row = (
+            connection.execute(
+                text("""
                 SELECT c.canonical_name as comp_name, ht.canonical_name as home_name, at.canonical_name as away_name
                 FROM matches m
                 JOIN competitions c ON c.competition_id = m.competition_id
@@ -160,19 +162,25 @@ def test_today_live_transition_and_score_persistence(
                 JOIN teams at ON at.team_id = m.away_team_id
                 WHERE m.match_id = :match_id
             """),
-            {"match_id": match_id}
-        ).mappings().first()
+                {"match_id": match_id},
+            )
+            .mappings()
+            .first()
+        )
         comp_name = str(row["comp_name"])
         home_name = str(row["home_name"])
         away_name = str(row["away_name"])
-        
-        from pitchvalue.providers.source_persistence import ensure_provider
+
         from pitchvalue.providers.five_dfa.capabilities import PROVIDER_NAME
+        from pitchvalue.providers.source_persistence import ensure_provider
+
         provider_id = ensure_provider(connection, PROVIDER_NAME, plan="FREE")
 
         connection.execute(
-            text("INSERT INTO match_provider_refs (match_id, provider_id, provider_match_id) VALUES (:match_id, :provider_id, :prov_id) ON CONFLICT DO NOTHING"),
-            {"match_id": match_id, "provider_id": provider_id, "prov_id": str(match_id)}
+            text(
+                "INSERT INTO match_provider_refs (match_id, provider_id, provider_match_id) VALUES (:match_id, :provider_id, :prov_id) ON CONFLICT DO NOTHING"
+            ),
+            {"match_id": match_id, "provider_id": provider_id, "prov_id": str(match_id)},
         )
         connection.commit()
 
@@ -184,22 +192,20 @@ def test_today_live_transition_and_score_persistence(
         "goals": {"home": 2, "away": 1},
         "statistics": {},
         "league": {"id": 1, "name": comp_name, "country": "England"},
-        "teams": {
-            "home": {"id": 1, "name": home_name},
-            "away": {"id": 2, "name": away_name}
-        }
+        "teams": {"home": {"id": 1, "name": home_name}, "away": {"id": 2, "name": away_name}},
     }
-    
-    with patch(
-        "pitchvalue.providers.five_dfa.adapter.FiveDfaFreeAdapter.fixture_payloads"
-    ) as mock_fetch, patch(
-        "pitchvalue.providers.five_dfa.fixtures.map_competition"
-    ) as mock_map_comp, patch(
-        "pitchvalue.operations.current_season.map_competition"
-    ) as mock_map_comp2:
+
+    with (
+        patch(
+            "pitchvalue.providers.five_dfa.adapter.FiveDfaFreeAdapter.fixture_payloads"
+        ) as mock_fetch,
+        patch("pitchvalue.providers.five_dfa.fixtures.map_competition") as mock_map_comp,
+        patch("pitchvalue.operations.current_season.map_competition") as mock_map_comp2,
+    ):
         # Fake rate limit state for adapter mock
         from pitchvalue.providers.five_dfa.client import RateLimitState
         from pitchvalue.providers.five_dfa.mapping import CompetitionReference, MappingStatus
+
         mock_fetch.return_value = ((mock_payload,), (RateLimitState(100, 100, 60, None),))
         comp_ref = CompetitionReference(
             provider="5DollarFootballAPI",
@@ -210,14 +216,16 @@ def test_today_live_transition_and_score_persistence(
         )
         mock_map_comp.return_value = comp_ref
         mock_map_comp2.return_value = comp_ref
-        
-        response = fixture_client.get(f"/api/v1/fixtures/today?date={fixture_date.isoformat()}&timezone=UTC")
+
+        response = fixture_client.get(
+            f"/api/v1/fixtures/today?date={fixture_date.isoformat()}&timezone=UTC"
+        )
         assert response.status_code == 200
         data = response.json()
-        
+
         # Verify provider called
         assert mock_fetch.call_count == 1
-        
+
         # Verify Today API response is LIVE with score
         fixtures = data.get("fixtures", [])
         assert len(fixtures) == 1
@@ -225,13 +233,19 @@ def test_today_live_transition_and_score_persistence(
         assert match["fixture_status"] == "IN_PLAY"
         assert match["home_score"] == 2
         assert match["away_score"] == 1
-        
+
         # Verify DB is LIVE with score
         with fixture_api_engine.connect() as connection:
-            row = connection.execute(
-                text("SELECT status, home_score, away_score FROM matches WHERE match_id = :match_id"),
-                {"match_id": match_id}
-            ).mappings().first()
+            row = (
+                connection.execute(
+                    text(
+                        "SELECT status, home_score, away_score FROM matches WHERE match_id = :match_id"
+                    ),
+                    {"match_id": match_id},
+                )
+                .mappings()
+                .first()
+            )
             assert row["status"] == "IN_PLAY"
             assert row["home_score"] == 2
             assert row["away_score"] == 1

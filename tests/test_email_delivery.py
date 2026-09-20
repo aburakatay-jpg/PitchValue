@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from pitchvalue.config import load_settings, Settings
+from pitchvalue.config import Settings
 from pitchvalue.product_services.email_delivery import ResendEmailVerificationDelivery
 
 

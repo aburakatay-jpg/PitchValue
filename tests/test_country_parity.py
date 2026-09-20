@@ -15,4 +15,6 @@ def test_country_parity():
     with open(mobile_path, encoding="utf-8") as f:
         mobile_data = json.load(f)
 
-    assert backend_data == mobile_data, "Mobile country artifact diverges from backend canonical source"  # noqa: E501
+    assert backend_data == mobile_data, (
+        "Mobile country artifact diverges from backend canonical source"
+    )  # noqa: E501
