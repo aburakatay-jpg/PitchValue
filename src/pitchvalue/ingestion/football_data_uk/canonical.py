@@ -31,6 +31,8 @@ TIMEZONES = {
     "PRT": "Europe/Lisbon",
     "ESP": "Europe/Madrid",
     "SCO": "Europe/London",
+    "ITA": "Europe/Rome",
+    "NLD": "Europe/Amsterdam",
 }
 
 STAT_COLUMN_MAP = {

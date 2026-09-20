@@ -165,7 +165,8 @@ def test_downloader_uses_http_boundary_and_preserves_response(tmp_path: Path) ->
 
 
 def test_registry_has_only_approved_domestic_scope() -> None:
-    assert len(SOURCES) == 14
+    # 9 competitions × 3 seasons = 27 sources
+    assert len(SOURCES) == 27
     assert {source.canonical_competition for source in SOURCES} == {
         "Premier League",
         "Ligue 1",
@@ -174,8 +175,11 @@ def test_registry_has_only_approved_domestic_scope() -> None:
         "Primeira Liga",
         "La Liga",
         "Scottish Premiership",
+        # Data-corpus-only competitions (active=False in DB, not engine-authorised)
+        "Serie A",
+        "Eredivisie",
     }
-    assert {source.season_name for source in SOURCES} == {"2024/25", "2025/26"}
+    assert {source.season_name for source in SOURCES} == {"2024/25", "2025/26", "2026/27"}
     assert all("UEFA" not in source.canonical_competition for source in SOURCES)
     assert all(source.enabled for source in SOURCES)
 
@@ -189,8 +193,12 @@ def test_registry_codes_and_urls_are_explicit() -> None:
         "P1",
         "SP1",
         "SC0",
+        "I1",
+        "N1",
     }
     assert get_source("SC0:2025/26").url.endswith("/mmz4281/2526/SC0.csv")
+    assert get_source("I1:2026/27").url.endswith("/mmz4281/2627/I1.csv")
+    assert get_source("N1:2026/27").url.endswith("/mmz4281/2627/N1.csv")
 
 
 def test_raw_directory_is_ignored_but_synthetic_fixtures_are_not() -> None:

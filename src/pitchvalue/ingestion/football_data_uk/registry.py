@@ -36,8 +36,10 @@ _COMPETITIONS = (
     ("Primeira Liga", "P1", "PRT", "PRT"),
     ("La Liga", "SP1", "ESP", "ESP"),
     ("Scottish Premiership", "SC0", "GBR", "SCO"),
+    ("Serie A", "I1", "ITA", "ITA"),
+    ("Eredivisie", "N1", "NLD", "NLD"),
 )
-_SEASONS = (("2024/25", "2425"), ("2025/26", "2526"))
+_SEASONS = (("2024/25", "2425"), ("2025/26", "2526"), ("2026/27", "2627"))
 
 SOURCES = tuple(
     SourceDefinition(
