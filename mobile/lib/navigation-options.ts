@@ -3,3 +3,5 @@ export const signInScreenOptions = {
   headerBackTitle: '',
   headerBackButtonDisplayMode: 'minimal' as const,
 };
+
+export const registrationScreenOptions = signInScreenOptions;

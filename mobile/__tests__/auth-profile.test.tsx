@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import AuthEntryScreen from '@/app/auth';
 import { ProfileView, profileGroups } from '@/app/profile';
-import { EmailAuthShell, SignInShell } from '@/components/AuthShell';
+import { SignInShell } from '@/components/AuthShell';
 import { signInScreenOptions } from '@/lib/navigation-options';
 import { ProductServiceError } from '@/lib/product-api';
 import { entitlementStates } from '@/types/entitlement';
@@ -27,6 +27,10 @@ const turkishEntitlementLabels = {
 
 describe('auth-safe presentation', () => {
   beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  afterEach(async () => {
     await AsyncStorage.clear();
   });
 
@@ -157,12 +161,6 @@ describe('auth-safe presentation', () => {
       expect(await view.findByText(label)).toBeTruthy();
     }
     expect(view.queryByText('Continue as Guest')).toBeNull();
-  });
-
-  it('keeps the existing registration shell separate from sign-in', async () => {
-    const view = await render(<EmailAuthShell initialMode="SIGN_UP" />);
-    expect(await view.findByText('Create an account')).toBeTruthy();
-    expect(view.queryByText('Sign In')).toBeNull();
   });
 });
 

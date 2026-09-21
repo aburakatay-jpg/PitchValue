@@ -1,17 +1,19 @@
+import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { EmailAuthShell } from '@/components/AuthShell';
+import { CreateAccountShell } from '@/components/AuthShell';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 import { confirmEmailVerification } from '@/lib/product-api';
 
 export default function EmailAuthScreen() {
   const router = useRouter();
   const session = useProductSession();
+  const { t } = useLanguage();
 
-  const handleSignIn = async (email: string, password: string) => {
-    await session.signInEmail(email, password);
+  const returnToSignIn = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)/today');
+    else router.replace('/auth');
   };
 
   const handleSignUp = async (
@@ -30,9 +32,20 @@ export default function EmailAuthScreen() {
   };
 
   return (
-    <EmailAuthShell
-      initialMode="SIGN_UP"
-      onSignIn={handleSignIn}
+    <CreateAccountShell
+      onOpenPrivacy={() =>
+        Alert.alert(
+          t('Privacy Policy'),
+          t('Final legal content is not yet available.'),
+        )
+      }
+      onOpenTerms={() =>
+        Alert.alert(
+          t('Terms of Use'),
+          t('Final legal content is not yet available.'),
+        )
+      }
+      onSignIn={returnToSignIn}
       onSignUp={handleSignUp}
       onVerify={handleVerify}
     />

@@ -1,23 +1,18 @@
 import { useRef, useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  Switch,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 
 import {
+  CountrySelector,
+  type RegistrationCountry,
+} from '@/components/CountrySelector';
+import {
   Button,
   Screen,
-  SectionHeader,
   sharedStyles,
   stackScreenEdges,
 } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
-import VALID_COUNTRIES from '@/lib/countries.json';
 import { ProductServiceError } from '@/lib/product-api';
 import {
   colors,
@@ -34,7 +29,82 @@ export const authErrorCopy = {
   NETWORK_UNAVAILABLE: 'Your network connection is unavailable.',
   SERVICE_UNAVAILABLE: 'Account services are temporarily unavailable.',
   UNABLE_TO_SIGN_IN: 'Unable to sign in',
+  UNABLE_TO_CREATE: 'Account cannot be created right now.',
 } as const;
+
+type PasswordInputProps = Readonly<{
+  labelId: string;
+  password: string;
+  setPassword: (value: string) => void;
+  onBlur?: (() => void) | undefined;
+  onSubmit?: (() => void) | undefined;
+  inputRef?: React.RefObject<TextInput | null> | undefined;
+  autoComplete: 'current-password' | 'new-password';
+}>;
+
+function PasswordInput({
+  labelId,
+  password,
+  setPassword,
+  onBlur,
+  onSubmit,
+  inputRef,
+  autoComplete,
+}: PasswordInputProps) {
+  const { t } = useLanguage();
+  const [focused, setFocused] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={[styles.inputFrame, focused && styles.inputFocused]}>
+      <TextInput
+        ref={inputRef}
+        accessibilityLabel={t('Password')}
+        accessibilityLabelledBy={labelId}
+        autoCapitalize="none"
+        autoComplete={autoComplete}
+        onBlur={() => {
+          setFocused(false);
+          onBlur?.();
+        }}
+        onChangeText={setPassword}
+        onFocus={() => setFocused(true)}
+        onSubmitEditing={onSubmit}
+        returnKeyType="done"
+        secureTextEntry={!visible}
+        style={[styles.bareInput, styles.passwordInput]}
+        textContentType={
+          autoComplete === 'new-password' ? 'newPassword' : 'password'
+        }
+        value={password}
+      />
+      <Pressable
+        accessibilityLabel={visible ? t('Hide password') : t('Show password')}
+        accessibilityRole="button"
+        onPress={() => setVisible((current) => !current)}
+        style={({ pressed }) => [styles.eyeButton, pressed && styles.pressed]}
+        testID="password-visibility-toggle"
+      >
+        <SymbolView
+          name={(visible ? 'eye.slash' : 'eye') as SFSymbol}
+          size={21}
+          tintColor={colors.textSecondary}
+        />
+      </Pressable>
+    </View>
+  );
+}
+
+function AuthHeading({ title }: { title: string }) {
+  return (
+    <View style={styles.authHeading}>
+      <Text style={styles.brand}>PitchValue</Text>
+      <Text accessibilityRole="header" style={styles.welcomeTitle}>
+        {title}
+      </Text>
+    </View>
+  );
+}
 
 export function SignInShell({
   onSignIn,
@@ -47,9 +117,7 @@ export function SignInShell({
   const passwordInput = useRef<TextInput>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serviceError, setServiceError] = useState<string | null>(null);
@@ -75,14 +143,8 @@ export function SignInShell({
 
   return (
     <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
-      <View style={styles.authHeading}>
-        <Text style={styles.brand}>PitchValue</Text>
-        <Text accessibilityRole="header" style={styles.welcomeTitle}>
-          {t('Welcome back')}
-        </Text>
-      </View>
-
-      <View style={styles.signInForm}>
+      <AuthHeading title={t('Welcome back')} />
+      <View style={styles.form}>
         <Text nativeID="sign-in-email-label" style={styles.label}>
           {t('Email')}
         </Text>
@@ -108,58 +170,21 @@ export function SignInShell({
           />
         </View>
         {emailTouched && !validEmail ? (
-          <Text accessibilityLiveRegion="polite" style={styles.error}>
-            {t(authErrorCopy.INVALID_EMAIL)}
-          </Text>
+          <InlineError message={t(authErrorCopy.INVALID_EMAIL)} />
         ) : null}
 
         <Text nativeID="sign-in-password-label" style={styles.label}>
           {t('Password')}
         </Text>
-        <View
-          style={[styles.inputFrame, passwordFocused && styles.inputFocused]}
-        >
-          <TextInput
-            ref={passwordInput}
-            accessibilityLabel={t('Password')}
-            accessibilityLabelledBy="sign-in-password-label"
-            autoCapitalize="none"
-            autoComplete="current-password"
-            onBlur={() => setPasswordFocused(false)}
-            onChangeText={setPassword}
-            onFocus={() => setPasswordFocused(true)}
-            onSubmitEditing={() => void submit()}
-            returnKeyType="done"
-            secureTextEntry={!showPassword}
-            style={[styles.bareInput, styles.passwordInput]}
-            textContentType="password"
-            value={password}
-          />
-          <Pressable
-            accessibilityLabel={
-              showPassword ? t('Hide password') : t('Show password')
-            }
-            accessibilityRole="button"
-            onPress={() => setShowPassword((visible) => !visible)}
-            style={({ pressed }) => [
-              styles.eyeButton,
-              pressed && styles.pressed,
-            ]}
-            testID="password-visibility-toggle"
-          >
-            <SymbolView
-              name={(showPassword ? 'eye.slash' : 'eye') as SFSymbol}
-              size={21}
-              tintColor={colors.textSecondary}
-            />
-          </Pressable>
-        </View>
-
-        {serviceError ? (
-          <Text accessibilityLiveRegion="polite" style={styles.error}>
-            {t(serviceError)}
-          </Text>
-        ) : null}
+        <PasswordInput
+          autoComplete="current-password"
+          inputRef={passwordInput}
+          labelId="sign-in-password-label"
+          onSubmit={() => void submit()}
+          password={password}
+          setPassword={setPassword}
+        />
+        {serviceError ? <InlineError message={t(serviceError)} /> : null}
         <Button
           accessibilityLabel={t('Sign In')}
           disabled={!onSignIn || submitting}
@@ -168,18 +193,13 @@ export function SignInShell({
         >
           {submitting ? t('Please wait') : t('Sign In')}
         </Button>
-        <View style={styles.createAccountRow}>
-          <Text style={styles.secondary}>{t("Don't have an account?")}</Text>
-          <Pressable
-            accessibilityLabel={t('Create an account')}
-            accessibilityRole="link"
-            onPress={onCreateAccount}
-            style={({ pressed }) => pressed && styles.pressed}
-            testID="auth-create-account"
-          >
-            <Text style={styles.textLink}>{t('Sign Up')}</Text>
-          </Pressable>
-        </View>
+        <InlineNavigation
+          label={t("Don't have an account?")}
+          linkLabel={t('Sign Up')}
+          onPress={onCreateAccount}
+          accessibilityLabel={t('Create an account')}
+          testID="auth-create-account"
+        />
       </View>
 
       <View accessibilityLabel={t('or')} style={styles.divider}>
@@ -187,12 +207,389 @@ export function SignInShell({
         <Text style={styles.secondary}>{t('or')}</Text>
         <View style={styles.line} />
       </View>
-
       <View style={styles.socialStack}>
         <SocialAuthButton provider="Apple" />
         <SocialAuthButton provider="Google" />
       </View>
     </Screen>
+  );
+}
+
+type CreateAccountProps = Readonly<{
+  onSignUp?:
+    | ((
+        email: string,
+        password: string,
+        countryCode: string,
+        ageAcknowledged: boolean,
+      ) => Promise<{ deliveryState: string }>)
+    | undefined;
+  onVerify?: ((token: string) => Promise<void>) | undefined;
+  onSignIn: () => void;
+  onOpenTerms?: (() => void) | undefined;
+  onOpenPrivacy?: (() => void) | undefined;
+}>;
+
+export function CreateAccountShell({
+  onSignUp,
+  onVerify,
+  onSignIn,
+  onOpenTerms,
+  onOpenPrivacy,
+}: CreateAccountProps) {
+  const { language, t } = useLanguage();
+  const passwordInput = useRef<TextInput>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [country, setCountry] = useState<RegistrationCountry | null>(null);
+  const [ageAccepted, setAgeAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [riskAccepted, setRiskAccepted] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [serviceError, setServiceError] = useState<string | null>(null);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [deliveryState, setDeliveryState] = useState<string | null>(null);
+
+  const normalizedEmail = email.trim();
+  const validEmail = /^\S+@\S+\.\S+$/.test(normalizedEmail);
+  const validPassword =
+    password.length >= 8 &&
+    password.toLowerCase() !== normalizedEmail.toLowerCase();
+  const canSubmit = Boolean(
+    onSignUp &&
+    validEmail &&
+    validPassword &&
+    country?.apiCode &&
+    ageAccepted &&
+    termsAccepted &&
+    riskAccepted &&
+    !submitting,
+  );
+
+  const submit = async () => {
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    setServiceError(null);
+    if (!canSubmit || !country?.apiCode || !onSignUp) return;
+    setSubmitting(true);
+    try {
+      const result = await onSignUp(
+        normalizedEmail,
+        password,
+        country.apiCode,
+        true,
+      );
+      setDeliveryState(result.deliveryState);
+    } catch (error) {
+      setServiceError(
+        error instanceof ProductServiceError && error.kind === 'CONFLICT'
+          ? authErrorCopy.ACCOUNT_EXISTS
+          : authErrorCopy.UNABLE_TO_CREATE,
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (deliveryState) {
+    return (
+      <VerificationShell
+        deliveryState={deliveryState}
+        onVerify={onVerify}
+        token={verificationToken}
+        setToken={setVerificationToken}
+      />
+    );
+  }
+
+  return (
+    <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
+      <AuthHeading title={t('Create your account')} />
+      <View style={styles.form}>
+        <Text nativeID="registration-email-label" style={styles.label}>
+          {t('Email')}
+        </Text>
+        <View style={[styles.inputFrame, emailFocused && styles.inputFocused]}>
+          <TextInput
+            accessibilityLabel={t('Email')}
+            accessibilityLabelledBy="registration-email-label"
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
+            keyboardType="email-address"
+            onBlur={() => {
+              setEmailFocused(false);
+              setEmailTouched(true);
+            }}
+            onChangeText={setEmail}
+            onFocus={() => setEmailFocused(true)}
+            onSubmitEditing={() => passwordInput.current?.focus()}
+            returnKeyType="next"
+            style={styles.bareInput}
+            textContentType="emailAddress"
+            value={email}
+          />
+        </View>
+        {emailTouched && !validEmail ? (
+          <InlineError message={t(authErrorCopy.INVALID_EMAIL)} />
+        ) : null}
+
+        <Text nativeID="registration-password-label" style={styles.label}>
+          {t('Password')}
+        </Text>
+        <PasswordInput
+          autoComplete="new-password"
+          inputRef={passwordInput}
+          labelId="registration-password-label"
+          onBlur={() => setPasswordTouched(true)}
+          onSubmit={() => void submit()}
+          password={password}
+          setPassword={setPassword}
+        />
+        {passwordTouched && !validPassword ? (
+          <InlineError
+            message={t(
+              password.length >= 8 &&
+                password.toLowerCase() === normalizedEmail.toLowerCase()
+                ? 'Password cannot be the same as email.'
+                : 'Password must be at least 8 characters.',
+            )}
+          />
+        ) : null}
+
+        <Text style={styles.label}>{t('Country / Region')}</Text>
+        <CountrySelector selected={country} onSelect={setCountry} />
+        {country?.value === 'OTHER' ? (
+          <InlineError
+            message={t('Registration for other regions is not available yet.')}
+          />
+        ) : null}
+
+        <View style={styles.acknowledgements}>
+          <AcknowledgementRow
+            checked={ageAccepted}
+            label={t('I am 18 years of age or older.')}
+            onChange={setAgeAccepted}
+            testID="age-acknowledgement"
+          />
+          <AcknowledgementRow
+            checked={termsAccepted}
+            label={t('I accept the Terms of Use.')}
+            onChange={setTermsAccepted}
+            testID="terms-acknowledgement"
+          >
+            <Text style={styles.acknowledgementText}>
+              {language === 'tr' ? null : t('I accept the ')}
+              <Text
+                accessibilityRole="link"
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onOpenTerms?.();
+                }}
+                style={styles.inlineLink}
+              >
+                {t('Terms of Use')}
+              </Text>
+              {t('Terms acceptance suffix')}
+            </Text>
+          </AcknowledgementRow>
+          <View style={styles.informationRow}>
+            <SymbolView
+              accessibilityElementsHidden
+              name={'info.circle' as SFSymbol}
+              size={20}
+              tintColor={colors.textSecondary}
+            />
+            <Text style={styles.informationText}>
+              {t('Privacy information prefix')}{' '}
+              <Text
+                accessibilityRole="link"
+                onPress={onOpenPrivacy}
+                style={styles.inlineLink}
+              >
+                {t('Privacy Policy')}
+              </Text>
+              {t('Privacy information suffix')}
+            </Text>
+          </View>
+          <AcknowledgementRow
+            checked={riskAccepted}
+            label={t(
+              'I understand that betting involves a risk of financial loss.',
+            )}
+            onChange={setRiskAccepted}
+            testID="risk-acknowledgement"
+          />
+        </View>
+
+        {serviceError ? <InlineError message={t(serviceError)} /> : null}
+        <Button
+          accessibilityLabel={t('Create Account')}
+          disabled={!canSubmit}
+          onPress={() => void submit()}
+          testID="create-account-primary"
+        >
+          {submitting ? t('Please wait') : t('Create Account')}
+        </Button>
+        <InlineNavigation
+          accessibilityLabel={t('Sign In')}
+          label={t('Already have an account?')}
+          linkLabel={t('Sign In')}
+          onPress={onSignIn}
+          testID="registration-sign-in"
+        />
+      </View>
+    </Screen>
+  );
+}
+
+function VerificationShell({
+  deliveryState,
+  onVerify,
+  token,
+  setToken,
+}: Readonly<{
+  deliveryState: string;
+  onVerify?: ((token: string) => Promise<void>) | undefined;
+  token: string;
+  setToken: (value: string) => void;
+}>) {
+  const { t } = useLanguage();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const unavailable = deliveryState === 'VERIFICATION_DELIVERY_UNAVAILABLE';
+
+  const verify = async () => {
+    if (!token.trim() || !onVerify || unavailable || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onVerify(token.trim());
+    } catch {
+      setError(authErrorCopy.SERVICE_UNAVAILABLE);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
+      <AuthHeading title={t('Verify email')} />
+      <View style={[sharedStyles.card, styles.form]}>
+        <Text style={styles.secondary}>
+          {unavailable
+            ? t('Email verification currently unavailable.')
+            : t('Enter the verification token sent to your email.')}
+        </Text>
+        {!unavailable ? (
+          <>
+            <Text nativeID="token-label" style={styles.label}>
+              {t('Verification Token')}
+            </Text>
+            <TextInput
+              accessibilityLabel={t('Verification Token')}
+              accessibilityLabelledBy="token-label"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={setToken}
+              onSubmitEditing={() => void verify()}
+              returnKeyType="done"
+              style={[styles.inputFrame, styles.verificationInput]}
+              value={token}
+            />
+            {error ? <InlineError message={t(error)} /> : null}
+            <Button
+              disabled={!token.trim() || !onVerify || submitting}
+              onPress={() => void verify()}
+            >
+              {submitting ? t('Please wait') : t('Verify')}
+            </Button>
+          </>
+        ) : null}
+      </View>
+    </Screen>
+  );
+}
+
+function AcknowledgementRow({
+  checked,
+  label,
+  onChange,
+  testID,
+  children,
+}: Readonly<{
+  checked: boolean;
+  label: string;
+  onChange: (value: boolean) => void;
+  testID: string;
+  children?: React.ReactNode;
+}>) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      onPress={() => onChange(!checked)}
+      style={({ pressed }) => [
+        styles.acknowledgementRow,
+        pressed && styles.pressed,
+      ]}
+      testID={testID}
+    >
+      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+        {checked ? (
+          <SymbolView
+            accessibilityElementsHidden
+            name={'checkmark' as SFSymbol}
+            size={15}
+            tintColor={colors.background}
+          />
+        ) : null}
+      </View>
+      <View style={styles.acknowledgementCopy}>
+        {children ?? <Text style={styles.acknowledgementText}>{label}</Text>}
+      </View>
+    </Pressable>
+  );
+}
+
+function InlineNavigation({
+  label,
+  linkLabel,
+  onPress,
+  accessibilityLabel,
+  testID,
+}: Readonly<{
+  label: string;
+  linkLabel: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+  testID: string;
+}>) {
+  return (
+    <View style={styles.inlineNavigation}>
+      <Text style={styles.secondary}>{label}</Text>
+      <Pressable
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="link"
+        onPress={onPress}
+        style={({ pressed }) => pressed && styles.pressed}
+        testID={testID}
+      >
+        <Text style={styles.textLink}>{linkLabel}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function InlineError({ message }: { message: string }) {
+  return (
+    <Text accessibilityLiveRegion="polite" style={styles.error}>
+      {message}
+    </Text>
   );
 }
 
@@ -225,320 +622,14 @@ function SocialAuthButton({ provider }: { provider: 'Apple' | 'Google' }) {
   );
 }
 
-type EmailMode = 'SIGN_IN' | 'SIGN_UP' | 'VERIFY';
-
-export function EmailAuthShell({
-  initialMode = 'SIGN_IN',
-  onSignIn,
-  onSignUp,
-  onVerify,
-}: {
-  initialMode?: EmailMode | undefined;
-  onSignIn?: ((email: string, password: string) => Promise<void>) | undefined;
-  onSignUp?:
-    | ((
-        email: string,
-        password: string,
-        countryCode: string,
-        ageAcknowledged: boolean,
-      ) => Promise<{ deliveryState: string }>)
-    | undefined;
-  onVerify?: ((token: string) => Promise<void>) | undefined;
-}) {
-  const { t } = useLanguage();
-  const [mode, setMode] = useState<EmailMode>(initialMode);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [countryCode, setCountryCode] = useState('');
-  const [ageAcknowledged, setAgeAcknowledged] = useState(false);
-  const [verificationToken, setVerificationToken] = useState('');
-
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
-  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
-  const [countryCodeTouched, setCountryCodeTouched] = useState(false);
-
-  const [submitting, setSubmitting] = useState(false);
-  const [serviceError, setServiceError] = useState<string | null>(null);
-
-  const validEmail = /^\S+@\S+\.\S+$/.test(email.trim());
-  const validPassword =
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password) &&
-    password.toLowerCase() !== email.toLowerCase().trim();
-  const validCountryCode = VALID_COUNTRIES.includes(
-    countryCode.trim().toUpperCase(),
-  );
-  const passwordsMatch = password === confirmPassword;
-
-  const handler =
-    mode === 'SIGN_IN' ? onSignIn : mode === 'SIGN_UP' ? onSignUp : onVerify;
-
-  const submit = async () => {
-    setEmailTouched(true);
-    setPasswordTouched(true);
-    if (mode === 'SIGN_UP') setConfirmPasswordTouched(true);
-    setCountryCodeTouched(true);
-    setServiceError(null);
-
-    if (mode === 'VERIFY') {
-      if (!verificationToken || !onVerify) return;
-      setSubmitting(true);
-      try {
-        await onVerify(verificationToken.trim());
-      } catch {
-        setServiceError(authErrorCopy.SERVICE_UNAVAILABLE);
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
-
-    if (!validEmail || !validPassword || !handler) return;
-
-    if (mode === 'SIGN_UP') {
-      if (!passwordsMatch) return;
-      if (!validCountryCode) {
-        setServiceError('Enter a valid 2-letter country code.');
-        return;
-      }
-      if (!ageAcknowledged) {
-        setServiceError('You must acknowledge that you are 18 or older.');
-        return;
-      }
-    }
-
-    setSubmitting(true);
-    try {
-      if (mode === 'SIGN_IN') {
-        await onSignIn!(email.trim(), password);
-      } else if (mode === 'SIGN_UP') {
-        const { deliveryState } = await onSignUp!(
-          email.trim(),
-          password,
-          countryCode.trim().toUpperCase(),
-          ageAcknowledged,
-        );
-        if (deliveryState === 'VERIFICATION_DELIVERY_UNAVAILABLE') {
-          setServiceError(
-            'E-posta teslimi şu anda kullanılamıyor. Daha sonra tekrar deneyin. (Email delivery is currently unavailable.)',
-          );
-        } else {
-          setMode('VERIFY');
-        }
-      }
-    } catch {
-      setServiceError(
-        mode === 'SIGN_IN'
-          ? authErrorCopy.INCORRECT_CREDENTIALS
-          : authErrorCopy.SERVICE_UNAVAILABLE,
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
-      <SectionHeader
-        title={
-          mode === 'SIGN_IN'
-            ? t('Sign in with email')
-            : mode === 'SIGN_UP'
-              ? t('Create an account')
-              : t('Verify email')
-        }
-        detail={
-          handler
-            ? mode === 'VERIFY'
-              ? t('Enter the verification token sent to your email.')
-              : t(
-                  'Use your PitchValue email identity. Your session is stored securely on this device.',
-                )
-            : t('Email sign-in is currently unavailable.')
-        }
-      />
-      <View style={sharedStyles.card}>
-        {mode === 'VERIFY' ? (
-          <>
-            <Text nativeID="token-label" style={styles.label}>
-              {t('Verification Token')}
-            </Text>
-            <TextInput
-              accessibilityLabelledBy="token-label"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={setVerificationToken}
-              returnKeyType="done"
-              style={styles.input}
-              value={verificationToken}
-            />
-          </>
-        ) : (
-          <>
-            <Text nativeID="email-label" style={styles.label}>
-              {t('Email')}
-            </Text>
-            <TextInput
-              accessibilityLabelledBy="email-label"
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              onBlur={() => setEmailTouched(true)}
-              onChangeText={setEmail}
-              returnKeyType="next"
-              style={styles.input}
-              value={email}
-            />
-            {emailTouched && !validEmail ? (
-              <Text accessibilityLiveRegion="polite" style={styles.error}>
-                {t(authErrorCopy.INVALID_EMAIL)}
-              </Text>
-            ) : null}
-            <View style={styles.switchRow}>
-              <Text nativeID="password-label" style={styles.label}>
-                {t('Password')}
-              </Text>
-              <Button
-                variant="secondary"
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? t('Hide password') : t('Show password')}
-              </Button>
-            </View>
-            <TextInput
-              accessibilityLabelledBy="password-label"
-              autoCapitalize="none"
-              autoComplete={
-                mode === 'SIGN_IN' ? 'current-password' : 'new-password'
-              }
-              onBlur={() => setPasswordTouched(true)}
-              onChangeText={setPassword}
-              returnKeyType="done"
-              secureTextEntry={!showPassword}
-              style={styles.input}
-              value={password}
-            />
-            {passwordTouched && !validPassword ? (
-              <Text accessibilityLiveRegion="polite" style={styles.error}>
-                {password.toLowerCase() === email.toLowerCase().trim() &&
-                password.length > 0
-                  ? t('Password cannot be the same as email.')
-                  : t(
-                      'Password must be 8+ chars with uppercase, lowercase, and number.',
-                    )}
-              </Text>
-            ) : null}
-
-            {mode === 'SIGN_UP' && (
-              <>
-                <Text nativeID="confirm-password-label" style={styles.label}>
-                  {t('Confirm Password')}
-                </Text>
-                <TextInput
-                  accessibilityLabelledBy="confirm-password-label"
-                  autoCapitalize="none"
-                  autoComplete="new-password"
-                  onBlur={() => setConfirmPasswordTouched(true)}
-                  onChangeText={setConfirmPassword}
-                  returnKeyType="done"
-                  secureTextEntry={!showPassword}
-                  style={styles.input}
-                  value={confirmPassword}
-                />
-                {confirmPasswordTouched && !passwordsMatch ? (
-                  <Text accessibilityLiveRegion="polite" style={styles.error}>
-                    {t('Passwords do not match.')}
-                  </Text>
-                ) : null}
-                <Text
-                  nativeID="country-label"
-                  style={[styles.label, { marginTop: spacing.sm }]}
-                >
-                  {t('Country Code (2 letters)')}
-                </Text>
-                <TextInput
-                  accessibilityLabelledBy="country-label"
-                  autoCapitalize="characters"
-                  maxLength={2}
-                  onBlur={() => setCountryCodeTouched(true)}
-                  onChangeText={setCountryCode}
-                  returnKeyType="next"
-                  style={styles.input}
-                  value={countryCode}
-                />
-                {countryCodeTouched && !validCountryCode ? (
-                  <Text accessibilityLiveRegion="polite" style={styles.error}>
-                    {t('Please enter a valid 2-letter country code.')}
-                  </Text>
-                ) : null}
-
-                <View style={styles.switchRow}>
-                  <Switch
-                    onValueChange={setAgeAcknowledged}
-                    value={ageAcknowledged}
-                  />
-                  <Text style={styles.secondary}>
-                    {t('I am 18 years of age or older.')}
-                  </Text>
-                </View>
-              </>
-            )}
-          </>
-        )}
-        {serviceError ? (
-          <Text accessibilityLiveRegion="polite" style={styles.error}>
-            {t(serviceError)}
-          </Text>
-        ) : null}
-        <Button
-          accessibilityLabel={
-            mode === 'VERIFY'
-              ? t('Verify')
-              : mode === 'SIGN_IN'
-                ? t('Sign in')
-                : t('Sign up')
-          }
-          disabled={!handler || submitting}
-          onPress={() => void submit()}
-        >
-          {submitting
-            ? t('Please wait')
-            : mode === 'VERIFY'
-              ? t('Verify')
-              : mode === 'SIGN_IN'
-                ? t('Sign In')
-                : t('Sign Up')}
-        </Button>
-        {mode === 'SIGN_IN' ? (
-          <Text style={styles.caption}>
-            {t('Password recovery is currently unavailable.')}
-          </Text>
-        ) : null}
-      </View>
-    </Screen>
-  );
-}
-
 const styles = StyleSheet.create({
   authHeading: { gap: spacing.xs },
-  brand: {
-    color: colors.accent,
-    ...typography.caption,
-  },
-  welcomeTitle: {
-    color: colors.text,
-    ...typography.pageTitle,
-  },
-  signInForm: { gap: spacing.sm },
+  brand: { color: colors.accent, ...typography.caption },
+  welcomeTitle: { color: colors.text, ...typography.pageTitle },
+  form: { gap: spacing.sm },
   divider: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   line: { backgroundColor: colors.border, flex: 1, height: 1 },
   secondary: { color: colors.textSecondary, ...typography.body },
-  caption: { color: colors.textSecondary, ...typography.caption },
   label: { color: colors.text, ...typography.body, fontWeight: '700' },
   inputFrame: {
     alignItems: 'center',
@@ -566,18 +657,15 @@ const styles = StyleSheet.create({
     right: 0,
     width: touchTarget,
   },
-  createAccountRow: {
+  inlineNavigation: {
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
     justifyContent: 'center',
   },
-  textLink: {
-    color: colors.secondary,
-    ...typography.body,
-    fontWeight: '700',
-  },
+  textLink: { color: colors.secondary, ...typography.body, fontWeight: '700' },
+  inlineLink: { color: colors.secondary, fontWeight: '700' },
   socialStack: { gap: spacing.sm },
   socialButton: {
     alignItems: 'center',
@@ -598,32 +686,53 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: touchTarget,
   },
-  googleIcon: {
-    color: '#4285F4',
-    fontSize: 21,
-    fontWeight: '800',
-  },
+  googleIcon: { color: '#4285F4', fontSize: 21, fontWeight: '800' },
   socialButtonText: {
     color: colors.text,
     ...typography.body,
     fontWeight: '700',
   },
-  pressed: { opacity: 0.8 },
-  input: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
-    borderRadius: radii.md,
+  error: { color: colors.negative, ...typography.caption },
+  acknowledgements: { gap: spacing.sm, marginVertical: spacing.xs },
+  acknowledgementRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: touchTarget,
+    paddingVertical: spacing.xs,
+  },
+  acknowledgementCopy: { flex: 1, minHeight: 24, justifyContent: 'center' },
+  acknowledgementText: { color: colors.text, ...typography.body },
+  checkbox: {
+    alignItems: 'center',
+    borderColor: colors.textSecondary,
+    borderRadius: radii.sm,
     borderWidth: 1,
+    height: 22,
+    justifyContent: 'center',
+    marginTop: 1,
+    width: 22,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
+  },
+  informationRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: touchTarget,
+    paddingVertical: spacing.xs,
+  },
+  informationText: {
+    color: colors.textSecondary,
+    flex: 1,
+    ...typography.caption,
+  },
+  verificationInput: {
     color: colors.text,
-    minHeight: 48,
     paddingHorizontal: spacing.md,
     ...typography.body,
   },
-  error: { color: colors.negative, ...typography.metadata },
-  switchRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
+  pressed: { opacity: 0.8 },
 });

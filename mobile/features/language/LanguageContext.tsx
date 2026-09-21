@@ -210,6 +210,21 @@ const en: Translations = {
   Edge: 'Edge',
   'Sign in with email': 'Sign in with email',
   'Create an account': 'Create an account',
+  'Create Account': 'Create Account',
+  'Create your account': 'Create your account',
+  'Country / Region': 'Country / Region',
+  'Select country or region': 'Select country or region',
+  'Close country selector': 'Close country selector',
+  'United Kingdom': 'United Kingdom',
+  Germany: 'Germany',
+  France: 'France',
+  Spain: 'Spain',
+  Portugal: 'Portugal',
+  Netherlands: 'Netherlands',
+  Italy: 'Italy',
+  Türkiye: 'Türkiye',
+  Other: 'Other',
+  'Already have an account?': 'Already have an account?',
   'Verify email': 'Verify email',
   'Enter the verification token sent to your email.':
     'Enter the verification token sent to your email.',
@@ -227,6 +242,28 @@ const en: Translations = {
   'Please enter a valid 2-letter country code.':
     'Please enter a valid 2-letter country code.',
   'I am 18 years of age or older.': 'I am 18 years of age or older.',
+  'I accept the Terms of Use.': 'I accept the Terms of Use.',
+  'I accept the ': 'I accept the ',
+  'Terms acceptance suffix': '.',
+  'Terms of Use': 'Terms of Use',
+  'Privacy Policy': 'Privacy Policy',
+  'Privacy information prefix': 'See our',
+  'Privacy information suffix':
+    ' for information about how your personal data is handled.',
+  'I understand that betting involves a risk of financial loss.':
+    'I understand that betting involves a risk of financial loss.',
+  'Password must be at least 8 characters.':
+    'Password must be at least 8 characters.',
+  'An account already exists for this email.':
+    'An account already exists for this email.',
+  'Account cannot be created right now.':
+    'Account cannot be created right now.',
+  'Email verification currently unavailable.':
+    'Email verification currently unavailable.',
+  'Registration for other regions is not available yet.':
+    'Registration for other regions is not available yet.',
+  'Final legal content is not yet available.':
+    'Final legal content is not yet available.',
   Verify: 'Verify',
 };
 
@@ -437,6 +474,21 @@ const tr: Translations = {
   Edge: 'Avantaj',
   'Sign in with email': 'E-posta ile giriş yap',
   'Create an account': 'Hesap oluştur',
+  'Create Account': 'Hesap Oluştur',
+  'Create your account': 'Hesabınızı oluşturun',
+  'Country / Region': 'Ülke / Bölge',
+  'Select country or region': 'Ülke veya bölge seçin',
+  'Close country selector': 'Ülke seçiciyi kapat',
+  'United Kingdom': 'Birleşik Krallık',
+  Germany: 'Almanya',
+  France: 'Fransa',
+  Spain: 'İspanya',
+  Portugal: 'Portekiz',
+  Netherlands: 'Hollanda',
+  Italy: 'İtalya',
+  Türkiye: 'Türkiye',
+  Other: 'Diğer',
+  'Already have an account?': 'Zaten hesabınız var mı?',
   'Verify email': 'E-postayı doğrula',
   'Enter the verification token sent to your email.':
     'E-postanıza gönderilen doğrulama kodunu girin.',
@@ -453,7 +505,27 @@ const tr: Translations = {
   'Country Code (2 letters)': 'Ülke Kodu (2 harf)',
   'Please enter a valid 2-letter country code.':
     'Lütfen geçerli 2 harfli bir ülke kodu girin.',
-  'I am 18 years of age or older.': '18 yaşından büyük olduğumu onaylıyorum.',
+  'I am 18 years of age or older.': '18 yaş veya üzerindeyim.',
+  'I accept the Terms of Use.': "Kullanım Koşulları'nı kabul ediyorum.",
+  'I accept the ': '',
+  'Terms acceptance suffix': "'nı kabul ediyorum.",
+  'Terms of Use': 'Kullanım Koşulları',
+  'Privacy Policy': 'Gizlilik Politikası',
+  'Privacy information prefix': 'Kişisel verilerinizin nasıl işlendiğini',
+  'Privacy information suffix': "'nda inceleyebilirsiniz.",
+  'I understand that betting involves a risk of financial loss.':
+    'Bahis faaliyetlerinin finansal kayıp riski taşıdığını anlıyorum.',
+  'Password must be at least 8 characters.':
+    'Şifre en az 8 karakter olmalıdır.',
+  'An account already exists for this email.':
+    'Bu e-posta adresiyle bir hesap zaten mevcut.',
+  'Account cannot be created right now.': 'Hesap şu anda oluşturulamıyor.',
+  'Email verification currently unavailable.':
+    'E-posta doğrulaması şu anda kullanılamıyor.',
+  'Registration for other regions is not available yet.':
+    'Diğer bölgeler için kayıt henüz kullanılamıyor.',
+  'Final legal content is not yet available.':
+    'Nihai hukuki içerik henüz kullanılamıyor.',
   Verify: 'Doğrula',
 };
 

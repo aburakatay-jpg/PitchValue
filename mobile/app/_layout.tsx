@@ -12,7 +12,10 @@ import {
   useLanguage,
 } from '@/features/language/LanguageContext';
 import { colors } from '@/theme/tokens';
-import { signInScreenOptions } from '@/lib/navigation-options';
+import {
+  registrationScreenOptions,
+  signInScreenOptions,
+} from '@/lib/navigation-options';
 
 const pitchValueNavigationTheme = {
   ...DarkTheme,
@@ -69,7 +72,10 @@ function RootNavigation() {
               options={{ title: t('Match detail') }}
             />
             <Stack.Screen name="auth/index" options={signInScreenOptions} />
-            <Stack.Screen name="auth/email" options={{ title: t('Email') }} />
+            <Stack.Screen
+              name="auth/email"
+              options={registrationScreenOptions}
+            />
             <Stack.Screen
               name="paywall"
               options={{
