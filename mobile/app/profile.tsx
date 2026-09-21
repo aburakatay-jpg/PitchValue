@@ -1,6 +1,14 @@
 import Constants from 'expo-constants';
 import { useRouter, type Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 
 import {
   Button,
@@ -12,15 +20,26 @@ import {
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { colors, spacing, touchTarget, typography } from '@/theme/tokens';
 import type { EntitlementState } from '@/types/entitlement';
 
 export const profileGroups = [
   'Account',
   'Preferences',
   'Responsible Gaming',
-  'App',
 ] as const;
+
+export const profileLegalDestinations = [
+  '18+ and Age Declaration',
+  'Betting Risk and Responsible Gaming',
+  'Terms of Use',
+  'Privacy Policy',
+  'Legal Information',
+] as const;
+
+const CONTACT_EMAIL = 'pitchvalue@outlook.com';
+const X_HANDLE = '@pitchvalueapp';
+const X_URL = 'https://x.com/pitchvalueapp';
 
 const entitlementLabels: Readonly<Record<EntitlementState, string>> = {
   GUEST: 'Premium Inactive',
@@ -29,6 +48,14 @@ const entitlementLabels: Readonly<Record<EntitlementState, string>> = {
   PREMIUM_EXPIRED: 'Premium Expired',
   PREMIUM_INACTIVE: 'Premium Inactive',
 };
+
+async function openSupportedUrl(url: string) {
+  try {
+    if (await Linking.canOpenURL(url)) await Linking.openURL(url);
+  } catch {
+    // A missing platform handler must not make Profile unusable.
+  }
+}
 
 function ProfileGroup({
   title,
@@ -57,6 +84,61 @@ function InformationRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function LegalRow({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.legalRow, pressed && styles.pressed]}
+    >
+      <Text style={styles.legalLabel}>{label}</Text>
+      <SymbolView
+        accessibilityElementsHidden
+        name={'chevron.right' as SFSymbol}
+        size={15}
+        tintColor={colors.textSecondary}
+      />
+    </Pressable>
+  );
+}
+
+function ContactLink({
+  label,
+  icon,
+  onPress,
+  testID,
+}: {
+  label: string;
+  icon: 'mail' | 'x';
+  onPress: () => void;
+  testID: string;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed }) => [styles.contactLink, pressed && styles.pressed]}
+      testID={testID}
+    >
+      {icon === 'mail' ? (
+        <SymbolView
+          accessibilityElementsHidden
+          name={'envelope' as SFSymbol}
+          size={18}
+          tintColor={colors.textSecondary}
+        />
+      ) : (
+        <Text accessibilityElementsHidden style={styles.xIcon}>
+          X
+        </Text>
+      )}
+      <Text style={styles.contactText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function ProfileView({
   entitlement,
   onSignIn,
@@ -70,6 +152,10 @@ export function ProfileView({
 }) {
   const guest = entitlement === 'GUEST';
   const { t, language, setLanguage } = useLanguage();
+  const version = Constants.expoConfig?.version ?? t('Unavailable');
+  const showLegalPlaceholder = (destination: string) =>
+    Alert.alert(destination, t('Final legal content is not yet available.'));
+
   return (
     <Screen safeAreaEdges={stackScreenEdges}>
       <ProfileGroup title={t('Account')}>
@@ -92,10 +178,11 @@ export function ProfileView({
           value={t(entitlementLabels[entitlement])}
         />
       </ProfileGroup>
+
       <ProfileGroup title={t('Preferences')}>
         <View style={sharedStyles.rowBetween}>
           <Text style={styles.label}>{t('Language')}</Text>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <View style={styles.languageActions}>
             <Button
               variant={language === 'en' ? 'primary' : 'secondary'}
               onPress={() => setLanguage('en')}
@@ -111,23 +198,38 @@ export function ProfileView({
           </View>
         </View>
       </ProfileGroup>
+
       <ProfileGroup title={t('Responsible Gaming')}>
-        <Text style={styles.detail}>
-          {t('18+ · Betting can involve financial loss.')}
-        </Text>
-        <Text style={styles.detail}>
-          {t('Full Responsible Gambling information is not yet available.')}
-        </Text>
+        {profileLegalDestinations.map((destination) => (
+          <LegalRow
+            key={destination}
+            label={t(destination)}
+            onPress={() => showLegalPlaceholder(t(destination))}
+          />
+        ))}
       </ProfileGroup>
-      <ProfileGroup title={t('App')}>
-        <InformationRow
-          label={t('Version')}
-          value={Constants.expoConfig?.version ?? t('Unavailable')}
+
+      <View style={styles.contactArea} testID="profile-contact-area">
+        <ContactLink
+          icon="mail"
+          label={CONTACT_EMAIL}
+          onPress={() => void openSupportedUrl(`mailto:${CONTACT_EMAIL}`)}
+          testID="profile-email-link"
         />
-        <Text style={styles.detail}>
-          {t('Legal and support destinations are not yet available.')}
+        <ContactLink
+          icon="x"
+          label={X_HANDLE}
+          onPress={() => void openSupportedUrl(X_URL)}
+          testID="profile-x-link"
+        />
+      </View>
+
+      <View style={styles.footer} testID="profile-footer">
+        <Text style={styles.versionText}>
+          {t('Version')} {version}
         </Text>
-      </ProfileGroup>
+        <Text style={styles.copyright}>crtnapp © 2026</Text>
+      </View>
     </Screen>
   );
 }
@@ -160,5 +262,54 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     ...typography.body,
   },
-  detail: { color: colors.textSecondary, ...typography.body },
+  languageActions: { flexDirection: 'row', gap: spacing.sm },
+  legalRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    minHeight: touchTarget,
+    paddingVertical: spacing.sm,
+  },
+  legalLabel: { color: colors.text, flex: 1, ...typography.body },
+  contactArea: {
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  contactLink: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.sm,
+  },
+  contactText: { color: colors.textSecondary, ...typography.body },
+  xIcon: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    width: 18,
+  },
+  footer: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.md,
+  },
+  versionText: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    ...typography.caption,
+  },
+  copyright: {
+    color: colors.textSecondary,
+    opacity: 0.72,
+    textAlign: 'center',
+    ...typography.caption,
+  },
+  pressed: { opacity: 0.8 },
 });

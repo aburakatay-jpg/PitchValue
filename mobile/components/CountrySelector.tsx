@@ -24,6 +24,7 @@ export type RegistrationCountry = Readonly<{
   value: 'GB' | 'DE' | 'FR' | 'ES' | 'PT' | 'NL' | 'IT' | 'TR' | 'OTHER';
   apiCode: string | null;
   flag: string;
+  icon?: SFSymbol | undefined;
   label: string;
 }>;
 
@@ -36,7 +37,13 @@ export const registrationCountries: readonly RegistrationCountry[] = [
   { value: 'NL', apiCode: 'NL', flag: '🇳🇱', label: 'Netherlands' },
   { value: 'IT', apiCode: 'IT', flag: '🇮🇹', label: 'Italy' },
   { value: 'TR', apiCode: 'TR', flag: '🇹🇷', label: 'Türkiye' },
-  { value: 'OTHER', apiCode: null, flag: '', label: 'Other' },
+  {
+    value: 'OTHER',
+    apiCode: null,
+    flag: '',
+    icon: 'globe.europe.africa.fill' as SFSymbol,
+    label: 'Other',
+  },
 ] as const;
 
 export function CountrySelector({
@@ -50,12 +57,12 @@ export function CountrySelector({
   const [open, setOpen] = useState(false);
   const selectedLabel = selected
     ? `${selected.flag ? `${selected.flag} ` : ''}${t(selected.label)}`
-    : t('Select country or region');
+    : t('Select country');
 
   return (
     <>
       <Pressable
-        accessibilityLabel={`${t('Country / Region')}: ${selectedLabel}`}
+        accessibilityLabel={`${t('Country')}: ${selectedLabel}`}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => {
@@ -65,9 +72,20 @@ export function CountrySelector({
         style={({ pressed }) => [styles.selector, pressed && styles.pressed]}
         testID="country-selector"
       >
-        <Text style={selected ? styles.selectorValue : styles.placeholder}>
-          {selectedLabel}
-        </Text>
+        <View style={styles.selectedValue}>
+          {selected?.icon ? (
+            <SymbolView
+              accessibilityElementsHidden
+              name={selected.icon}
+              size={19}
+              testID="country-selected-icon"
+              tintColor={colors.textSecondary}
+            />
+          ) : null}
+          <Text style={selected ? styles.selectorValue : styles.placeholder}>
+            {selectedLabel}
+          </Text>
+        </View>
         <SymbolView
           name={'chevron.down' as SFSymbol}
           size={16}
@@ -90,7 +108,7 @@ export function CountrySelector({
           <SafeAreaView edges={['bottom']} style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text accessibilityRole="header" style={styles.sheetTitle}>
-                {t('Country / Region')}
+                {t('Country')}
               </Text>
               <Pressable
                 accessibilityLabel={t('Close country selector')}
@@ -110,7 +128,7 @@ export function CountrySelector({
                 const isSelected = selected?.value === country.value;
                 return (
                   <Pressable
-                    accessibilityLabel={`${country.flag ? `${country.flag} ` : ''}${t(country.label)}`}
+                    accessibilityLabel={t(country.label)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
                     key={country.value}
@@ -125,10 +143,22 @@ export function CountrySelector({
                     ]}
                     testID={`country-option-${country.value}`}
                   >
-                    <Text style={styles.optionText}>
-                      {country.flag ? `${country.flag} ` : ''}
-                      {t(country.label)}
-                    </Text>
+                    <View style={styles.optionIdentity}>
+                      {country.icon ? (
+                        <SymbolView
+                          accessibilityElementsHidden
+                          name={country.icon}
+                          size={20}
+                          testID={`country-option-icon-${country.value}`}
+                          tintColor={colors.textSecondary}
+                        />
+                      ) : (
+                        <Text accessibilityElementsHidden style={styles.flag}>
+                          {country.flag}
+                        </Text>
+                      )}
+                      <Text style={styles.optionText}>{t(country.label)}</Text>
+                    </View>
                     {isSelected ? (
                       <SymbolView
                         name={'checkmark' as SFSymbol}
@@ -161,6 +191,12 @@ const styles = StyleSheet.create({
   },
   selectorValue: { color: colors.text, flex: 1, ...typography.body },
   placeholder: { color: colors.textSecondary, flex: 1, ...typography.body },
+  selectedValue: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.62)',
@@ -202,6 +238,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   optionSelected: { backgroundColor: colors.surfaceRaised },
+  optionIdentity: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  flag: { fontSize: 20, width: 24 },
   optionText: { color: colors.text, flex: 1, ...typography.body },
   pressed: { opacity: 0.8 },
 });

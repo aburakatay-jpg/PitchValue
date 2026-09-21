@@ -360,7 +360,7 @@ export function CreateAccountShell({
           />
         ) : null}
 
-        <Text style={styles.label}>{t('Country / Region')}</Text>
+        <Text style={styles.label}>{t('Country')}</Text>
         <CountrySelector selected={country} onSelect={setCountry} />
         {country?.value === 'OTHER' ? (
           <InlineError
@@ -396,7 +396,15 @@ export function CreateAccountShell({
               {t('Terms acceptance suffix')}
             </Text>
           </AcknowledgementRow>
-          <View style={styles.informationRow}>
+          <AcknowledgementRow
+            checked={riskAccepted}
+            label={t(
+              'I understand that betting involves a risk of financial loss.',
+            )}
+            onChange={setRiskAccepted}
+            testID="risk-acknowledgement"
+          />
+          <View style={styles.informationRow} testID="privacy-information">
             <SymbolView
               accessibilityElementsHidden
               name={'info.circle' as SFSymbol}
@@ -415,14 +423,6 @@ export function CreateAccountShell({
               {t('Privacy information suffix')}
             </Text>
           </View>
-          <AcknowledgementRow
-            checked={riskAccepted}
-            label={t(
-              'I understand that betting involves a risk of financial loss.',
-            )}
-            onChange={setRiskAccepted}
-            testID="risk-acknowledgement"
-          />
         </View>
 
         {serviceError ? <InlineError message={t(serviceError)} /> : null}

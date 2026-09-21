@@ -1,4 +1,5 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -167,6 +168,15 @@ describe('auth-safe presentation', () => {
 import { LanguageProvider } from '@/features/language/LanguageContext';
 
 describe('Profile foundation', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  afterEach(async () => {
+    await AsyncStorage.clear();
+    jest.restoreAllMocks();
+  });
+
   it('renders all canonical groups and a truthful Guest state', async () => {
     const onSignIn = jest.fn();
     const view = await render(
@@ -197,6 +207,88 @@ describe('Profile foundation', () => {
 
     // Verify track record / My Bets is removed from Profile
     expect(view.queryByText(/Open My Bets/i)).toBeNull();
+  });
+
+  it('renders legal destinations, lightweight contacts, and the final footer without an App group', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByText('Responsible Gaming');
+    for (const label of [
+      '18+ and Age Declaration',
+      'Betting Risk and Responsible Gaming',
+      'Terms of Use',
+      'Privacy Policy',
+      'Legal Information',
+    ]) {
+      expect(view.getByRole('button', { name: label })).toBeTruthy();
+    }
+    expect(view.queryByText('App')).toBeNull();
+    expect(
+      view.queryByText('Legal and support destinations are not yet available.'),
+    ).toBeNull();
+    expect(
+      view.getByRole('link', { name: 'pitchvalue@outlook.com' }),
+    ).toBeTruthy();
+    expect(view.getByRole('link', { name: '@pitchvalueapp' })).toBeTruthy();
+    expect(view.getByText(/^Version /)).toBeTruthy();
+    expect(view.getByText('crtnapp © 2026')).toBeTruthy();
+    const tree = JSON.stringify(view.toJSON());
+    expect(tree.indexOf('profile-contact-area')).toBeLessThan(
+      tree.indexOf('profile-footer'),
+    );
+    expect(tree.indexOf('Version')).toBeLessThan(
+      tree.indexOf('crtnapp © 2026'),
+    );
+  });
+
+  it('opens contact links only through supported platform URL handlers', async () => {
+    const canOpenURL = jest
+      .spyOn(Linking, 'canOpenURL')
+      .mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByText('Responsible Gaming');
+    await fireEvent.press(view.getByTestId('profile-email-link'));
+    expect(canOpenURL).toHaveBeenCalledWith('mailto:pitchvalue@outlook.com');
+    await waitFor(() =>
+      expect(openURL).toHaveBeenCalledWith('mailto:pitchvalue@outlook.com'),
+    );
+    await fireEvent.press(view.getByTestId('profile-x-link'));
+    expect(canOpenURL).toHaveBeenCalledWith('https://x.com/pitchvalueapp');
+    await waitFor(() =>
+      expect(openURL).toHaveBeenCalledWith('https://x.com/pitchvalueapp'),
+    );
+  });
+
+  it('localizes the complete legal and footer hierarchy in Turkish', async () => {
+    await AsyncStorage.setItem('pitchvalue_language', 'tr');
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    for (const label of [
+      'Sorumlu Oyun',
+      '18+ ve Yaş Beyanı',
+      'Bahis Riski ve Sorumlu Oyun',
+      'Kullanım Koşulları',
+      'Gizlilik Politikası',
+      'Yasal Bilgiler',
+      'pitchvalue@outlook.com',
+      '@pitchvalueapp',
+      'crtnapp © 2026',
+    ]) {
+      expect(await view.findByText(label)).toBeTruthy();
+    }
+    expect(view.getByText(/^Sürüm /)).toBeTruthy();
+    expect(view.queryByText('Uygulama')).toBeNull();
   });
 
   it.each(entitlementStates)(

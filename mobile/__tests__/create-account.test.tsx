@@ -101,7 +101,8 @@ describe('Create Account experience', () => {
       countryLabels,
     );
     const view = await renderRegistration();
-    expect(view.getByText('Country / Region')).toBeTruthy();
+    expect(view.getByText('Country')).toBeTruthy();
+    expect(view.queryByText('Country / Region')).toBeNull();
     await fireEvent.press(view.getByTestId('country-selector'));
     const tree = JSON.stringify(view.toJSON());
     let previousPosition = -1;
@@ -113,6 +114,8 @@ describe('Create Account experience', () => {
       previousPosition = position;
       expect(countryLabels[index]).toBeDefined();
     }
+    expect(registrationCountries[8]?.icon).toBe('globe.europe.africa.fill');
+    expect(tree).toContain('country-option-icon-OTHER');
   });
 
   it('keeps required acknowledgements unchecked and Privacy informational only', async () => {
@@ -129,6 +132,10 @@ describe('Create Account experience', () => {
     }
     expect(view.getByRole('link', { name: 'Privacy Policy' })).toBeTruthy();
     expect(view.queryByRole('checkbox', { name: /Privacy Policy/ })).toBeNull();
+    const tree = JSON.stringify(view.toJSON());
+    expect(tree.indexOf('risk-acknowledgement')).toBeLessThan(
+      tree.indexOf('privacy-information'),
+    );
   });
 
   it('uses wrapping legal rows without fixed-height clipping', async () => {
@@ -195,7 +202,7 @@ describe('Create Account experience', () => {
       'Hesabınızı oluşturun',
       'E-posta',
       'Şifre',
-      'Ülke / Bölge',
+      'Ülke',
       '18 yaş veya üzerindeyim.',
       'Bahis faaliyetlerinin finansal kayıp riski taşıdığını anlıyorum.',
       'Hesap Oluştur',
@@ -209,6 +216,7 @@ describe('Create Account experience', () => {
         name: "Kullanım Koşulları'nı kabul ediyorum.",
       }),
     ).toBeTruthy();
+    expect(view.queryByText('Ülke / Bölge')).toBeNull();
     await fireEvent.press(view.getByTestId('country-selector'));
     const turkishCountries = [
       'Birleşik Krallık',
