@@ -1,6 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 
 export function SkeletonBlock({
   height,
@@ -105,7 +111,7 @@ export function StaleIndicator({ detail }: { detail?: string | undefined }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   skeleton: {
     backgroundColor: colors.surfaceRaised,
     borderRadius: radii.sm,

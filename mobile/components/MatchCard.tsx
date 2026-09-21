@@ -1,9 +1,15 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Badge, sharedStyles } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
-import { colors, spacing, touchTarget, typeScale } from '@/theme/tokens';
+import {
+  colors,
+  spacing,
+  touchTarget,
+  typeScale,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 
 export type FixtureCardModel = Readonly<{
   id: string;
@@ -46,7 +52,7 @@ export function MatchCard({ match }: { match: FixtureCardModel }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   card: { ...sharedStyles.card, minHeight: touchTarget, gap: spacing.sm },
   competition: { color: colors.textSecondary, fontSize: typeScale.caption },
   kickoff: {

@@ -1,16 +1,17 @@
 import { Link, Stack } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { stackScreenEdges } from '@/components/ui';
-import { useLanguage } from '@/features/language/LanguageContext';
 import {
+  createThemedStyleSheet,
   colors,
   radii,
   spacing,
   touchTarget,
   typography,
 } from '@/theme/tokens';
+
+import { stackScreenEdges } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 
 export default function NotFoundScreen() {
   const { t } = useLanguage();
@@ -38,7 +39,7 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   safe: { backgroundColor: colors.background, flex: 1 },
   container: {
     flex: 1,

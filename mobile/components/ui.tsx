@@ -4,7 +4,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
   type PressableProps,
@@ -18,6 +17,7 @@ import {
   touchTarget,
   typography,
   typeScale,
+  createThemedStyleSheet,
 } from '@/theme/tokens';
 import { useRouter } from 'expo-router';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
@@ -167,7 +167,14 @@ export function Button({
       ]}
       {...props}
     >
-      <Text style={styles.buttonText}>{children as ReactNode}</Text>
+      <Text
+        style={[
+          styles.buttonText,
+          (variant !== 'primary' || disabled) && styles.buttonTextOnSurface,
+        ]}
+      >
+        {children as ReactNode}
+      </Text>
     </Pressable>
   );
 }
@@ -281,7 +288,7 @@ export function UnavailableState({
   );
 }
 
-export const sharedStyles = StyleSheet.create({
+export const sharedStyles = createThemedStyleSheet({
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -308,7 +315,7 @@ export const sharedStyles = StyleSheet.create({
   strong: { color: colors.text, ...typography.body, fontWeight: '700' },
 });
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   safe: { flex: 1, backgroundColor: colors.background },
   screen: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.lg },
   header: {
@@ -328,9 +335,10 @@ const styles = StyleSheet.create({
   title: { color: colors.text, ...typography.pageTitle },
   sectionHeader: { gap: spacing.xs },
   sectionTitle: {
-    color: colors.text,
+    color: colors.onBrand,
     ...typography.sectionTitle,
   },
+  buttonTextOnSurface: { color: colors.text },
   secondary: {
     color: colors.textSecondary,
     ...typography.body,
@@ -376,7 +384,7 @@ const styles = StyleSheet.create({
     fontSize: typeScale.caption,
     fontWeight: '700',
   },
-  chipTextSelected: { color: colors.text },
+  chipTextSelected: { color: colors.onBrand },
   badge: {
     alignSelf: 'flex-start',
     borderRadius: radii.pill,

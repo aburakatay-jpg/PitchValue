@@ -1,6 +1,14 @@
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
+import {
+  createThemedStyleSheet,
+  colors,
+  radii,
+  spacing,
+  touchTarget,
+  typography,
+} from '@/theme/tokens';
 
 import {
   CountrySelector,
@@ -14,13 +22,6 @@ import {
 } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { ProductServiceError } from '@/lib/product-api';
-import {
-  colors,
-  radii,
-  spacing,
-  touchTarget,
-  typography,
-} from '@/theme/tokens';
 
 export const authErrorCopy = {
   INVALID_EMAIL: 'Enter a valid email address.',
@@ -545,7 +546,7 @@ function AcknowledgementRow({
             accessibilityElementsHidden
             name={'checkmark' as SFSymbol}
             size={15}
-            tintColor={colors.background}
+            tintColor={colors.onBrand}
           />
         ) : null}
       </View>
@@ -622,7 +623,7 @@ function SocialAuthButton({ provider }: { provider: 'Apple' | 'Google' }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   authHeading: { gap: spacing.xs },
   brand: { color: colors.accent, ...typography.caption },
   welcomeTitle: { color: colors.text, ...typography.pageTitle },
@@ -633,7 +634,7 @@ const styles = StyleSheet.create({
   label: { color: colors.text, ...typography.body, fontWeight: '700' },
   inputFrame: {
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.inputBackground,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,

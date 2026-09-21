@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { lifecycleLabel, lifecycleTone } from '@/components/discovery';
-import { InlineNotice, StaleIndicator } from '@/components/feedback';
-import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
-import { useLanguage } from '@/features/language/LanguageContext';
+import { Pressable, Text, View } from 'react-native';
 import {
+  createThemedStyleSheet,
   colors,
   radii,
   spacing,
   touchTarget,
   typography,
 } from '@/theme/tokens';
+
+import { lifecycleLabel, lifecycleTone } from '@/components/discovery';
+import { InlineNotice, StaleIndicator } from '@/components/feedback';
+import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import type {
   FinalCheckState,
   MatchDetailResponse,
@@ -442,7 +443,7 @@ export function FreshnessSection({ detail }: { detail: MatchDetailResponse }) {
   ) : null;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   headerCard: { ...sharedStyles.card, gap: spacing.md },
   sectionCard: { ...sharedStyles.card, gap: spacing.md },
   competition: {

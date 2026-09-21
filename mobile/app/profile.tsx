@@ -21,7 +21,18 @@ import {
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
-import { colors, spacing, touchTarget, typography } from '@/theme/tokens';
+import {
+  appearancePreferences,
+  useAppearance,
+  type AppearancePreference,
+} from '@/features/appearance/AppearanceContext';
+import {
+  colors,
+  spacing,
+  touchTarget,
+  typography,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 import type { EntitlementState } from '@/types/entitlement';
 
 export const profileGroups = [
@@ -142,16 +153,15 @@ function ContactLink({
         </Text>
       )}
       <Text style={styles.contactText}>{label}</Text>
-      <SymbolView
-        accessibilityElementsHidden
-        name={'arrow.up.right' as SFSymbol}
-        size={14}
-        testID={`${testID}-external-icon`}
-        tintColor={colors.textSecondary}
-      />
     </Pressable>
   );
 }
+
+const appearanceLabels: Readonly<Record<AppearancePreference, string>> = {
+  system: 'System',
+  dark: 'Dark',
+  light: 'Light',
+};
 
 export function ProfileView({
   entitlement,
@@ -166,6 +176,7 @@ export function ProfileView({
 }) {
   const guest = entitlement === 'GUEST';
   const { t, language, setLanguage } = useLanguage();
+  const { preference, setPreference } = useAppearance();
   const version = Constants.expoConfig?.version ?? t('Unavailable');
   const showLegalPlaceholder = (destination: string) =>
     Alert.alert(destination, t('Final legal content is not yet available.'));
@@ -209,6 +220,43 @@ export function ProfileView({
             >
               TR
             </Button>
+          </View>
+        </View>
+        <View style={styles.preferenceDivider} />
+        <View style={styles.appearancePreference}>
+          <Text style={styles.label}>{t('Appearance')}</Text>
+          <View
+            accessibilityLabel={t('Appearance')}
+            accessibilityRole="radiogroup"
+            style={styles.appearanceActions}
+          >
+            {appearancePreferences.map((appearance) => {
+              const selected = preference === appearance;
+              return (
+                <Pressable
+                  accessibilityLabel={t(appearanceLabels[appearance])}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  key={appearance}
+                  onPress={() => setPreference(appearance)}
+                  style={({ pressed }) => [
+                    styles.appearanceOption,
+                    selected && styles.appearanceOptionSelected,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      styles.appearanceOptionText,
+                      selected && styles.appearanceOptionTextSelected,
+                    ]}
+                  >
+                    {t(appearanceLabels[appearance])}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
       </ProfileGroup>
@@ -269,7 +317,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   group: { gap: spacing.sm },
   label: {
     color: colors.text,
@@ -284,6 +332,34 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   languageActions: { flexDirection: 'row', gap: spacing.sm },
+  preferenceDivider: {
+    backgroundColor: colors.border,
+    height: StyleSheet.hairlineWidth,
+  },
+  appearancePreference: { gap: spacing.sm },
+  appearanceActions: { flexDirection: 'row', gap: spacing.sm },
+  appearanceOption: {
+    alignItems: 'center',
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  appearanceOptionSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  appearanceOptionText: {
+    color: colors.textSecondary,
+    flexShrink: 1,
+    textAlign: 'center',
+    ...typography.caption,
+  },
+  appearanceOptionTextSelected: { color: colors.onBrand },
   legalRow: {
     alignItems: 'center',
     borderBottomColor: colors.border,

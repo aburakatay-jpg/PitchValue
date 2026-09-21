@@ -1,11 +1,17 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { hasPremiumAccess } from '@/lib/entitlement';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 import type { EntitlementState } from '@/types/entitlement';
 
 export function LockedPremiumSection({
@@ -64,7 +70,7 @@ export function PremiumGuard({
   return <>{children}</>;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   locked: {
     backgroundColor: colors.surface,
     borderColor: colors.accent,

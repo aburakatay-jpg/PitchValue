@@ -11,6 +11,15 @@ import { ProductServiceError } from '@/lib/product-api';
 import { entitlementStates } from '@/types/entitlement';
 import { spacing, touchTarget } from '@/theme/tokens';
 
+jest.mock('@/features/appearance/AppearanceContext', () => ({
+  appearancePreferences: ['system', 'dark', 'light'],
+  useAppearance: () => ({
+    preference: 'system',
+    resolvedAppearance: 'dark',
+    setPreference: jest.fn(),
+  }),
+}));
+
 const englishEntitlementLabels = {
   GUEST: 'Premium Inactive',
   PREMIUM_ACTIVE: 'Premium Active',
@@ -268,7 +277,7 @@ describe('Profile foundation', () => {
     );
   });
 
-  it('presents equal lightweight contact rows with decorative external-link affordances', async () => {
+  it('presents equal lightweight contact rows without trailing external-link indicators', async () => {
     const view = await render(
       <LanguageProvider>
         <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
@@ -290,9 +299,9 @@ describe('Profile foundation', () => {
       'profile-email-link-external-icon',
       'profile-x-link-external-icon',
     ]) {
-      const icon = view.getByTestId(testID, { includeHiddenElements: true });
-      expect(icon).toHaveProp('name', 'arrow.up.right');
-      expect(icon).toHaveProp('accessibilityElementsHidden', true);
+      expect(
+        view.queryByTestId(testID, { includeHiddenElements: true }),
+      ).toBeNull();
     }
   });
 

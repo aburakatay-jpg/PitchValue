@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { SkeletonBlock } from '@/components/feedback';
-import { SectionHeader, sharedStyles } from '@/components/ui';
-import { useLanguage } from '@/features/language/LanguageContext';
+import { Pressable, Text, View } from 'react-native';
 import {
+  createThemedStyleSheet,
   colors,
   radii,
   spacing,
   touchTarget,
   typography,
 } from '@/theme/tokens';
+
+import { SkeletonBlock } from '@/components/feedback';
+import { SectionHeader, sharedStyles } from '@/components/ui';
+import { useLanguage } from '@/features/language/LanguageContext';
 import { getSavedSelections, getTrackingPerformance } from '@/lib/product-api';
 import type {
   SavedSelection,
@@ -255,7 +256,7 @@ export function MyBetsSkeleton({ tab }: { tab: MyBetsTab }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   stack: { gap: spacing.lg },
   tabs: {
     backgroundColor: colors.surface,
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     ...typography.caption,
   },
-  tabTextSelected: { color: colors.text },
+  tabTextSelected: { color: colors.onBrand },
   note: { color: colors.textSecondary, ...typography.caption },
   recordTitle: { color: colors.text, ...typography.body, fontWeight: '700' },
   skeleton: { gap: spacing.md },

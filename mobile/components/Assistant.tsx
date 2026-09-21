@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import {
+  createThemedStyleSheet,
+  colors,
+  radii,
+  spacing,
+  touchTarget,
+  typography,
+} from '@/theme/tokens';
 
 import { InlineNotice, PredictionCardSkeleton } from '@/components/feedback';
 import { LockedPremiumSection } from '@/components/PremiumGuard';
@@ -21,13 +29,6 @@ import {
   type CouponRisk,
 } from '@/lib/assistant-contract';
 import type { PublicApiError } from '@/lib/public-api';
-import {
-  colors,
-  radii,
-  spacing,
-  touchTarget,
-  typography,
-} from '@/theme/tokens';
 import type {
   PredictionListResponse,
   PublicPrediction,
@@ -381,7 +382,7 @@ export function AiView({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   stack: { gap: spacing.md },
   featureCard: {
     ...sharedStyles.card,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   form: { ...sharedStyles.card, gap: spacing.sm },
   label: { color: colors.text, ...typography.caption },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.inputBackground,
     borderColor: colors.border,
     borderRadius: radii.sm,
     borderWidth: 1,

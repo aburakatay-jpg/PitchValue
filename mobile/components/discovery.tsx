@@ -1,9 +1,15 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Badge, sharedStyles } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
-import { colors, spacing, touchTarget, typography } from '@/theme/tokens';
+import {
+  createThemedStyleSheet,
+  colors,
+  spacing,
+  touchTarget,
+  typography,
+} from '@/theme/tokens';
 import type {
   PublicFixtureSummary,
   PublicPrediction,
@@ -155,7 +161,7 @@ export function ExplorePredictionCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   card: {
     ...sharedStyles.card,
     minHeight: touchTarget,

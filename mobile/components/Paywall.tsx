@@ -1,10 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
 import { useCommerce } from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { CanonicalPlan } from '@/lib/commerce';
-import { colors, spacing, typography } from '@/theme/tokens';
+import {
+  colors,
+  spacing,
+  typography,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 import type { TrialEligibility } from '@/types/entitlement';
 
 export const premiumBenefits = [
@@ -151,7 +156,7 @@ export function PaywallPresentation({ onClose }: { onClose: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   stack: { gap: spacing.md },
   highlighted: { borderColor: colors.accent },
   name: { color: colors.text, ...typography.sectionTitle },

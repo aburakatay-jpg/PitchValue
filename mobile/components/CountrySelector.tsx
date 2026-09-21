@@ -10,15 +10,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-
-import { useLanguage } from '@/features/language/LanguageContext';
 import {
+  createThemedStyleSheet,
   colors,
   radii,
   spacing,
   touchTarget,
   typography,
 } from '@/theme/tokens';
+
+import { useLanguage } from '@/features/language/LanguageContext';
 
 export type RegistrationCountry = Readonly<{
   value: 'GB' | 'DE' | 'FR' | 'ES' | 'PT' | 'NL' | 'IT' | 'TR' | 'OTHER';
@@ -177,10 +178,10 @@ export function CountrySelector({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   selector: {
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.inputBackground,
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
   },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.62)',
+    backgroundColor: colors.overlay,
     bottom: 0,
     left: 0,
     position: 'absolute',

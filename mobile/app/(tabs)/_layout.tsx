@@ -1,9 +1,14 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { SymbolView, SFSymbol } from 'expo-symbols';
 
 import { tabRoutes } from '@/lib/routes';
-import { colors, touchTarget, typeScale } from '@/theme/tokens';
+import {
+  colors,
+  touchTarget,
+  typeScale,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 import { useLanguage } from '@/features/language/LanguageContext';
 
 const tabIconNames: Record<string, SFSymbol> = {
@@ -33,10 +38,10 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
-        tabBarActiveTintColor: colors.secondary,
+        tabBarActiveTintColor: colors.brandSecondary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.tabBarBackground,
           borderTopColor: colors.border,
           minHeight: 64,
         },
@@ -63,7 +68,7 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',

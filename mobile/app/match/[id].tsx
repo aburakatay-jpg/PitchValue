@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { createThemedStyleSheet, colors, typography } from '@/theme/tokens';
+import { Text, View } from 'react-native';
 import { useLanguage } from '@/features/language/LanguageContext';
 
 import { InlineNotice, MatchDetailSkeleton } from '@/components/feedback';
@@ -25,7 +26,6 @@ import { config } from '@/lib/config';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 import { saveSelection } from '@/lib/product-api';
 import { getMatchDetail, type PublicApiError } from '@/lib/public-api';
-import { colors, typography } from '@/theme/tokens';
 import type { MatchDetailResponse, PublicPrediction } from '@/types/public-api';
 
 export function parseCanonicalMatchId(
@@ -193,6 +193,6 @@ export default function MatchDetailScreen() {
   return <ProductionMatchDetail matchId={matchId} />;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   preview: { color: colors.textSecondary, ...typography.body },
 });

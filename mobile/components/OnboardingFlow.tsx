@@ -1,10 +1,16 @@
 import { useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  createThemedStyleSheet,
+  colors,
+  radii,
+  spacing,
+  typography,
+} from '@/theme/tokens';
 
 import { Button } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
-import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 export const onboardingPages = [
   {
@@ -200,7 +206,7 @@ function FirstLaunchPage({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyleSheet({
   safe: { backgroundColor: colors.background, flex: 1 },
   screen: {
     flexGrow: 1,
