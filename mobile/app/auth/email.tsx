@@ -22,7 +22,7 @@ export default function EmailAuthScreen() {
   ) => {
     return session.signUpEmail(email, password, countryCode, ageAcknowledged);
   };
-  
+
   const handleVerify = async (token: string) => {
     await confirmEmailVerification(token, new AbortController().signal);
     if (router.canGoBack()) router.back();
@@ -31,6 +31,7 @@ export default function EmailAuthScreen() {
 
   return (
     <EmailAuthShell
+      initialMode="SIGN_UP"
       onSignIn={handleSignIn}
       onSignUp={handleSignUp}
       onVerify={handleVerify}

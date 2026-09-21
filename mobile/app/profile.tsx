@@ -2,7 +2,13 @@ import Constants from 'expo-constants';
 import { useRouter, type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Screen, SectionHeader, sharedStyles } from '@/components/ui';
+import {
+  Button,
+  Screen,
+  SectionHeader,
+  sharedStyles,
+  stackScreenEdges,
+} from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
@@ -65,7 +71,7 @@ export function ProfileView({
   const guest = entitlement === 'GUEST';
   const { t, language, setLanguage } = useLanguage();
   return (
-    <Screen>
+    <Screen safeAreaEdges={stackScreenEdges}>
       <ProfileGroup title={t('Account')}>
         {guest ? (
           <Button onPress={onSignIn} variant="secondary">

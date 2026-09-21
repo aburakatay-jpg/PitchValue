@@ -1,7 +1,12 @@
 import { fireEvent, render } from '@testing-library/react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import AuthEntryScreen from '@/app/auth';
 import { ProfileView, profileGroups } from '@/app/profile';
-import { AuthEntry, EmailAuthShell } from '@/components/AuthShell';
+import { EmailAuthShell, SignInShell } from '@/components/AuthShell';
+import { signInScreenOptions } from '@/lib/navigation-options';
+import { ProductServiceError } from '@/lib/product-api';
 import { entitlementStates } from '@/types/entitlement';
 
 const englishEntitlementLabels = {
@@ -21,31 +26,61 @@ const turkishEntitlementLabels = {
 } as const;
 
 describe('auth-safe presentation', () => {
-  it('shows canonical auth methods without faking success and keeps Guest usable', async () => {
-    const onGuest = jest.fn();
-    const onEmail = jest.fn();
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('opens the email/password sign-in form directly without chooser tabs or Guest CTA', async () => {
+    const view = await render(<AuthEntryScreen />);
+    expect(await view.findByText('Welcome back')).toBeTruthy();
+    expect(view.getByLabelText('Email')).toBeTruthy();
+    expect(view.getByLabelText('Password')).toBeTruthy();
+    expect(view.queryByText('Continue as Guest')).toBeNull();
+    expect(view.queryByText('Continue with Email')).toBeNull();
+    expect(view.queryByText('Create an account')).toBeNull();
+  });
+
+  it('places honest Apple and Google options after the primary email flow', async () => {
     const view = await render(
-      <AuthEntry onEmail={onEmail} onGuest={onGuest} />,
+      <SignInShell
+        onCreateAccount={jest.fn()}
+        onSignIn={jest.fn().mockResolvedValue(undefined)}
+      />,
     );
     for (const provider of ['Apple', 'Google']) {
       expect(
         view.getByLabelText(`Continue with ${provider}, unavailable`),
       ).toBeDisabled();
     }
-    await fireEvent.press(view.getByLabelText('Continue with Email'));
-    expect(onEmail).toHaveBeenCalledTimes(1);
-    expect(view.queryByText(/continue with sms/i)).toBeNull();
-    await fireEvent.press(view.getByText('Continue as Guest'));
-    expect(onGuest).toHaveBeenCalledTimes(1);
+    expect(view.getByTestId('auth-apple-symbol')).toHaveProp(
+      'name',
+      'apple.logo',
+    );
+    expect(view.getByText('G')).toBeTruthy();
+    const tree = JSON.stringify(view.toJSON());
+    expect(tree.indexOf('auth-primary')).toBeLessThan(
+      tree.indexOf('auth-apple'),
+    );
+    expect(tree.indexOf('auth-apple')).toBeLessThan(
+      tree.indexOf('auth-google'),
+    );
   });
 
-  it('provides labeled email/password semantics and honest disabled submission', async () => {
-    const view = await render(<EmailAuthShell />);
+  it('provides mobile email/password semantics and an inline eye toggle', async () => {
+    const view = await render(
+      <SignInShell onCreateAccount={jest.fn()} onSignIn={jest.fn()} />,
+    );
     const email = view.getByLabelText('Email');
     const password = view.getByLabelText('Password');
     expect(email).toHaveProp('keyboardType', 'email-address');
+    expect(email).toHaveProp('autoCapitalize', 'none');
+    expect(email).toHaveProp('returnKeyType', 'next');
     expect(password).toHaveProp('secureTextEntry', true);
-    expect(view.getByLabelText('Sign in')).toBeDisabled();
+    expect(password).toHaveProp('returnKeyType', 'done');
+    expect(view.queryByText('Show password')).toBeNull();
+    await fireEvent.press(view.getByLabelText('Show password'));
+    expect(password).toHaveProp('secureTextEntry', false);
+    expect(view.getByLabelText('Hide password')).toBeTruthy();
     await fireEvent.changeText(email, 'invalid');
     await fireEvent(email, 'blur');
     expect(view.getByText('Enter a valid email address.')).toBeTruthy();
@@ -53,7 +88,9 @@ describe('auth-safe presentation', () => {
 
   it('submits email authentication only through a real service callback', async () => {
     const onSignIn = jest.fn().mockResolvedValue(undefined);
-    const view = await render(<EmailAuthShell onSignIn={onSignIn} />);
+    const view = await render(
+      <SignInShell onCreateAccount={jest.fn()} onSignIn={onSignIn} />,
+    );
     await fireEvent.changeText(
       view.getByLabelText('Email'),
       'user@example.com',
@@ -62,11 +99,70 @@ describe('auth-safe presentation', () => {
       view.getByLabelText('Password'),
       'SecurePassword1!',
     );
-    await fireEvent.press(view.getByLabelText('Sign in'));
+    await fireEvent.press(view.getByLabelText('Sign In'));
     expect(onSignIn).toHaveBeenCalledWith(
       'user@example.com',
       'SecurePassword1!',
     );
+  });
+
+  it('keeps authentication errors user-safe and localized', async () => {
+    const view = await render(
+      <SignInShell
+        onCreateAccount={jest.fn()}
+        onSignIn={jest
+          .fn()
+          .mockRejectedValue(new ProductServiceError('UNAVAILABLE'))}
+      />,
+    );
+    await fireEvent.changeText(
+      view.getByLabelText('Email'),
+      'user@example.com',
+    );
+    await fireEvent.changeText(view.getByLabelText('Password'), 'password');
+    await fireEvent.press(view.getByLabelText('Sign In'));
+    expect(await view.findByText('Unable to sign in')).toBeTruthy();
+  });
+
+  it('uses a text link for Create Account and chevron-only stack navigation', async () => {
+    const onCreateAccount = jest.fn();
+    const view = await render(
+      <SignInShell onCreateAccount={onCreateAccount} onSignIn={jest.fn()} />,
+    );
+    const link = view.getByRole('link', { name: 'Create an account' });
+    await fireEvent.press(link);
+    expect(onCreateAccount).toHaveBeenCalledTimes(1);
+    expect(signInScreenOptions).toEqual({
+      title: '',
+      headerBackTitle: '',
+      headerBackButtonDisplayMode: 'minimal',
+    });
+  });
+
+  it('renders the complete sign-in flow in Turkish', async () => {
+    await AsyncStorage.setItem('pitchvalue_language', 'tr');
+    const view = await render(
+      <SignInShell onCreateAccount={jest.fn()} onSignIn={jest.fn()} />,
+    );
+    for (const label of [
+      'Tekrar hoş geldiniz',
+      'E-posta',
+      'Şifre',
+      'Giriş Yap',
+      'Hesabınız yok mu?',
+      'Kayıt Ol',
+      'Apple ile devam et',
+      'Google ile devam et',
+    ]) {
+      expect(await view.findByText(label)).toBeTruthy();
+    }
+    expect(view.queryByText('Continue as Guest')).toBeNull();
+  });
+
+  it('keeps the existing registration shell separate from sign-in', async () => {
+    const view = await render(<EmailAuthShell initialMode="SIGN_UP" />);
+    expect(await view.findByText('Create an account')).toBeTruthy();
+    expect(view.queryByText('Sign In')).toBeNull();
   });
 });
 
@@ -82,6 +178,10 @@ describe('Profile foundation', () => {
     );
     // Wait for async storage LanguageProvider initialization
     await view.findByText('Account');
+    expect(view.getByTestId('screen-safe-area').props.edges).toMatchObject({
+      top: 'off',
+      bottom: 'additive',
+    });
 
     for (const group of profileGroups) {
       expect(view.getByText(group)).toBeTruthy();
