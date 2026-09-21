@@ -33,7 +33,9 @@ def guard_against_dev_database() -> None:
     db_url = os.environ.get("DATABASE_URL", "")
     if db_url.endswith("/pitchvalue"):
         pytest.exit(
-            "HARD SAFETY GUARD TRIGGERED: Tests are attempting to run against the development database ('pitchvalue'). Tests must target a dedicated test database."
+            "HARD SAFETY GUARD TRIGGERED: Tests are attempting to"
+            " run against the development database ('pitchvalue')."
+            " Tests must target a dedicated test database."
         )
 
     # Deterministic test seed for REFERENCE_DATA_DEPENDENCY tests
@@ -49,20 +51,27 @@ def guard_against_dev_database() -> None:
                 text(
                     "INSERT INTO providers(name, provider_type, priority) "
                     "SELECT '5DollarFootballAPI', 'football_data', 1 "
-                    "WHERE NOT EXISTS (SELECT 1 FROM providers WHERE name = '5DollarFootballAPI')"
+                    "WHERE NOT EXISTS "
+                    "(SELECT 1 FROM providers WHERE name = '5DollarFootballAPI')"
                 )
             )
             # Dummy engine_run for report location and operations tests
             conn.execute(
                 text(
                     "INSERT INTO engine_runs("
-                    "run_id, logical_run_id, attempt_number, run_type, status, scheduled_for, started_at, "
-                    "schedule_version, fixture_horizon, model_version, feature_profile, "
-                    "orchestrator_version, policy_version, dq_version, market_stability_version, "
-                    "calibration_confidence_version, no_vig_version, provider_contract_version) "
-                    "SELECT 'test-dummy-run-id', 'test-dummy-run-id', 1, 'SHADOW', 'RUNNING', :now, :now, "
+                    "run_id, logical_run_id, attempt_number, run_type, status,"
+                    " scheduled_for, started_at, "
+                    "schedule_version, fixture_horizon, model_version,"
+                    " feature_profile, "
+                    "orchestrator_version, policy_version, dq_version,"
+                    " market_stability_version, "
+                    "calibration_confidence_version, no_vig_version,"
+                    " provider_contract_version) "
+                    "SELECT 'test-dummy-run-id', 'test-dummy-run-id', 1,"
+                    " 'SHADOW', 'RUNNING', :now, :now, "
                     "'{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}' "
-                    "WHERE NOT EXISTS (SELECT 1 FROM engine_runs WHERE run_id = 'test-dummy-run-id')"
+                    "WHERE NOT EXISTS "
+                    "(SELECT 1 FROM engine_runs WHERE run_id = 'test-dummy-run-id')"
                 ),
                 {"now": datetime.now(UTC)},
             )
@@ -74,21 +83,37 @@ def guard_against_dev_database() -> None:
                         "provider_id, provider_entity_id, provider_display_name, "
                         "entity_type, mapping_status, mapping_version, provenance, "
                         "first_seen_at, last_seen_at) "
-                        "SELECT (SELECT provider_id FROM providers WHERE name = '5DollarFootballAPI' LIMIT 1), "
-                        "'dummy-' || :entity, 'Dummy ' || :entity, :entity, 'UNRESOLVED', 1, 'TEST', :now, :now "
-                        "WHERE NOT EXISTS (SELECT 1 FROM source_entity_references WHERE entity_type = :entity)"
+                        "SELECT (SELECT provider_id FROM providers"
+                        " WHERE name = '5DollarFootballAPI' LIMIT 1), "
+                        "'dummy-' || :entity, 'Dummy ' || :entity,"
+                        " :entity, 'UNRESOLVED', 1, 'TEST', :now, :now "
+                        "WHERE NOT EXISTS (SELECT 1 FROM source_entity_references"
+                        " WHERE entity_type = :entity)"
                     ),
                     {"entity": entity, "now": datetime.now(UTC)},
                 )
 
             # Insert a dummy CURRENT_SEASON_SYNC_SUCCEEDED event to prevent STALE reasons
+            _eid = "0000000000000000000000000000000000000000000000000000000000000000"
+            _etype = "CURRENT_SEASON_SYNC_SUCCEEDED"
             conn.execute(
                 text(
-                    "INSERT INTO operational_events(event_id, event_type, event_version, occurred_at, severity, correlation_id, source_component, metadata, delivery_visibility, persisted_at) "
-                    "SELECT '0000000000000000000000000000000000000000000000000000000000000000', 'CURRENT_SEASON_SYNC_SUCCEEDED', 1, :occurred_at, 'INFO', 'dummy-correlation', 'TEST', '{}'::jsonb, 'INTERNAL', :now "
-                    "WHERE NOT EXISTS (SELECT 1 FROM operational_events WHERE event_type = 'CURRENT_SEASON_SYNC_SUCCEEDED')"
+                    "INSERT INTO operational_events("
+                    "event_id, event_type, event_version, occurred_at,"
+                    " severity, correlation_id, source_component,"
+                    " metadata, delivery_visibility, persisted_at) "
+                    "SELECT :eid, :etype, 1, :occurred_at,"
+                    " 'INFO', 'dummy-correlation', 'TEST',"
+                    " '{}'::jsonb, 'INTERNAL', :now "
+                    "WHERE NOT EXISTS (SELECT 1 FROM operational_events"
+                    " WHERE event_type = :etype)"
                 ),
-                {"now": datetime.now(UTC), "occurred_at": datetime(2026, 9, 13, tzinfo=UTC)},
+                {
+                    "now": datetime.now(UTC),
+                    "occurred_at": datetime(2026, 9, 13, tzinfo=UTC),
+                    "eid": _eid,
+                    "etype": _etype,
+                },
             )
     except Exception as e:
         print(f"Warning: Seed initialization failed (schema might not be applied yet): {e}")

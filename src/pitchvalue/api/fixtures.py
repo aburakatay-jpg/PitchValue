@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -62,7 +63,12 @@ m.home_score,m.away_score,m.result,m.updated_at,
 def _refresh_stale_date(connection: Connection, fixture_date: date, checked_at: datetime) -> bool:
     start_time = datetime(fixture_date.year, fixture_date.month, fixture_date.day, tzinfo=UTC)
     lock_id1 = 1001
-    lock_id2 = int(start_time.timestamp())
+    # Raw timestamp for post-2038 dates exceeds int32 max and is rejected by
+    # pg_try_advisory_xact_lock(int4,int4).  Use a stable 31-bit hash of the
+    # ISO date string instead, which is guaranteed to fit.
+    lock_id2 = (
+        int(hashlib.sha256(fixture_date.isoformat().encode()).hexdigest()[:7], 16) & 0x7FFFFFFF
+    )
     locked = connection.execute(
         text("SELECT pg_try_advisory_xact_lock(:id1, :id2)"),
         {"id1": lock_id1, "id2": lock_id2},

@@ -146,13 +146,27 @@ def test_shadow_activation_validation_is_complete_read_only_and_fail_closed(
         }
     )
     with create_engine(settings.database_url).begin() as conn:
+        _eid = "0000000000000000000000000000000000000000000000000000000000000000"
+        _etype = "CURRENT_SEASON_SYNC_SUCCEEDED"
         conn.execute(
             text(
-                "INSERT INTO operational_events(event_id, event_type, event_version, occurred_at, severity, correlation_id, source_component, metadata, delivery_visibility, persisted_at) "
-                "SELECT '0000000000000000000000000000000000000000000000000000000000000000', 'CURRENT_SEASON_SYNC_SUCCEEDED', 1, :now, 'INFO', 'dummy-correlation', 'TEST', '{}'::jsonb, 'INTERNAL', :now "
-                "WHERE NOT EXISTS (SELECT 1 FROM operational_events WHERE event_type = 'CURRENT_SEASON_SYNC_SUCCEEDED')"
+                "INSERT INTO operational_events("
+                "event_id, event_type, event_version,"
+                " occurred_at, severity, correlation_id,"
+                " source_component, metadata,"
+                " delivery_visibility, persisted_at) "
+                "SELECT :eid, :etype, 1, :now,"
+                " 'INFO', 'dummy-correlation', 'TEST',"
+                " '{}'::jsonb, 'INTERNAL', :now "
+                "WHERE NOT EXISTS ("
+                "SELECT 1 FROM operational_events"
+                " WHERE event_type = :etype)"
             ),
-            {"now": datetime(2026, 9, 13, tzinfo=UTC)},
+            {
+                "now": datetime(2026, 9, 13, tzinfo=UTC),
+                "eid": _eid,
+                "etype": _etype,
+            },
         )
     result = validate_shadow_activation(
         settings,
@@ -415,4 +429,4 @@ def test_concurrent_reads_are_deterministic_and_do_not_mutate_state(
 
 
 def test_database_readiness_constant_is_the_committed_schema_head() -> None:
-    assert EXPECTED_ALEMBIC_REVISION == "754c63cfcf58"
+    assert EXPECTED_ALEMBIC_REVISION == "3af5899142ab"

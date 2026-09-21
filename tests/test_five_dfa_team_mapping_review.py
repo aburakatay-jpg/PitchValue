@@ -46,17 +46,30 @@ def db(mapping_engine: Engine) -> Iterator[Connection]:
             ):
                 connection.execute(
                     text(
-                        "INSERT INTO teams(canonical_name, normalized_name, active, created_at, updated_at) "
-                        "SELECT :name, lower(:name), true, :now, :now "
-                        "WHERE NOT EXISTS (SELECT 1 FROM teams WHERE canonical_name=:name)"
+                        "INSERT INTO teams("
+                        "canonical_name, normalized_name, active,"
+                        " created_at, updated_at) "
+                        "SELECT :name, lower(:name), true,"
+                        " :now, :now "
+                        "WHERE NOT EXISTS (SELECT 1 FROM teams"
+                        " WHERE canonical_name=:name)"
                     ),
                     {"name": item.canonical_name, "now": NOW},
                 )
             connection.execute(
                 text(
-                    "INSERT INTO source_entity_references(provider_id, provider_entity_id, provider_display_name, entity_type, mapping_status, mapping_version, provenance, first_seen_at, last_seen_at) "
-                    "SELECT :provider, :id, :name, 'TEAM', 'UNRESOLVED', 1, 'TEST', :now, :now "
-                    "WHERE NOT EXISTS (SELECT 1 FROM source_entity_references WHERE provider_id=:provider AND provider_entity_id=:id)"
+                    "INSERT INTO source_entity_references("
+                    "provider_id, provider_entity_id,"
+                    " provider_display_name, entity_type,"
+                    " mapping_status, mapping_version,"
+                    " provenance, first_seen_at, last_seen_at) "
+                    "SELECT :provider, :id, :name,"
+                    " 'TEAM', 'UNRESOLVED', 1,"
+                    " 'TEST', :now, :now "
+                    "WHERE NOT EXISTS ("
+                    "SELECT 1 FROM source_entity_references"
+                    " WHERE provider_id=:provider"
+                    " AND provider_entity_id=:id)"
                 ),
                 {
                     "provider": provider_id,
@@ -67,49 +80,91 @@ def db(mapping_engine: Engine) -> Iterator[Connection]:
             )
         connection.execute(
             text(
-                "INSERT INTO source_entity_references(provider_id, provider_entity_id, provider_display_name, entity_type, mapping_status, mapping_version, provenance, first_seen_at, last_seen_at) "
-                "SELECT :provider, '762247077', 'Man Utd', 'TEAM', 'UNRESOLVED', 1, 'TEST', :now, :now "
-                "WHERE NOT EXISTS (SELECT 1 FROM source_entity_references WHERE provider_id=:provider AND provider_entity_id='762247077')"
+                "INSERT INTO source_entity_references("
+                "provider_id, provider_entity_id,"
+                " provider_display_name, entity_type,"
+                " mapping_status, mapping_version,"
+                " provenance, first_seen_at, last_seen_at) "
+                "SELECT :provider, '762247077', 'Man Utd',"
+                " 'TEAM', 'UNRESOLVED', 1,"
+                " 'TEST', :now, :now "
+                "WHERE NOT EXISTS ("
+                "SELECT 1 FROM source_entity_references"
+                " WHERE provider_id=:provider"
+                " AND provider_entity_id='762247077')"
             ),
             {"provider": provider_id, "now": NOW},
         )
 
         connection.execute(
             text(
-                "INSERT INTO teams(canonical_name, normalized_name, active, created_at, updated_at) "
-                "SELECT 'Man City', 'man city', true, :now, :now "
-                "WHERE NOT EXISTS (SELECT 1 FROM teams WHERE canonical_name='Man City')"
+                "INSERT INTO teams("
+                "canonical_name, normalized_name, active,"
+                " created_at, updated_at) "
+                "SELECT 'Man City', 'man city', true,"
+                " :now, :now "
+                "WHERE NOT EXISTS (SELECT 1 FROM teams"
+                " WHERE canonical_name='Man City')"
             ),
             {"now": NOW},
         )
 
         connection.execute(
             text(
-                "INSERT INTO source_entity_references(provider_id, provider_entity_id, provider_display_name, entity_type, mapping_status, mapping_version, canonical_team_id, provenance, first_seen_at, last_seen_at) "
-                "SELECT :provider, '3103334772', 'Man City', 'TEAM', 'RESOLVED', 1, "
-                "(SELECT team_id FROM teams WHERE canonical_name='Man City'), "
+                "INSERT INTO source_entity_references("
+                "provider_id, provider_entity_id,"
+                " provider_display_name, entity_type,"
+                " mapping_status, mapping_version,"
+                " canonical_team_id, provenance,"
+                " first_seen_at, last_seen_at) "
+                "SELECT :provider, '3103334772', 'Man City',"
+                " 'TEAM', 'RESOLVED', 1, "
+                "(SELECT team_id FROM teams"
+                " WHERE canonical_name='Man City'), "
                 "'TEST', :now, :now "
-                "WHERE NOT EXISTS (SELECT 1 FROM source_entity_references WHERE provider_id=:provider AND provider_entity_id='3103334772')"
+                "WHERE NOT EXISTS ("
+                "SELECT 1 FROM source_entity_references"
+                " WHERE provider_id=:provider"
+                " AND provider_entity_id='3103334772')"
             ),
             {"provider": provider_id, "now": NOW},
         )
 
         connection.execute(
             text(
-                "INSERT INTO competitions(canonical_name, competition_type, gender, active, created_at, updated_at) "
-                "SELECT 'England Premier League', 'domestic_league', 'MALE', true, :now, :now "
-                "WHERE NOT EXISTS (SELECT 1 FROM competitions WHERE canonical_name='England Premier League')"
+                "INSERT INTO competitions("
+                "canonical_name, competition_type, gender,"
+                " active, created_at, updated_at) "
+                "SELECT 'England Premier League',"
+                " 'domestic_league', 'MALE',"
+                " true, :now, :now "
+                "WHERE NOT EXISTS (SELECT 1 FROM competitions"
+                " WHERE canonical_name="
+                "'England Premier League')"
             ),
             {"now": NOW},
         )
 
         connection.execute(
             text(
-                "INSERT INTO source_entity_references(provider_id, provider_entity_id, provider_display_name, entity_type, mapping_status, mapping_version, canonical_competition_id, provenance, first_seen_at, last_seen_at) "
-                "SELECT :provider, '100', 'England Premier League', 'COMPETITION', 'RESOLVED', 1, "
-                "(SELECT competition_id FROM competitions WHERE canonical_name='England Premier League'), "
+                "INSERT INTO source_entity_references("
+                "provider_id, provider_entity_id,"
+                " provider_display_name, entity_type,"
+                " mapping_status, mapping_version,"
+                " canonical_competition_id, provenance,"
+                " first_seen_at, last_seen_at) "
+                "SELECT :provider, '100',"
+                " 'England Premier League',"
+                " 'COMPETITION', 'RESOLVED', 1, "
+                "(SELECT competition_id FROM competitions"
+                " WHERE canonical_name="
+                "'England Premier League'), "
                 "'TEST', :now, :now "
-                "WHERE NOT EXISTS (SELECT 1 FROM source_entity_references WHERE provider_id=:provider AND provider_entity_id='100' AND entity_type='COMPETITION')"
+                "WHERE NOT EXISTS ("
+                "SELECT 1 FROM source_entity_references"
+                " WHERE provider_id=:provider"
+                " AND provider_entity_id='100'"
+                " AND entity_type='COMPETITION')"
             ),
             {"provider": provider_id, "now": NOW},
         )

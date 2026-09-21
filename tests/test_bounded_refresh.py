@@ -44,8 +44,10 @@ def _clean_extended(connection: Connection) -> None:
     connection.execute(text("DELETE FROM competition_provider_refs"))
     connection.execute(text("DELETE FROM shadow_analysis_snapshots"))
     connection.execute(text("DELETE FROM match_statistics"))
-    connection.execute(text("DELETE FROM engine_runs"))
-    connection.execute(text("DELETE FROM source_entity_references"))
+    connection.execute(text("DELETE FROM engine_runs WHERE run_id != 'test-dummy-run-id'"))
+    connection.execute(
+        text("DELETE FROM source_entity_references WHERE provider_entity_id NOT LIKE 'dummy-%'")
+    )
     connection.execute(text("DELETE FROM match_provider_refs"))
     _clean_fixture_data(connection)
 
@@ -72,10 +74,13 @@ def _mark_fresh(engine, match_id: int, fresh_at) -> None:
         connection.execute(
             text(
                 "INSERT INTO source_entity_references ("
-                "provider_id, entity_type, provider_entity_id, provider_display_name, "
-                "mapping_status, mapping_version, provenance, canonical_match_id, first_seen_at, last_seen_at"
+                "provider_id, entity_type, provider_entity_id,"
+                " provider_display_name, "
+                "mapping_status, mapping_version, provenance,"
+                " canonical_match_id, first_seen_at, last_seen_at"
                 ") VALUES ("
-                "1, 'FIXTURE', 'mock', 'mock', 'RESOLVED', 'v1', 'mock', :match_id, :fresh_at, :fresh_at"
+                "1, 'FIXTURE', 'mock', 'mock', 'RESOLVED',"
+                " 'v1', 'mock', :match_id, :fresh_at, :fresh_at"
                 ")"
             ),
             {"match_id": match_id, "fresh_at": fresh_at},
@@ -155,7 +160,9 @@ def test_today_live_transition_and_score_persistence(
         row = (
             connection.execute(
                 text("""
-                SELECT c.canonical_name as comp_name, ht.canonical_name as home_name, at.canonical_name as away_name
+                SELECT c.canonical_name as comp_name,
+                    ht.canonical_name as home_name,
+                    at.canonical_name as away_name
                 FROM matches m
                 JOIN competitions c ON c.competition_id = m.competition_id
                 JOIN teams ht ON ht.team_id = m.home_team_id
@@ -178,9 +185,16 @@ def test_today_live_transition_and_score_persistence(
 
         connection.execute(
             text(
-                "INSERT INTO match_provider_refs (match_id, provider_id, provider_match_id) VALUES (:match_id, :provider_id, :prov_id) ON CONFLICT DO NOTHING"
+                "INSERT INTO match_provider_refs"
+                " (match_id, provider_id, provider_match_id)"
+                " VALUES (:match_id, :provider_id, :prov_id)"
+                " ON CONFLICT DO NOTHING"
             ),
-            {"match_id": match_id, "provider_id": provider_id, "prov_id": str(match_id)},
+            {
+                "match_id": match_id,
+                "provider_id": provider_id,
+                "prov_id": str(match_id),
+            },
         )
         connection.commit()
 
@@ -239,7 +253,9 @@ def test_today_live_transition_and_score_persistence(
             row = (
                 connection.execute(
                     text(
-                        "SELECT status, home_score, away_score FROM matches WHERE match_id = :match_id"
+                        "SELECT status, home_score, away_score"
+                        " FROM matches"
+                        " WHERE match_id = :match_id"
                     ),
                     {"match_id": match_id},
                 )
