@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Button,
@@ -108,18 +109,24 @@ function ContactLink({
   icon,
   onPress,
   testID,
+  divided = false,
 }: {
   label: string;
   icon: 'mail' | 'x';
   onPress: () => void;
   testID: string;
+  divided?: boolean;
 }) {
   return (
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="link"
       onPress={onPress}
-      style={({ pressed }) => [styles.contactLink, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.contactLink,
+        divided && styles.contactDivider,
+        pressed && styles.pressed,
+      ]}
       testID={testID}
     >
       {icon === 'mail' ? (
@@ -135,6 +142,13 @@ function ContactLink({
         </Text>
       )}
       <Text style={styles.contactText}>{label}</Text>
+      <SymbolView
+        accessibilityElementsHidden
+        name={'arrow.up.right' as SFSymbol}
+        size={14}
+        testID={`${testID}-external-icon`}
+        tintColor={colors.textSecondary}
+      />
     </Pressable>
   );
 }
@@ -213,6 +227,7 @@ export function ProfileView({
         <ContactLink
           icon="mail"
           label={CONTACT_EMAIL}
+          divided
           onPress={() => void openSupportedUrl(`mailto:${CONTACT_EMAIL}`)}
           testID="profile-email-link"
         />
@@ -224,12 +239,18 @@ export function ProfileView({
         />
       </View>
 
-      <View style={styles.footer} testID="profile-footer">
-        <Text style={styles.versionText}>
-          {t('Version')} {version}
-        </Text>
-        <Text style={styles.copyright}>crtnapp © 2026</Text>
-      </View>
+      <SafeAreaView
+        edges={['bottom']}
+        style={styles.footerSafeArea}
+        testID="profile-footer"
+      >
+        <View style={styles.footer}>
+          <Text style={styles.versionText}>
+            {t('Version')} {version}
+          </Text>
+          <Text style={styles.copyright}>crtnapp © 2026</Text>
+        </View>
+      </SafeAreaView>
     </Screen>
   );
 }
@@ -275,18 +296,24 @@ const styles = StyleSheet.create({
   },
   legalLabel: { color: colors.text, flex: 1, ...typography.body },
   contactArea: {
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    alignItems: 'stretch',
   },
   contactLink: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
     minHeight: touchTarget,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  contactText: { color: colors.textSecondary, ...typography.body },
+  contactDivider: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  contactText: {
+    color: colors.textSecondary,
+    flex: 1,
+    ...typography.body,
+  },
   xIcon: {
     color: colors.textSecondary,
     fontSize: 16,
@@ -297,9 +324,9 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     gap: spacing.xs,
-    paddingBottom: spacing.sm,
     paddingTop: spacing.md,
   },
+  footerSafeArea: { paddingBottom: spacing.md },
   versionText: {
     color: colors.textSecondary,
     textAlign: 'center',

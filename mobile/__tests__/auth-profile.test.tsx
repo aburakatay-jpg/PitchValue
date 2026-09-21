@@ -1,5 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -9,6 +9,7 @@ import { SignInShell } from '@/components/AuthShell';
 import { signInScreenOptions } from '@/lib/navigation-options';
 import { ProductServiceError } from '@/lib/product-api';
 import { entitlementStates } from '@/types/entitlement';
+import { spacing, touchTarget } from '@/theme/tokens';
 
 const englishEntitlementLabels = {
   GUEST: 'Premium Inactive',
@@ -264,6 +265,48 @@ describe('Profile foundation', () => {
     expect(canOpenURL).toHaveBeenCalledWith('https://x.com/pitchvalueapp');
     await waitFor(() =>
       expect(openURL).toHaveBeenCalledWith('https://x.com/pitchvalueapp'),
+    );
+  });
+
+  it('presents equal lightweight contact rows with decorative external-link affordances', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByText('Responsible Gaming');
+    const emailRow = view.getByTestId('profile-email-link');
+    const xRow = view.getByTestId('profile-x-link');
+    expect(StyleSheet.flatten(emailRow.props.style).minHeight).toBe(
+      touchTarget,
+    );
+    expect(StyleSheet.flatten(xRow.props.style).minHeight).toBe(touchTarget);
+    expect(
+      StyleSheet.flatten(view.getByTestId('profile-contact-area').props.style)
+        .backgroundColor,
+    ).toBeUndefined();
+    expect(view.queryByText(/^(Contact|Support)$/)).toBeNull();
+    for (const testID of [
+      'profile-email-link-external-icon',
+      'profile-x-link-external-icon',
+    ]) {
+      const icon = view.getByTestId(testID, { includeHiddenElements: true });
+      expect(icon).toHaveProp('name', 'arrow.up.right');
+      expect(icon).toHaveProp('accessibilityElementsHidden', true);
+    }
+  });
+
+  it('keeps the footer inside a bottom safe-area boundary with breathing room', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByText('Responsible Gaming');
+    const footer = view.getByTestId('profile-footer');
+    expect(footer.props.edges).toMatchObject({ bottom: 'additive' });
+    expect(StyleSheet.flatten(footer.props.style).paddingBottom).toBe(
+      spacing.md,
     );
   });
 
