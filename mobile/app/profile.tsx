@@ -11,17 +11,16 @@ import type { EntitlementState } from '@/types/entitlement';
 
 export const profileGroups = [
   'Account',
-  'Subscription',
   'Preferences',
   'Responsible Gaming',
   'App',
 ] as const;
 
 const entitlementLabels: Readonly<Record<EntitlementState, string>> = {
-  GUEST: 'Guest',
+  GUEST: 'Premium Inactive',
   PREMIUM_ACTIVE: 'Premium Active',
   PREMIUM_TRIAL: 'Premium Trial',
-  PREMIUM_EXPIRED: 'Premium Inactive',
+  PREMIUM_EXPIRED: 'Premium Expired',
   PREMIUM_INACTIVE: 'Premium Inactive',
 };
 
@@ -55,13 +54,11 @@ function InformationRow({ label, value }: { label: string; value: string }) {
 export function ProfileView({
   entitlement,
   onSignIn,
-  onViewPremium,
   email = null,
   onSignOut,
 }: {
   entitlement: EntitlementState;
   onSignIn: () => void;
-  onViewPremium: () => void;
   email?: string | null;
   onSignOut?: (() => void) | undefined;
 }) {
@@ -70,21 +67,10 @@ export function ProfileView({
   return (
     <Screen>
       <ProfileGroup title={t('Account')}>
-        <InformationRow
-          label={t('Account status')}
-          value={t(entitlementLabels[entitlement])}
-        />
         {guest ? (
-          <>
-            <Text style={styles.detail}>
-              {t(
-                'Guest access includes public Today, Explore, and Match Detail discovery.',
-              )}
-            </Text>
-            <Button onPress={onSignIn} variant="secondary">
-              {t('Sign in')}
-            </Button>
-          </>
+          <Button onPress={onSignIn} variant="secondary">
+            {t('Sign In')}
+          </Button>
         ) : (
           <>
             {email ? <InformationRow label="Email" value={email} /> : null}
@@ -95,20 +81,10 @@ export function ProfileView({
             ) : null}
           </>
         )}
-      </ProfileGroup>
-      <ProfileGroup title={t('Subscription')}>
         <InformationRow
-          label={t('Access')}
+          label={t('Premium')}
           value={t(entitlementLabels[entitlement])}
         />
-        <Button onPress={onViewPremium} variant="secondary">
-          {t('View Premium')}
-        </Button>
-        <Text style={styles.detail}>
-          {t(
-            'Subscription management and restoration are currently unavailable.',
-          )}
-        </Text>
       </ProfileGroup>
       <ProfileGroup title={t('Preferences')}>
         <View style={sharedStyles.rowBetween}>
@@ -160,7 +136,6 @@ export default function ProfileScreen() {
       email={session.user?.email ?? null}
       onSignIn={() => router.push('/auth' as Href)}
       onSignOut={() => void session.signOut()}
-      onViewPremium={() => router.push('/paywall')}
     />
   );
 }
