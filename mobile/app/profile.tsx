@@ -96,6 +96,41 @@ function InformationRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PremiumStatusRow({
+  label,
+  value,
+  actionLabel,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  actionLabel: string;
+  onPress?: (() => void) | undefined;
+}) {
+  if (!onPress) return <InformationRow label={label} value={value} />;
+
+  return (
+    <Pressable
+      accessibilityLabel={`${label}: ${value}. ${actionLabel}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.premiumRow, pressed && styles.pressed]}
+      testID="profile-premium-row"
+    >
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.premiumValueArea}>
+        <Text style={styles.value}>{value}</Text>
+        <SymbolView
+          accessibilityElementsHidden
+          name={'chevron.right' as SFSymbol}
+          size={15}
+          tintColor={colors.textSecondary}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
 function LegalRow({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable
@@ -166,11 +201,13 @@ const appearanceLabels: Readonly<Record<AppearancePreference, string>> = {
 export function ProfileView({
   entitlement,
   onSignIn,
+  onOpenPremium,
   email = null,
   onSignOut,
 }: {
   entitlement: EntitlementState;
   onSignIn: () => void;
+  onOpenPremium?: (() => void) | undefined;
   email?: string | null;
   onSignOut?: (() => void) | undefined;
 }) {
@@ -178,6 +215,10 @@ export function ProfileView({
   const { t, language, setLanguage } = useLanguage();
   const { preference, setPreference } = useAppearance();
   const version = Constants.expoConfig?.version ?? t('Unavailable');
+  const premiumOpensPaywall =
+    entitlement === 'GUEST' ||
+    entitlement === 'PREMIUM_INACTIVE' ||
+    entitlement === 'PREMIUM_EXPIRED';
   const showLegalPlaceholder = (destination: string) =>
     Alert.alert(destination, t('Final legal content is not yet available.'));
 
@@ -198,9 +239,11 @@ export function ProfileView({
             ) : null}
           </>
         )}
-        <InformationRow
+        <PremiumStatusRow
           label={t('Premium')}
           value={t(entitlementLabels[entitlement])}
+          actionLabel={t('View Premium')}
+          onPress={premiumOpensPaywall ? onOpenPremium : undefined}
         />
       </ProfileGroup>
 
@@ -305,12 +348,13 @@ export function ProfileView({
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { state } = useEntitlement();
+  const entitlement = useEntitlement();
   const session = useProductSession();
   return (
     <ProfileView
-      entitlement={state}
+      entitlement={entitlement.state}
       email={session.user?.email ?? null}
+      onOpenPremium={entitlement.openPaywall}
       onSignIn={() => router.push('/auth' as Href)}
       onSignOut={() => void session.signOut()}
     />
@@ -330,6 +374,18 @@ const styles = createThemedStyleSheet({
     flexShrink: 1,
     textAlign: 'right',
     ...typography.body,
+  },
+  premiumRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: touchTarget,
+  },
+  premiumValueArea: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: spacing.xs,
   },
   languageActions: { flexDirection: 'row', gap: spacing.sm },
   preferenceDivider: {

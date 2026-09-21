@@ -219,6 +219,92 @@ describe('Profile foundation', () => {
     expect(view.queryByText(/Open My Bets/i)).toBeNull();
   });
 
+  it('opens existing Premium options for Guest without forcing registration', async () => {
+    const onSignIn = jest.fn();
+    const onOpenPremium = jest.fn();
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView
+          entitlement="GUEST"
+          onOpenPremium={onOpenPremium}
+          onSignIn={onSignIn}
+        />
+      </LanguageProvider>,
+    );
+    const premiumRow = await view.findByTestId('profile-premium-row');
+    expect(premiumRow.props.accessibilityLabel).toBe(
+      'Premium: Premium Inactive. View Premium',
+    );
+    expect(StyleSheet.flatten(premiumRow.props.style).minHeight).toBe(
+      touchTarget,
+    );
+    await fireEvent.press(premiumRow);
+    expect(onOpenPremium).toHaveBeenCalledTimes(1);
+    expect(onSignIn).not.toHaveBeenCalled();
+  });
+
+  it.each(['PREMIUM_INACTIVE', 'PREMIUM_EXPIRED'] as const)(
+    'opens existing Premium options for %s without changing entitlement semantics',
+    async (entitlement) => {
+      const onOpenPremium = jest.fn();
+      const view = await render(
+        <LanguageProvider>
+          <ProfileView
+            entitlement={entitlement}
+            onOpenPremium={onOpenPremium}
+            onSignIn={jest.fn()}
+          />
+        </LanguageProvider>,
+      );
+      await view.findByTestId('profile-premium-row');
+      expect(
+        view.getByText(englishEntitlementLabels[entitlement]),
+      ).toBeTruthy();
+      await fireEvent.press(view.getByTestId('profile-premium-row'));
+      expect(onOpenPremium).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(['PREMIUM_ACTIVE', 'PREMIUM_TRIAL'] as const)(
+    'keeps %s informative without a purchase or subscription-management loop',
+    async (entitlement) => {
+      const onOpenPremium = jest.fn();
+      const view = await render(
+        <LanguageProvider>
+          <ProfileView
+            entitlement={entitlement}
+            onOpenPremium={onOpenPremium}
+            onSignIn={jest.fn()}
+          />
+        </LanguageProvider>,
+      );
+      await view.findByText(englishEntitlementLabels[entitlement]);
+      expect(view.queryByTestId('profile-premium-row')).toBeNull();
+      expect(onOpenPremium).not.toHaveBeenCalled();
+      expect(view.queryByText(/day|renew|billing/i)).toBeNull();
+    },
+  );
+
+  it('localizes the interactive Premium row in Turkish', async () => {
+    await AsyncStorage.setItem('pitchvalue_language', 'tr');
+    const onOpenPremium = jest.fn();
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView
+          entitlement="PREMIUM_INACTIVE"
+          onOpenPremium={onOpenPremium}
+          onSignIn={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    const premiumRow = await view.findByTestId('profile-premium-row');
+    expect(premiumRow.props.accessibilityLabel).toBe(
+      "Premium: Premium Pasif. Premium'u Görüntüle",
+    );
+    await fireEvent.press(premiumRow);
+    expect(onOpenPremium).toHaveBeenCalledTimes(1);
+  });
+
   it('renders legal destinations, lightweight contacts, and the final footer without an App group', async () => {
     const view = await render(
       <LanguageProvider>
