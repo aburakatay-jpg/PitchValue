@@ -83,12 +83,12 @@ export const darkColors: ThemeColors = {
 };
 
 export const lightColors: ThemeColors = {
-  background: '#F3F6FA',
-  surface: '#FFFFFF',
-  surfaceElevated: '#E8EEF6',
-  border: '#C7D2E0',
+  background: '#F3F1EB',
+  surface: '#EAE8E2',
+  surfaceElevated: '#DEDAD2',
+  border: '#B7B3AC',
   textPrimary: '#0B1728',
-  textSecondary: '#506279',
+  textSecondary: '#4E6077',
   textMuted: '#6B7D91',
   brandPrimary: '#4169E1',
   brandSecondary: '#3158C9',
@@ -96,9 +96,9 @@ export const lightColors: ThemeColors = {
   positive: '#087A59',
   warning: '#966000',
   negative: '#B4233D',
-  inputBackground: '#FFFFFF',
-  tabBarBackground: '#FFFFFF',
-  headerBackground: '#FFFFFF',
+  inputBackground: '#F3F1EB',
+  tabBarBackground: '#EAE8E2',
+  headerBackground: '#EAE8E2',
   overlay: 'rgba(8, 17, 31, 0.42)',
   onBrand: '#FFFFFF',
   controlSelected: '#E1E8F1',
@@ -111,12 +111,12 @@ export const lightColors: ThemeColors = {
   authPrimaryBackground: '#F2B84B',
   authPrimaryText: '#0B1728',
   // Accessible amber foreground for interactive text on the Light surface.
-  // #966300 has a 4.75:1 contrast ratio against #F3F6FA.
-  interactiveTextAccent: '#966300',
+  // #835500 meets WCAG AA normal-text contrast on both warm Light surfaces.
+  interactiveTextAccent: '#835500',
   transparent: 'transparent',
   primary: '#4169E1',
   secondary: '#3158C9',
-  surfaceRaised: '#E8EEF6',
+  surfaceRaised: '#DEDAD2',
   text: '#0B1728',
 };
 

@@ -1,6 +1,8 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { ReactNode } from 'react';
 
+import { darkColors, lightColors } from '@/theme/tokens';
+
 export default function Root({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -14,8 +16,7 @@ export default function Root({ children }: { children: ReactNode }) {
         <ScrollViewStyleReset />
         <style
           dangerouslySetInnerHTML={{
-            __html:
-              'body { background-color: #08111F; } @media (prefers-color-scheme: light) { body { background-color: #F3F6FA; } }',
+            __html: `body { background-color: ${darkColors.background}; } @media (prefers-color-scheme: light) { body { background-color: ${lightColors.background}; } }`,
           }}
         />
       </head>

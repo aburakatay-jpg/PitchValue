@@ -258,6 +258,10 @@ describe('premium UI foundation', () => {
       fontWeight: '800',
     });
     expect(view.getByText('With Premium')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(view.getByTestId('paywall-plan-group').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.surface);
     const benefits = [
       'More powerful analysis with PV Engine',
       'Discover value opportunities faster',

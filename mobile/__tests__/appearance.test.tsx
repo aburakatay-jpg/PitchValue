@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 import { ProfileView } from '@/app/profile';
+import { Screen, sharedStyles } from '@/components/ui';
 import {
   APPEARANCE_STORAGE_KEY,
   AppearanceProvider,
@@ -42,6 +43,22 @@ function SignOutProbe() {
   return <Text onPress={() => void session.signOut()}>sign-out</Text>;
 }
 
+function contrastRatio(foreground: string, background: string) {
+  const luminance = (hex: string) => {
+    const channels = [1, 3, 5].map(
+      (start) => parseInt(hex.slice(start, start + 2), 16) / 255,
+    );
+    const linear = channels.map((channel) =>
+      channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+    );
+    return linear[0]! * 0.2126 + linear[1]! * 0.7152 + linear[2]! * 0.0722;
+  };
+  const values = [luminance(foreground), luminance(background)].sort(
+    (a, b) => b - a,
+  );
+  return (values[0]! + 0.05) / (values[1]! + 0.05);
+}
+
 describe('appearance foundation', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -60,6 +77,11 @@ describe('appearance foundation', () => {
   });
 
   it('defines distinct semantic palettes for content and navigation surfaces', () => {
+    expect(lightColors.background).toBe('#F3F1EB');
+    expect(lightColors.surface).toBe('#EAE8E2');
+    expect(lightColors.surface).not.toBe('#DAD8D3');
+    expect(darkColors.background).toBe('#08111F');
+    expect(darkColors.surface).toBe('#111D2E');
     expect(lightColors.background).not.toBe(darkColors.background);
     expect(lightColors.surface).not.toBe(darkColors.surface);
     expect(lightColors.textPrimary).not.toBe(darkColors.textPrimary);
@@ -78,7 +100,7 @@ describe('appearance foundation', () => {
     expect(lightColors.appearanceSelectedText).toBe(lightColors.textPrimary);
     expect(lightColors.authPrimaryBackground).toBe('#F2B84B');
     expect(lightColors.authPrimaryText).toBe(lightColors.textPrimary);
-    expect(lightColors.interactiveTextAccent).toBe('#966300');
+    expect(lightColors.interactiveTextAccent).toBe('#835500');
     expect(lightColors.interactiveTextAccent).not.toBe(
       lightColors.brandPrimary,
     );
@@ -91,6 +113,57 @@ describe('appearance foundation', () => {
     expect(darkColors.authPrimaryBackground).toBe('rgba(65, 105, 225, 1)');
     expect(darkColors.controlSelected).toBe(darkColors.brandPrimary);
     expect(darkColors.interactiveTextAccent).toBe('rgba(118, 150, 245, 1)');
+  });
+
+  it('keeps Light normal text accessible on both warm surfaces', () => {
+    for (const surface of [lightColors.background, lightColors.surface]) {
+      expect(
+        contrastRatio(lightColors.textPrimary, surface),
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrastRatio(lightColors.textSecondary, surface),
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrastRatio(lightColors.interactiveTextAccent, surface),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(
+      contrastRatio(
+        lightColors.authPrimaryText,
+        lightColors.authPrimaryBackground,
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('resolves the shared Light canvas and card while retaining Dark surfaces', async () => {
+    setActiveAppearance('light');
+    const lightView = await render(
+      <Screen>
+        <View testID="sample-card" style={sharedStyles.card} />
+      </Screen>,
+    );
+    expect(
+      StyleSheet.flatten(lightView.getByTestId('screen-safe-area').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.background);
+    expect(
+      StyleSheet.flatten(lightView.getByTestId('sample-card').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.surface);
+    setActiveAppearance('dark');
+    await lightView.rerender(
+      <Screen>
+        <View testID="sample-card" style={sharedStyles.card} />
+      </Screen>,
+    );
+    expect(
+      StyleSheet.flatten(lightView.getByTestId('screen-safe-area').props.style)
+        .backgroundColor,
+    ).toBe(darkColors.background);
+    expect(
+      StyleSheet.flatten(lightView.getByTestId('sample-card').props.style)
+        .backgroundColor,
+    ).toBe(darkColors.surface);
   });
 
   it('holds the app at a theme-safe bootstrap surface until storage resolves', async () => {
