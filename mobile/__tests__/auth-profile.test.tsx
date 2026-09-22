@@ -9,7 +9,12 @@ import { SignInShell } from '@/components/AuthShell';
 import { signInScreenOptions } from '@/lib/navigation-options';
 import { ProductServiceError } from '@/lib/product-api';
 import { entitlementStates } from '@/types/entitlement';
-import { spacing, touchTarget } from '@/theme/tokens';
+import {
+  lightColors,
+  setActiveAppearance,
+  spacing,
+  touchTarget,
+} from '@/theme/tokens';
 
 jest.mock('@/features/appearance/AppearanceContext', () => ({
   appearancePreferences: ['system', 'dark', 'light'],
@@ -42,7 +47,18 @@ describe('auth-safe presentation', () => {
   });
 
   afterEach(async () => {
+    setActiveAppearance('dark');
     await AsyncStorage.clear();
+  });
+
+  it('uses the semantic yellow treatment for enabled Light Mode auth CTAs', async () => {
+    setActiveAppearance('light');
+    const signIn = await render(
+      <SignInShell onCreateAccount={jest.fn()} onSignIn={jest.fn()} />,
+    );
+    expect(
+      StyleSheet.flatten(signIn.getByTestId('auth-primary').props.style),
+    ).toMatchObject({ backgroundColor: lightColors.authPrimaryBackground });
   });
 
   it('opens the email/password sign-in form directly without chooser tabs or Guest CTA', async () => {

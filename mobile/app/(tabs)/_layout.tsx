@@ -21,14 +21,15 @@ const tabIconNames: Record<string, SFSymbol> = {
 
 function TabIcon({ name, focused }: { name: SFSymbol; focused: boolean }) {
   return (
-    <View
-      style={[styles.iconContainer, focused && styles.iconContainerFocused]}
-    >
+    <View style={styles.iconContainer}>
       <SymbolView
         name={name}
         tintColor={focused ? colors.tabActive : colors.textSecondary}
         size={24}
       />
+      {focused ? (
+        <View accessible={false} style={styles.iconIndicator} />
+      ) : null}
     </View>
   );
 }
@@ -73,10 +74,14 @@ export default function TabLayout() {
 const styles = createThemedStyleSheet({
   iconContainer: {
     alignItems: 'center',
-    borderRadius: 16,
     justifyContent: 'center',
     height: 32,
-    width: 40,
   },
-  iconContainerFocused: { backgroundColor: colors.tabActiveIndicator },
+  iconIndicator: {
+    backgroundColor: colors.tabActiveIndicator,
+    bottom: 0,
+    height: 3,
+    position: 'absolute',
+    width: 18,
+  },
 });

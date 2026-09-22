@@ -148,7 +148,7 @@ export function Button({
   style,
   variant = 'primary',
   ...props
-}: PressableProps & { variant?: 'primary' | 'secondary' | 'quiet' }) {
+}: PressableProps & { variant?: 'primary' | 'secondary' | 'quiet' | 'auth' }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -161,6 +161,7 @@ export function Button({
         styles.button,
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'quiet' && styles.buttonQuiet,
+        variant === 'auth' && styles.buttonAuth,
         disabled && styles.buttonDisabled,
         state.pressed && !disabled && styles.pressed,
         typeof style === 'function' ? style(state) : style,
@@ -170,6 +171,7 @@ export function Button({
       <Text
         style={[
           styles.buttonText,
+          variant === 'auth' && !disabled && styles.buttonTextAuth,
           (variant !== 'primary' || disabled) && styles.buttonTextOnSurface,
         ]}
       >
@@ -359,6 +361,7 @@ const styles = createThemedStyleSheet({
   },
   buttonSecondary: { backgroundColor: colors.surfaceRaised },
   buttonQuiet: { backgroundColor: colors.transparent },
+  buttonAuth: { backgroundColor: colors.authPrimaryBackground },
   buttonText: {
     color: colors.text,
     flexShrink: 1,
@@ -366,6 +369,7 @@ const styles = createThemedStyleSheet({
     fontWeight: '700',
     textAlign: 'center',
   },
+  buttonTextAuth: { color: colors.authPrimaryText },
   pressed: { opacity: 0.8 },
   chip: {
     minHeight: 40,

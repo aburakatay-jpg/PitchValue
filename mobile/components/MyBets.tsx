@@ -148,6 +148,7 @@ export function MyBetsView({
             key={tab}
             onPress={() => setSelected(tab)}
             style={[styles.tab, selected === tab && styles.tabSelected]}
+            testID={`my-bets-tab-${tab.toLowerCase()}`}
           >
             <Text
               style={[
@@ -276,16 +277,15 @@ const styles = createThemedStyleSheet({
     paddingVertical: spacing.sm,
   },
   tabSelected: {
-    backgroundColor: colors.controlSelected,
-    borderBottomColor: colors.controlSelectedAccent,
-    borderBottomWidth: 3,
+    backgroundColor: colors.segmentedSelectedBackground,
+    borderColor: colors.segmentedSelectedBackground,
   },
   tabText: {
     color: colors.textSecondary,
     textAlign: 'center',
     ...typography.caption,
   },
-  tabTextSelected: { color: colors.controlSelectedText, fontWeight: '700' },
+  tabTextSelected: { color: colors.segmentedSelectedText, fontWeight: '700' },
   note: { color: colors.textSecondary, ...typography.caption },
   recordTitle: { color: colors.text, ...typography.body, fontWeight: '700' },
   skeleton: { gap: spacing.md },

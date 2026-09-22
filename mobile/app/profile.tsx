@@ -291,6 +291,7 @@ export function ProfileView({
                     selected && styles.appearanceOptionSelected,
                     pressed && styles.pressed,
                   ]}
+                  testID={`appearance-${appearance}`}
                 >
                   <Text
                     numberOfLines={2}
@@ -411,8 +412,8 @@ const styles = createThemedStyleSheet({
     paddingVertical: spacing.sm,
   },
   appearanceOptionSelected: {
-    backgroundColor: colors.controlSelected,
-    borderColor: colors.controlSelected,
+    backgroundColor: colors.appearanceSelectedBackground,
+    borderColor: colors.appearanceSelectedBackground,
   },
   appearanceOptionText: {
     color: colors.textSecondary,
@@ -421,7 +422,7 @@ const styles = createThemedStyleSheet({
     ...typography.caption,
   },
   appearanceOptionTextSelected: {
-    color: colors.controlSelectedText,
+    color: colors.appearanceSelectedText,
     fontWeight: '700',
   },
   legalRow: {

@@ -10,6 +10,7 @@ import {
 } from '@/components/CountrySelector';
 import { registrationScreenOptions } from '@/lib/navigation-options';
 import { ProductServiceError } from '@/lib/product-api';
+import { lightColors, setActiveAppearance } from '@/theme/tokens';
 
 const countryValues = ['GB', 'DE', 'FR', 'ES', 'PT', 'NL', 'IT', 'TR', 'OTHER'];
 const countryLabels = [
@@ -58,7 +59,20 @@ describe('Create Account experience', () => {
   });
 
   afterEach(async () => {
+    setActiveAppearance('dark');
     await AsyncStorage.clear();
+  });
+
+  it('shares the semantic yellow Light Mode treatment once the form is enabled', async () => {
+    setActiveAppearance('light');
+    const view = await renderRegistration();
+    const cta = view.getByTestId('create-account-primary');
+    expect(cta).toBeDisabled();
+    await completeRequiredForm(view);
+    expect(cta).toBeEnabled();
+    expect(StyleSheet.flatten(cta.props.style)).toMatchObject({
+      backgroundColor: lightColors.authPrimaryBackground,
+    });
   });
 
   it('is a dedicated registration screen without auth-mode tabs or confirmation password', async () => {

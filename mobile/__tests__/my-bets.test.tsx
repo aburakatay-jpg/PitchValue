@@ -1,4 +1,5 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import {
   MyBetsSkeleton,
@@ -11,6 +12,7 @@ import {
   productTrackingContractReady,
   productionTrackingAvailable,
 } from '@/lib/personal-tracking';
+import { lightColors, setActiveAppearance } from '@/theme/tokens';
 
 describe('personal tracking contract safety', () => {
   it('records that no production saved-user contract exists', () => {
@@ -38,6 +40,8 @@ describe('personal tracking contract safety', () => {
 });
 
 describe('My Bets top-level presentation', () => {
+  afterEach(() => setActiveAppearance('dark'));
+
   it('uses the three canonical accessible tabs with Active selected', async () => {
     const view = await render(<MyBetsView />);
     expect(myBetsTabs).toEqual(['Active', 'History', 'Performance']);
@@ -55,6 +59,18 @@ describe('My Bets top-level presentation', () => {
     expect(view.getByText('Performance unavailable')).toBeTruthy();
     expect(view.getByText(/ROI is not calculated/)).toBeTruthy();
     expect(view.queryByText(/0% ROI|0\.00%/i)).toBeNull();
+  });
+
+  it('uses the semantic yellow selected segment in Light Mode', async () => {
+    setActiveAppearance('light');
+    const view = await render(<MyBetsView />);
+    const active = view.getByTestId('my-bets-tab-active');
+    const style = active.props.style;
+    expect(StyleSheet.flatten(style)).toMatchObject({
+      backgroundColor: lightColors.segmentedSelectedBackground,
+      borderColor: lightColors.segmentedSelectedBackground,
+    });
+    expect(active.props.accessibilityState).toEqual({ selected: true });
   });
 
   it('supports honest empty states only when a future authority supplies them', async () => {

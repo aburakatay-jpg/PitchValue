@@ -29,6 +29,12 @@ export type ThemeColors = Readonly<{
   controlSelected: string;
   controlSelectedText: string;
   controlSelectedAccent: string;
+  segmentedSelectedBackground: string;
+  segmentedSelectedText: string;
+  appearanceSelectedBackground: string;
+  appearanceSelectedText: string;
+  authPrimaryBackground: string;
+  authPrimaryText: string;
   tabActive: string;
   tabActiveIndicator: string;
   transparent: string;
@@ -61,8 +67,14 @@ export const darkColors: ThemeColors = {
   controlSelected: '#4169E1',
   controlSelectedText: '#F4F7FB',
   controlSelectedAccent: '#4169E1',
+  segmentedSelectedBackground: 'rgba(65, 105, 225, 1)',
+  segmentedSelectedText: '#F4F7FB',
+  appearanceSelectedBackground: 'rgba(65, 105, 225, 1)',
+  appearanceSelectedText: '#F4F7FB',
+  authPrimaryBackground: 'rgba(65, 105, 225, 1)',
+  authPrimaryText: '#F4F7FB',
   tabActive: '#7696F5',
-  tabActiveIndicator: 'transparent',
+  tabActiveIndicator: 'rgba(0, 0, 0, 0)',
   transparent: 'transparent',
   primary: '#4169E1',
   secondary: '#7696F5',
@@ -92,6 +104,12 @@ export const lightColors: ThemeColors = {
   controlSelected: '#E1E8F1',
   controlSelectedText: '#0B1728',
   controlSelectedAccent: '#F2B84B',
+  segmentedSelectedBackground: '#F2B84B',
+  segmentedSelectedText: '#0B1728',
+  appearanceSelectedBackground: '#F2B84B',
+  appearanceSelectedText: '#0B1728',
+  authPrimaryBackground: '#F2B84B',
+  authPrimaryText: '#0B1728',
   tabActive: '#0B1728',
   tabActiveIndicator: '#F2B84B',
   transparent: 'transparent',

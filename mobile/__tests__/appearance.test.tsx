@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { ProfileView } from '@/app/profile';
 import {
@@ -71,11 +72,24 @@ describe('appearance foundation', () => {
     expect(lightColors.controlSelectedText).toBe(lightColors.textPrimary);
     expect(lightColors.controlSelectedAccent).toBe('#F2B84B');
     expect(darkColors.controlSelectedAccent).toBe(darkColors.brandPrimary);
+    expect(lightColors.segmentedSelectedBackground).toBe('#F2B84B');
+    expect(lightColors.segmentedSelectedText).toBe(lightColors.textPrimary);
+    expect(lightColors.appearanceSelectedBackground).toBe('#F2B84B');
+    expect(lightColors.appearanceSelectedText).toBe(lightColors.textPrimary);
+    expect(lightColors.authPrimaryBackground).toBe('#F2B84B');
+    expect(lightColors.authPrimaryText).toBe(lightColors.textPrimary);
+    expect(darkColors.segmentedSelectedBackground).toBe(
+      'rgba(65, 105, 225, 1)',
+    );
+    expect(darkColors.appearanceSelectedBackground).toBe(
+      'rgba(65, 105, 225, 1)',
+    );
+    expect(darkColors.authPrimaryBackground).toBe('rgba(65, 105, 225, 1)');
     expect(darkColors.controlSelected).toBe(darkColors.brandPrimary);
     expect(lightColors.tabActive).toBe(lightColors.textPrimary);
     expect(lightColors.tabActiveIndicator).toBe('#F2B84B');
     expect(darkColors.tabActive).toBe(darkColors.brandSecondary);
-    expect(darkColors.tabActiveIndicator).toBe('transparent');
+    expect(darkColors.tabActiveIndicator).toBe('rgba(0, 0, 0, 0)');
   });
 
   it('holds the app at a theme-safe bootstrap surface until storage resolves', async () => {
@@ -199,5 +213,10 @@ describe('appearance foundation', () => {
         'light',
       ),
     );
+    const lightOption = view.getByTestId('appearance-light');
+    expect(StyleSheet.flatten(lightOption.props.style)).toMatchObject({
+      backgroundColor: lightColors.appearanceSelectedBackground,
+      borderColor: lightColors.appearanceSelectedBackground,
+    });
   });
 });

@@ -24,6 +24,7 @@ import {
   useAppearance,
 } from '@/features/appearance/AppearanceContext';
 import {
+  createNativeHeaderOptions,
   registrationScreenOptions,
   signInScreenOptions,
 } from '@/lib/navigation-options';
@@ -51,6 +52,7 @@ function RootNavigation() {
   const { resolvedAppearance, colors: themeColors } = useAppearance();
   const navigationBase =
     resolvedAppearance === 'dark' ? DarkTheme : DefaultTheme;
+  const nativeHeaderOptions = createNativeHeaderOptions(themeColors);
   const navigationTheme = {
     ...navigationBase,
     colors: {
@@ -75,13 +77,7 @@ function RootNavigation() {
       >
         <CommerceProvider>
           <StatusBar style={resolvedAppearance === 'dark' ? 'light' : 'dark'} />
-          <Stack
-            screenOptions={{
-              contentStyle: { backgroundColor: themeColors.background },
-              headerStyle: { backgroundColor: themeColors.headerBackground },
-              headerTintColor: themeColors.textPrimary,
-            }}
-          >
+          <Stack screenOptions={nativeHeaderOptions}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen
               name="(tabs)"
@@ -89,20 +85,28 @@ function RootNavigation() {
             />
             <Stack.Screen
               name="profile"
-              options={{ title: t('Profile'), headerBackTitle: '' }}
+              options={{
+                ...nativeHeaderOptions,
+                title: t('Profile'),
+                headerBackTitle: '',
+              }}
             />
             <Stack.Screen
               name="match/[id]"
-              options={{ title: t('Match detail') }}
+              options={{ ...nativeHeaderOptions, title: t('Match detail') }}
             />
-            <Stack.Screen name="auth/index" options={signInScreenOptions} />
+            <Stack.Screen
+              name="auth/index"
+              options={{ ...nativeHeaderOptions, ...signInScreenOptions }}
+            />
             <Stack.Screen
               name="auth/email"
-              options={registrationScreenOptions}
+              options={{ ...nativeHeaderOptions, ...registrationScreenOptions }}
             />
             <Stack.Screen
               name="paywall"
               options={{
+                ...nativeHeaderOptions,
                 presentation: 'modal',
                 title: t('PitchValue Premium'),
               }}

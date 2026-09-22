@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 
 jest.mock('@/features/language/LanguageContext', () => ({
   useLanguage: () => ({
@@ -27,8 +28,11 @@ jest.mock('expo-symbols', () => {
 });
 
 import TabLayout from '@/app/(tabs)/_layout';
+import { lightColors, setActiveAppearance } from '@/theme/tokens';
 
 describe('Navigation Regression', () => {
+  afterEach(() => setActiveAppearance('dark'));
+
   it('renders exactly four canonical bottom tabs without profile', () => {
     const layout = TabLayout();
     const screens = layout.props.children;
@@ -50,5 +54,28 @@ describe('Navigation Regression', () => {
     expect(names).not.toContain('profile'); // Fail if profile is accidentally re-added to bottom tabs
     const pve = screenProps.find((screen: any) => screen.name === 'ai');
     expect(pve.options.title).toBe('PvE');
+  });
+
+  it('uses a compact Light Mode yellow indicator without an icon background', () => {
+    setActiveAppearance('light');
+    const layout = TabLayout();
+    const screens = layout.props.children;
+    const screenProps = Array.isArray(screens)
+      ? screens.map((screen: any) => screen.props)
+      : [screens.props];
+    const pve = screenProps.find((screen: any) => screen.name === 'ai');
+    const icon = pve.options.tabBarIcon({ focused: true });
+    const renderedIcon = icon.type(icon.props);
+    const [symbol, indicator] = React.Children.toArray(
+      renderedIcon.props.children,
+    );
+
+    expect(symbol).toBeTruthy();
+    expect(
+      StyleSheet.flatten(renderedIcon.props.style).backgroundColor,
+    ).toBeUndefined();
+    expect(StyleSheet.flatten((indicator as any).props.style)).toMatchObject({
+      backgroundColor: lightColors.tabActiveIndicator,
+    });
   });
 });

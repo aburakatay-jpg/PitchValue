@@ -191,6 +191,7 @@ export function SignInShell({
           disabled={!onSignIn || submitting}
           onPress={() => void submit()}
           testID="auth-primary"
+          variant="auth"
         >
           {submitting ? t('Please wait') : t('Sign In')}
         </Button>
@@ -432,6 +433,7 @@ export function CreateAccountShell({
           disabled={!canSubmit}
           onPress={() => void submit()}
           testID="create-account-primary"
+          variant="auth"
         >
           {submitting ? t('Please wait') : t('Create Account')}
         </Button>
@@ -505,6 +507,7 @@ function VerificationShell({
             <Button
               disabled={!token.trim() || !onVerify || submitting}
               onPress={() => void verify()}
+              variant="auth"
             >
               {submitting ? t('Please wait') : t('Verify')}
             </Button>
