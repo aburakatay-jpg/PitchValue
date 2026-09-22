@@ -84,7 +84,7 @@ export const darkColors: ThemeColors = {
 
 export const lightColors: ThemeColors = {
   background: '#F3F1EB',
-  surface: '#EAE8E2',
+  surface: '#F0EEE8',
   surfaceElevated: '#DEDAD2',
   border: '#B7B3AC',
   textPrimary: '#0B1728',
@@ -97,8 +97,8 @@ export const lightColors: ThemeColors = {
   warning: '#966000',
   negative: '#B4233D',
   inputBackground: '#F3F1EB',
-  tabBarBackground: '#EAE8E2',
-  headerBackground: '#EAE8E2',
+  tabBarBackground: '#F0EEE8',
+  headerBackground: '#F0EEE8',
   overlay: 'rgba(8, 17, 31, 0.42)',
   onBrand: '#FFFFFF',
   controlSelected: '#E1E8F1',

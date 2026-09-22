@@ -78,8 +78,9 @@ describe('appearance foundation', () => {
 
   it('defines distinct semantic palettes for content and navigation surfaces', () => {
     expect(lightColors.background).toBe('#F3F1EB');
-    expect(lightColors.surface).toBe('#EAE8E2');
+    expect(lightColors.surface).toBe('#F0EEE8');
     expect(lightColors.surface).not.toBe('#DAD8D3');
+    expect(lightColors.surface).not.toBe('#EAE8E2');
     expect(darkColors.background).toBe('#08111F');
     expect(darkColors.surface).toBe('#111D2E');
     expect(lightColors.background).not.toBe(darkColors.background);
