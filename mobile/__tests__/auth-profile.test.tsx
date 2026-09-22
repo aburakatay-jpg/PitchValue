@@ -25,20 +25,20 @@ jest.mock('@/features/appearance/AppearanceContext', () => ({
   }),
 }));
 
-const englishEntitlementLabels = {
-  GUEST: 'Premium Inactive',
-  PREMIUM_ACTIVE: 'Premium Active',
-  PREMIUM_TRIAL: 'Premium Trial',
-  PREMIUM_EXPIRED: 'Premium Expired',
-  PREMIUM_INACTIVE: 'Premium Inactive',
+const englishStatusLabels = {
+  GUEST: 'Inactive',
+  PREMIUM_ACTIVE: 'Active',
+  PREMIUM_TRIAL: 'Trial',
+  PREMIUM_EXPIRED: 'Expired',
+  PREMIUM_INACTIVE: 'Inactive',
 } as const;
 
-const turkishEntitlementLabels = {
-  GUEST: 'Premium Pasif',
-  PREMIUM_ACTIVE: 'Premium Aktif',
-  PREMIUM_TRIAL: 'Premium Deneme',
-  PREMIUM_EXPIRED: 'Premium Süresi Doldu',
-  PREMIUM_INACTIVE: 'Premium Pasif',
+const turkishStatusLabels = {
+  GUEST: 'Pasif',
+  PREMIUM_ACTIVE: 'Aktif',
+  PREMIUM_TRIAL: 'Deneme',
+  PREMIUM_EXPIRED: 'Süresi Doldu',
+  PREMIUM_INACTIVE: 'Pasif',
 } as const;
 
 describe('auth-safe presentation', () => {
@@ -234,7 +234,10 @@ describe('Profile foundation', () => {
 
     expect(view.queryByText('Subscription')).toBeNull();
     expect(view.getByText('Premium')).toBeTruthy();
-    expect(view.getByText('Premium Inactive')).toBeTruthy();
+    expect(view.getByText('Inactive')).toBeTruthy();
+    expect(view.getByTestId('profile-account-divider')).toBeTruthy();
+    expect(view.queryByTestId('profile-account-identity')).toBeNull();
+    expect(view.queryByTestId('profile-sign-out')).toBeNull();
     expect(view.queryByText(/Guest access includes/i)).toBeNull();
     expect(
       view.queryByText(/Subscription management and restoration/i),
@@ -288,8 +291,13 @@ describe('Profile foundation', () => {
         </LanguageProvider>,
       );
       await view.findByTestId('profile-premium-row');
+      expect(view.getByTestId('profile-premium-value')).toHaveTextContent(
+        englishStatusLabels[entitlement],
+      );
       expect(
-        view.getByText(englishEntitlementLabels[entitlement]),
+        view.getByTestId('profile-premium-chevron', {
+          includeHiddenElements: true,
+        }),
       ).toBeTruthy();
       await fireEvent.press(view.getByTestId('profile-premium-row'));
       expect(onOpenPremium).toHaveBeenCalledTimes(1);
@@ -309,8 +317,16 @@ describe('Profile foundation', () => {
           />
         </LanguageProvider>,
       );
-      await view.findByText(englishEntitlementLabels[entitlement]);
+      await view.findByTestId('profile-premium-static-row');
+      expect(view.getByTestId('profile-premium-value')).toHaveTextContent(
+        englishStatusLabels[entitlement],
+      );
       expect(view.queryByTestId('profile-premium-row')).toBeNull();
+      expect(
+        view.queryByTestId('profile-premium-chevron', {
+          includeHiddenElements: true,
+        }),
+      ).toBeNull();
       expect(onOpenPremium).not.toHaveBeenCalled();
       expect(view.queryByText(/day|renew|billing/i)).toBeNull();
     },
@@ -471,17 +487,20 @@ describe('Profile foundation', () => {
       await view.findByText('Account');
       expect(view.queryByText('Subscription')).toBeNull();
       expect(view.getByText('Premium')).toBeTruthy();
-      expect(view.getByText(englishEntitlementLabels[state])).toBeTruthy();
+      expect(view.getByTestId('profile-premium-value')).toHaveTextContent(
+        englishStatusLabels[state],
+      );
       expect(view.queryByText(/Free|Basic|Standard/)).toBeNull();
     },
   );
 
-  it('keeps authenticated identity and sign-out inside the merged Account card', async () => {
+  it('shows authoritative identity in Account and Sign Out below contacts', async () => {
     const onSignOut = jest.fn();
     const view = await render(
       <LanguageProvider>
         <ProfileView
           entitlement="PREMIUM_ACTIVE"
+          authenticated
           email="person@example.com"
           onSignIn={jest.fn()}
           onSignOut={onSignOut}
@@ -490,10 +509,69 @@ describe('Profile foundation', () => {
     );
     await view.findByText('Account');
     expect(view.getByText('person@example.com')).toBeTruthy();
-    expect(view.getByText('Premium Active')).toBeTruthy();
+    expect(view.getByText('Active')).toBeTruthy();
     expect(view.queryByText('Subscription')).toBeNull();
-    await fireEvent.press(view.getByText('Sign out'));
+    const tree = JSON.stringify(view.toJSON());
+    expect(tree.indexOf('profile-sign-out')).toBeGreaterThan(
+      tree.indexOf('profile-x-link'),
+    );
+    expect(tree.indexOf('profile-sign-out')).toBeLessThan(
+      tree.indexOf('profile-footer'),
+    );
+    expect(
+      view.getByTestId('profile-account-identity').props.accessibilityLabel,
+    ).toBe('person@example.com');
+    await fireEvent.press(view.getByTestId('profile-sign-out'));
     expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps authenticated identity separate from a non-Premium entitlement', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView
+          authenticated
+          entitlement="GUEST"
+          email="member@example.com"
+          onSignIn={jest.fn()}
+          onSignOut={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    expect(await view.findByText('member@example.com')).toBeTruthy();
+    expect(view.getByTestId('profile-premium-value')).toHaveTextContent(
+      'Inactive',
+    );
+    expect(view.queryByTestId('profile-account-sign-in')).toBeNull();
+    expect(view.getByTestId('profile-sign-out')).toBeTruthy();
+  });
+
+  it('truncates a long authoritative email and has a truthful signed-in fallback', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView
+          authenticated
+          entitlement="PREMIUM_INACTIVE"
+          email="a-very-long-email-address@example-football-domain.com"
+          onSignIn={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    await view.findByTestId('profile-account-identity');
+    expect(
+      view.getByText('a-very-long-email-address@example-football-domain.com')
+        .props.numberOfLines,
+    ).toBe(1);
+    view.rerender(
+      <LanguageProvider>
+        <ProfileView
+          authenticated
+          entitlement="PREMIUM_INACTIVE"
+          onSignIn={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    expect(await view.findByText('Signed in')).toBeTruthy();
+    expect(view.queryByText('user@example.com')).toBeNull();
   });
 
   it.each(entitlementStates)(
@@ -510,7 +588,9 @@ describe('Profile foundation', () => {
         await fireEvent.press(turkishControl);
       }
       expect(await view.findByText('Hesap')).toBeTruthy();
-      expect(view.getByText(turkishEntitlementLabels[state])).toBeTruthy();
+      expect(view.getByTestId('profile-premium-value')).toHaveTextContent(
+        turkishStatusLabels[state],
+      );
       if (state === 'GUEST') {
         expect(view.getByText('Giriş Yap')).toBeTruthy();
       }

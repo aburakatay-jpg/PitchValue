@@ -61,6 +61,14 @@ const entitlementLabels: Readonly<Record<EntitlementState, string>> = {
   PREMIUM_INACTIVE: 'Premium Inactive',
 };
 
+const entitlementStatusLabels: Readonly<Record<EntitlementState, string>> = {
+  GUEST: 'Inactive',
+  PREMIUM_ACTIVE: 'Active',
+  PREMIUM_TRIAL: 'Trial',
+  PREMIUM_EXPIRED: 'Expired',
+  PREMIUM_INACTIVE: 'Inactive',
+};
+
 async function openSupportedUrl(url: string) {
   try {
     if (await Linking.canOpenURL(url)) await Linking.openURL(url);
@@ -88,55 +96,69 @@ function ProfileGroup({
   );
 }
 
-function InformationRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View
-      accessibilityLabel={`${label}: ${value}`}
-      style={sharedStyles.rowBetween}
-    >
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-    </View>
-  );
-}
-
 function PremiumStatusRow({
   label,
   value,
+  fullValue,
   actionLabel,
   onPress,
 }: {
   label: string;
   value: string;
+  fullValue: string;
   actionLabel: string;
   onPress?: (() => void) | undefined;
 }) {
-  if (!onPress) return <InformationRow label={label} value={value} />;
-
-  return (
+  const content = (
+    <>
+      <View style={styles.accountRowLeading}>
+        <SymbolView
+          accessibilityElementsHidden
+          name={'p.circle' as SFSymbol}
+          size={20}
+          tintColor={colors.textSecondary}
+        />
+        <Text style={styles.label}>{label}</Text>
+      </View>
+      <View style={styles.premiumValueArea}>
+        <Text
+          style={onPress ? styles.premiumInteractiveValue : styles.statusValue}
+          testID="profile-premium-value"
+        >
+          {value}
+        </Text>
+        {onPress ? (
+          <SymbolView
+            accessibilityElementsHidden
+            name={'chevron.right' as SFSymbol}
+            size={15}
+            tintColor={colors.textSecondary}
+            testID="profile-premium-chevron"
+          />
+        ) : null}
+      </View>
+    </>
+  );
+  return onPress ? (
     <Pressable
-      accessibilityLabel={`${label}: ${value}. ${actionLabel}`}
+      accessibilityLabel={`${label}: ${fullValue}. ${actionLabel}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.premiumRow, pressed && styles.pressed]}
       testID="profile-premium-row"
     >
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.premiumValueArea}>
-        <Text
-          style={styles.premiumInteractiveValue}
-          testID="profile-premium-value"
-        >
-          {value}
-        </Text>
-        <SymbolView
-          accessibilityElementsHidden
-          name={'chevron.right' as SFSymbol}
-          size={15}
-          tintColor={colors.textSecondary}
-        />
-      </View>
+      {content}
     </Pressable>
+  ) : (
+    <View
+      accessible
+      accessibilityLabel={`${label}: ${fullValue}`}
+      accessibilityRole="text"
+      style={styles.premiumRow}
+      testID="profile-premium-static-row"
+    >
+      {content}
+    </View>
   );
 }
 
@@ -213,14 +235,16 @@ export function ProfileView({
   onOpenPremium,
   email = null,
   onSignOut,
+  authenticated = false,
 }: {
   entitlement: EntitlementState;
   onSignIn: () => void;
   onOpenPremium?: (() => void) | undefined;
   email?: string | null;
   onSignOut?: (() => void) | undefined;
+  authenticated?: boolean;
 }) {
-  const guest = entitlement === 'GUEST';
+  const guest = !authenticated;
   const { t, language, setLanguage } = useLanguage();
   const { preference, setPreference } = useAppearance();
   const version = Constants.expoConfig?.version ?? t('Unavailable');
@@ -235,22 +259,41 @@ export function ProfileView({
     <Screen safeAreaEdges={stackScreenEdges}>
       <ProfileGroup account title={t('Account')}>
         {guest ? (
-          <Button onPress={onSignIn} variant="secondary">
-            {t('Sign In')}
-          </Button>
+          <Pressable
+            accessibilityLabel={t('Sign In')}
+            accessibilityRole="button"
+            onPress={onSignIn}
+            style={({ pressed }) => [
+              styles.accountSignIn,
+              pressed && styles.pressed,
+            ]}
+            testID="profile-account-sign-in"
+          >
+            <Text style={styles.accountSignInText}>{t('Sign In')}</Text>
+          </Pressable>
         ) : (
-          <>
-            {email ? <InformationRow label="Email" value={email} /> : null}
-            {onSignOut ? (
-              <Button onPress={onSignOut} variant="secondary">
-                {t('Sign out')}
-              </Button>
-            ) : null}
-          </>
+          <View
+            accessible
+            accessibilityLabel={email || t('Signed in')}
+            style={styles.accountIdentityRow}
+            testID="profile-account-identity"
+          >
+            <SymbolView
+              accessibilityElementsHidden
+              name={'person.crop.circle' as SFSymbol}
+              size={20}
+              tintColor={colors.textSecondary}
+            />
+            <Text numberOfLines={1} style={styles.accountIdentityText}>
+              {email || t('Signed in')}
+            </Text>
+          </View>
         )}
+        <View style={styles.accountDivider} testID="profile-account-divider" />
         <PremiumStatusRow
           label={t('Premium')}
-          value={t(entitlementLabels[entitlement])}
+          value={t(entitlementStatusLabels[entitlement])}
+          fullValue={t(entitlementLabels[entitlement])}
           actionLabel={t('View Premium')}
           onPress={premiumOpensPaywall ? onOpenPremium : undefined}
         />
@@ -342,6 +385,21 @@ export function ProfileView({
         />
       </View>
 
+      {authenticated && onSignOut ? (
+        <Pressable
+          accessibilityLabel={t('Sign out')}
+          accessibilityRole="button"
+          onPress={onSignOut}
+          style={({ pressed }) => [
+            styles.signOutRow,
+            pressed && styles.pressed,
+          ]}
+          testID="profile-sign-out"
+        >
+          <Text style={styles.signOutText}>{t('Sign out')}</Text>
+        </Pressable>
+      ) : null}
+
       <SafeAreaView
         edges={['bottom']}
         style={styles.footerSafeArea}
@@ -365,6 +423,7 @@ export default function ProfileScreen() {
   return (
     <ProfileView
       entitlement={entitlement.state}
+      authenticated={session.state === 'AUTHENTICATED'}
       email={session.user?.email ?? null}
       onOpenPremium={entitlement.openPaywall}
       onSignIn={() => router.push('/auth' as Href)}
@@ -375,15 +434,49 @@ export default function ProfileScreen() {
 
 const styles = createThemedStyleSheet({
   group: { gap: spacing.sm },
-  accountCard: { gap: spacing.md, paddingVertical: spacing.sm },
+  accountCard: { gap: 0, paddingVertical: spacing.xs },
+  accountSignIn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget,
+  },
+  accountSignInText: {
+    color: colors.interactiveTextAccent,
+    ...typography.body,
+    fontWeight: '700',
+  },
+  accountIdentityRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: touchTarget,
+  },
+  accountIdentityText: {
+    color: colors.text,
+    flex: 1,
+    flexShrink: 1,
+    ...typography.body,
+    fontWeight: '600',
+  },
+  accountDivider: {
+    backgroundColor: colors.border,
+    height: StyleSheet.hairlineWidth,
+    marginVertical: spacing.xs,
+  },
+  accountRowLeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 1,
+    gap: spacing.sm,
+  },
   label: {
     color: colors.text,
     flexShrink: 1,
     ...typography.body,
     fontWeight: '700',
   },
-  value: {
-    color: colors.secondary,
+  statusValue: {
+    color: colors.textSecondary,
     flexShrink: 1,
     textAlign: 'right',
     ...typography.body,
@@ -397,6 +490,7 @@ const styles = createThemedStyleSheet({
   premiumRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     minHeight: touchTarget,
   },
@@ -406,6 +500,12 @@ const styles = createThemedStyleSheet({
     flexShrink: 1,
     gap: spacing.xs,
   },
+  signOutRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget,
+  },
+  signOutText: { color: colors.textSecondary, ...typography.body },
   languageActions: { flexDirection: 'row', gap: spacing.sm },
   preferenceDivider: {
     backgroundColor: colors.border,

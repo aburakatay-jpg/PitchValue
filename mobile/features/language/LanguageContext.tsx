@@ -33,6 +33,7 @@ const en: Translations = {
   'Sign in': 'Sign in',
   'Sign In': 'Sign In',
   'Sign out': 'Sign out',
+  'Signed in': 'Signed in',
   'Welcome back': 'Welcome back',
   Email: 'Email',
   Password: 'Password',
@@ -52,6 +53,9 @@ const en: Translations = {
   'Premium Trial': 'Premium Trial',
   'Premium Inactive': 'Premium Inactive',
   'Premium Expired': 'Premium Expired',
+  Trial: 'Trial',
+  Inactive: 'Inactive',
+  Expired: 'Expired',
   Language: 'Language',
   Appearance: 'Appearance',
   System: 'System',
@@ -89,6 +93,19 @@ const en: Translations = {
   Annual: 'Annual',
   'Annual billing': 'Annual billing',
   'Unlock full PitchValue analysis': 'Unlock full PitchValue analysis',
+  'PitchValue Premium': 'PitchValue Premium',
+  'Not more predictions.\nBetter filtering.':
+    'Not more predictions.\nBetter filtering.',
+  'Premium plans': 'Premium plans',
+  'Loading plans': 'Loading plans',
+  'Plans and prices are currently unavailable.':
+    'Plans and prices are currently unavailable.',
+  'Go Premium': 'Go Premium',
+  'Purchase is temporarily unavailable.':
+    'Purchase is temporarily unavailable.',
+  'With Premium': 'With Premium',
+  'Premium feature details are not available yet.':
+    'Premium feature details are not available yet.',
   'Review the planned Premium experience. Store purchases are not available yet.':
     'Review the planned Premium experience. Store purchases are not available yet.',
   'Annual option': 'Annual option',
@@ -319,6 +336,7 @@ const tr: Translations = {
   'Sign in': 'Giriş yap',
   'Sign In': 'Giriş Yap',
   'Sign out': 'Çıkış yap',
+  'Signed in': 'Giriş yapıldı',
   'Welcome back': 'Tekrar hoş geldiniz',
   Email: 'E-posta',
   Password: 'Şifre',
@@ -338,6 +356,9 @@ const tr: Translations = {
   'Premium Trial': 'Premium Deneme',
   'Premium Inactive': 'Premium Pasif',
   'Premium Expired': 'Premium Süresi Doldu',
+  Trial: 'Deneme',
+  Inactive: 'Pasif',
+  Expired: 'Süresi Doldu',
   Language: 'Dil',
   Appearance: 'Görünüm',
   System: 'Sistem',
@@ -376,6 +397,19 @@ const tr: Translations = {
   Annual: 'Yıllık',
   'Annual billing': 'Yıllık faturalandırma',
   'Unlock full PitchValue analysis': 'PitchValue analizlerinin tamamını açın',
+  'PitchValue Premium': 'PitchValue Premium',
+  'Not more predictions.\nBetter filtering.':
+    'Daha fazla tahmin değil.\nDaha iyi filtreleme.',
+  'Premium plans': 'Premium planları',
+  'Loading plans': 'Planlar yükleniyor',
+  'Plans and prices are currently unavailable.':
+    'Planlar ve fiyatlar şu anda kullanılamıyor.',
+  'Go Premium': "Premium'a Geç",
+  'Purchase is temporarily unavailable.':
+    'Satın alma işlemi geçici olarak kullanılamıyor.',
+  'With Premium': 'Premium ile',
+  'Premium feature details are not available yet.':
+    'Premium özellik ayrıntıları henüz kullanılamıyor.',
   'Review the planned Premium experience. Store purchases are not available yet.':
     'Planlanan Premium deneyimini inceleyin. Mağaza satın alımları henüz kullanıma açık değil.',
   'Annual option': 'Yıllık seçenek',
