@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 
 import { Button } from '@/components/ui';
 import { useCommerce } from '@/features/entitlement/CommerceContext';
@@ -21,6 +22,7 @@ const planNames: Readonly<Record<CanonicalPlan, string>> = {
   quarterly: '3 Months',
   annual: 'Annual',
 };
+const planOrder: readonly CanonicalPlan[] = ['monthly', 'quarterly', 'annual'];
 
 export function annualPlanDetail(
   eligibility: TrialEligibility,
@@ -33,24 +35,28 @@ export function annualPlanDetail(
 }
 
 function PaywallPlanRow({
+  plan,
   product,
   selected,
   onSelect,
   last,
 }: {
-  product: CommerceProduct;
+  plan: CanonicalPlan;
+  product: CommerceProduct | undefined;
   selected: boolean;
   onSelect: () => void;
   last: boolean;
 }) {
   const { t } = useLanguage();
-  const name = t(planNames[product.id]);
-  const price = product.localizedPrice ?? t('Localized price unavailable');
+  const name = t(planNames[plan]);
+  const available = Boolean(product?.localizedPrice);
+  const price = product?.localizedPrice || '—';
   return (
     <Pressable
-      accessibilityLabel={`${name}, ${price}`}
+      accessibilityLabel={`${name}, ${available ? price : t('Price unavailable')}`}
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled: !available }}
+      disabled={!available}
       onPress={onSelect}
       style={({ pressed }) => [
         styles.planRow,
@@ -58,21 +64,24 @@ function PaywallPlanRow({
         !last && styles.planDivider,
         pressed && styles.pressed,
       ]}
-      testID={`paywall-plan-${product.id}`}
+      testID={`paywall-plan-${plan}`}
     >
       <View style={[styles.radio, selected && styles.radioSelected]}>
         {selected ? <View style={styles.radioCenter} /> : null}
       </View>
       <Text style={styles.planName}>{name}</Text>
-      <Text style={styles.planPrice}>{price}</Text>
+      <Text style={[styles.planPrice, !available && styles.placeholderPrice]}>
+        {price}
+      </Text>
     </Pressable>
   );
 }
 
 export function PaywallShell({
-  trialEligibility = 'unknown',
+  onClose,
 }: {
   trialEligibility?: TrialEligibility;
+  onClose?: () => void;
 }) {
   const { t } = useLanguage();
   const commerce = useCommerce();
@@ -94,35 +103,55 @@ export function PaywallShell({
 
   return (
     <View style={styles.stack}>
-      <Text style={styles.context}>{t('PitchValue Premium')}</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.context}>{t('PitchValue Premium')}</Text>
+        {onClose ? (
+          <Pressable
+            accessibilityLabel={t('Close')}
+            accessibilityRole="button"
+            onPress={onClose}
+            style={({ pressed }) => [
+              styles.closeControl,
+              pressed && styles.pressed,
+            ]}
+            testID="paywall-close"
+          >
+            <SymbolView
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              name={'xmark' as SFSymbol}
+              size={18}
+              tintColor={colors.text}
+            />
+          </Pressable>
+        ) : null}
+      </View>
       <Text accessibilityRole="header" style={styles.headline}>
         {t('Not more predictions.\nBetter filtering.')}
       </Text>
 
-      {products.length > 0 ? (
-        <View
-          accessibilityLabel={t('Premium plans')}
-          accessibilityRole="radiogroup"
-          style={styles.planGroup}
-          testID="paywall-plan-group"
-        >
-          {products.map((product, index) => (
+      <View
+        accessibilityLabel={t('Premium plans')}
+        accessibilityRole="radiogroup"
+        style={styles.planGroup}
+        testID="paywall-plan-group"
+      >
+        {planOrder.map((plan, index) => {
+          const product = products.find((candidate) => candidate.id === plan);
+          return (
             <PaywallPlanRow
-              key={product.id}
+              key={plan}
+              plan={plan}
               product={product}
-              selected={selectedPlan === product.id}
-              onSelect={() => setSelectedPlan(product.id)}
-              last={index === products.length - 1}
+              selected={
+                Boolean(product?.localizedPrice) && selectedPlan === plan
+              }
+              onSelect={() => setSelectedPlan(plan)}
+              last={index === planOrder.length - 1}
             />
-          ))}
-        </View>
-      ) : (
-        <Text style={styles.unavailable} testID="paywall-plans-unavailable">
-          {commerce.isFetchingProducts
-            ? t('Loading plans')
-            : t('Plans and prices are currently unavailable.')}
-        </Text>
-      )}
+          );
+        })}
+      </View>
 
       <Button
         accessibilityLabel={t('Go Premium')}
@@ -147,56 +176,45 @@ export function PaywallShell({
         <Text accessibilityRole="header" style={styles.benefitTitle}>
           {t('With Premium')}
         </Text>
-        <Text style={styles.unavailable}>
-          {t('Premium feature details are not available yet.')}
-        </Text>
       </View>
 
-      <Button
+      <Pressable
         accessibilityLabel={t('Restore purchases')}
+        accessibilityRole="button"
+        accessibilityState={{
+          disabled: !commerce.isConfigured || commerce.isRestoring,
+        }}
         disabled={!commerce.isConfigured || commerce.isRestoring}
         onPress={commerce.restore}
-        variant="quiet"
+        style={({ pressed }) => [
+          styles.restoreAction,
+          pressed && styles.pressed,
+        ]}
+        testID="paywall-restore"
       >
-        {t('Restore Purchases')}{' '}
-        {!commerce.isConfigured ? `· ${t('Unavailable')}` : ''}
-      </Button>
-      <Text style={styles.footnote}>
-        {commerce.isConfigured
-          ? t(
-              'Payment, restoration, and trial confirmation will use the App Store.',
-            )
-          : t(
-              'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.',
-            )}
-      </Text>
-      {trialEligibility === 'eligible' ? (
-        <Text style={styles.footnote}>
-          {annualPlanDetail(trialEligibility, t)}
-        </Text>
-      ) : null}
+        <Text style={styles.restoreText}>{t('Restore Purchases')}</Text>
+      </Pressable>
     </View>
   );
 }
 
 export function PaywallPresentation({ onClose }: { onClose: () => void }) {
-  const { t } = useLanguage();
-  return (
-    <View style={styles.stack}>
-      <Button
-        accessibilityLabel={t('Close Premium options')}
-        onPress={onClose}
-        variant="quiet"
-      >
-        {t('Close')}
-      </Button>
-      <PaywallShell trialEligibility="unknown" />
-    </View>
-  );
+  return <PaywallShell onClose={onClose} />;
 }
 
 const styles = createThemedStyleSheet({
   stack: { gap: spacing.lg },
+  topRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  closeControl: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget,
+    minWidth: touchTarget,
+  },
   context: { color: colors.textSecondary, ...typography.caption },
   headline: { color: colors.text, ...typography.pageTitle },
   planGroup: {
@@ -248,13 +266,15 @@ const styles = createThemedStyleSheet({
     ...typography.body,
     fontWeight: '700',
   },
+  placeholderPrice: { color: colors.textSecondary },
   benefits: { gap: spacing.sm },
   benefitTitle: { color: colors.text, ...typography.sectionTitle },
   unavailable: { color: colors.textSecondary, ...typography.body },
-  footnote: {
-    color: colors.textSecondary,
-    textAlign: 'center',
-    ...typography.caption,
+  restoreAction: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget,
   },
+  restoreText: { color: colors.textSecondary, ...typography.body },
   pressed: { opacity: 0.8 },
 });

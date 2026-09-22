@@ -10,6 +10,7 @@ import { signInScreenOptions } from '@/lib/navigation-options';
 import { ProductServiceError } from '@/lib/product-api';
 import { entitlementStates } from '@/types/entitlement';
 import {
+  darkColors,
   lightColors,
   setActiveAppearance,
   spacing,
@@ -495,6 +496,7 @@ describe('Profile foundation', () => {
   );
 
   it('shows authoritative identity in Account and Sign Out below contacts', async () => {
+    setActiveAppearance('dark');
     const onSignOut = jest.fn();
     const view = await render(
       <LanguageProvider>
@@ -521,8 +523,30 @@ describe('Profile foundation', () => {
     expect(
       view.getByTestId('profile-account-identity').props.accessibilityLabel,
     ).toBe('person@example.com');
+    const signOutText = view.getByText('Sign out');
+    expect(StyleSheet.flatten(signOutText.props.style).color).toBe(
+      darkColors.negative,
+    );
     await fireEvent.press(view.getByTestId('profile-sign-out'));
     expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Sign Out destructive in Light appearance', async () => {
+    setActiveAppearance('light');
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView
+          entitlement="PREMIUM_ACTIVE"
+          authenticated
+          email="person@example.com"
+          onSignIn={jest.fn()}
+          onSignOut={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    expect(
+      StyleSheet.flatten(view.getByText('Sign out').props.style).color,
+    ).toBe(lightColors.negative);
   });
 
   it('keeps authenticated identity separate from a non-Premium entitlement', async () => {

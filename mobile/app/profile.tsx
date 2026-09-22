@@ -505,7 +505,7 @@ const styles = createThemedStyleSheet({
     justifyContent: 'center',
     minHeight: touchTarget,
   },
-  signOutText: { color: colors.textSecondary, ...typography.body },
+  signOutText: { color: colors.negative, ...typography.body },
   languageActions: { flexDirection: 'row', gap: spacing.sm },
   preferenceDivider: {
     backgroundColor: colors.border,

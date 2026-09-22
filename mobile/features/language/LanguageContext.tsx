@@ -110,6 +110,7 @@ const en: Translations = {
     'Review the planned Premium experience. Store purchases are not available yet.',
   'Annual option': 'Annual option',
   'Localized price unavailable': 'Localized price unavailable',
+  'Price unavailable': 'Price unavailable',
   'Pricing will be supplied by the App Store.':
     'Pricing will be supplied by the App Store.',
   'Purchase unavailable': 'Purchase unavailable',
@@ -414,6 +415,7 @@ const tr: Translations = {
     'Planlanan Premium deneyimini inceleyin. Mağaza satın alımları henüz kullanıma açık değil.',
   'Annual option': 'Yıllık seçenek',
   'Localized price unavailable': 'Yerelleştirilmiş fiyat mevcut değil',
+  'Price unavailable': 'Fiyat bilgisi kullanılamıyor',
   'Pricing will be supplied by the App Store.':
     'Fiyatlandırma App Store tarafından sağlanacaktır.',
   'Purchase unavailable': 'Satın alma kullanılamıyor',

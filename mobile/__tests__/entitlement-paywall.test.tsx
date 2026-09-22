@@ -118,18 +118,29 @@ describe('premium UI foundation', () => {
     expect(view.getByLabelText('Premium content locked')).toBeTruthy();
   });
 
-  it('does not display the unconfigured adapter placeholders as store plans', async () => {
+  it('keeps three disabled plan concepts without treating placeholders as products', async () => {
     const view = await render(<PaywallShell />);
     expect(
       (await defaultCommerceAdapter.queryProducts()).every(
         (product) => product.provider === 'UNCONFIGURED',
       ),
     ).toBe(true);
-    expect(view.getByTestId('paywall-plans-unavailable')).toHaveTextContent(
-      'Plans and prices are currently unavailable.',
-    );
-    expect(view.queryByTestId('paywall-plan-group')).toBeNull();
-    expect(view.queryByText('Monthly')).toBeNull();
+    expect(view.getByTestId('paywall-plan-group')).toBeTruthy();
+    for (const plan of ['monthly', 'quarterly', 'annual']) {
+      const row = view.getByTestId(`paywall-plan-${plan}`);
+      expect(row).toBeDisabled();
+      expect(row.props.accessibilityState.checked).toBe(false);
+    }
+    expect(view.getByText('Monthly')).toBeTruthy();
+    expect(view.getByText('3 Months')).toBeTruthy();
+    expect(view.getByText('Annual')).toBeTruthy();
+    expect(view.getAllByText('—')).toHaveLength(3);
+    expect(
+      view.getByTestId('paywall-plan-monthly').props.accessibilityLabel,
+    ).toBe('Monthly, Price unavailable');
+    expect(
+      view.queryByText('Plans and prices are currently unavailable.'),
+    ).toBeNull();
     expect(view.queryByText(/TL|\$|€|£/)).toBeNull();
     expect(view.getByTestId('paywall-primary')).toBeDisabled();
   });
@@ -169,7 +180,8 @@ describe('premium UI foundation', () => {
     setActiveAppearance('light');
     const view = await render(<PaywallShell />);
     const monthly = view.getByRole('radio', { name: 'Monthly, £4.99' });
-    expect(view.queryByText('3 Months')).toBeNull();
+    expect(view.getByText('3 Months')).toBeTruthy();
+    expect(view.getByTestId('paywall-plan-quarterly')).toBeDisabled();
     expect(monthly.props.accessibilityState.checked).toBe(false);
     await fireEvent.press(monthly);
     expect(monthly.props.accessibilityState.checked).toBe(true);
@@ -241,10 +253,16 @@ describe('premium UI foundation', () => {
     ).toHaveProp('accessibilityRole', 'header');
     expect(view.getByText('With Premium')).toBeTruthy();
     expect(
-      view.getByText('Premium feature details are not available yet.'),
-    ).toBeTruthy();
+      view.queryByText('Premium feature details are not available yet.'),
+    ).toBeNull();
     expect(view.queryByText(/Model Agreement/i)).toBeNull();
     expect(view.queryByText(/Premium filtering experience/i)).toBeNull();
+    expect(
+      view.queryByText(/Payment, restoration, trial confirmation/),
+    ).toBeNull();
+    expect(view.getByTestId('paywall-restore')).toBeDisabled();
+    expect(view.getByTestId('paywall-restore').props.style).toBeTruthy();
+    expect(view.queryByText(/Restore Purchases · Unavailable/)).toBeNull();
     const tree = JSON.stringify(view.toJSON());
     expect(tree.indexOf('paywall-primary')).toBeLessThan(
       tree.indexOf('paywall-benefits'),
@@ -266,7 +284,8 @@ describe('premium UI foundation', () => {
   it('keeps an accessible close control available', async () => {
     const onClose = jest.fn();
     const view = await render(<PaywallPresentation onClose={onClose} />);
-    await fireEvent.press(await view.findByLabelText('Close Premium options'));
+    expect(view.queryByText('Close')).toBeNull();
+    await fireEvent.press(await view.findByLabelText('Close'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -282,11 +301,23 @@ describe('premium UI foundation', () => {
     expect(
       await view.findByText('Daha fazla tahmin değil.\nDaha iyi filtreleme.'),
     ).toBeTruthy();
-    expect(
-      view.getByText('Planlar ve fiyatlar şu anda kullanılamıyor.'),
-    ).toBeTruthy();
+    expect(view.getByText('Aylık')).toBeTruthy();
+    expect(view.getByText('3 Aylık')).toBeTruthy();
+    expect(view.getByText('Yıllık')).toBeTruthy();
     expect(view.getByLabelText("Premium'a Geç")).toBeDisabled();
     expect(view.getByText('Premium ile')).toBeTruthy();
     expect(view.getByLabelText('Satın alımları geri yükle')).toBeTruthy();
+  });
+
+  it('localizes the compact close control in Turkish', async () => {
+    const view = await render(
+      <>
+        <TurkishSwitch />
+        <PaywallPresentation onClose={jest.fn()} />
+      </>,
+    );
+    await fireEvent.press(view.getByText('switch-to-turkish'));
+    expect(view.getByLabelText('Kapat')).toBeTruthy();
+    expect(view.queryByText('Kapat')).toBeNull();
   });
 });
