@@ -139,3 +139,9 @@ export function useAppearance() {
   }
   return context;
 }
+
+// Discovery views can subscribe to appearance without requiring a provider in
+// isolated public-data component tests. Production always has the provider.
+export function useOptionalAppearanceResolution() {
+  return useContext(AppearanceContext)?.resolvedAppearance ?? null;
+}

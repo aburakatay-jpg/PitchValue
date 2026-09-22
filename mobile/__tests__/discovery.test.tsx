@@ -1,4 +1,6 @@
-import { render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet, Text } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const capturedHrefs: unknown[] = [];
 jest.mock('expo-router', () => ({
@@ -20,6 +22,11 @@ import {
   PredictionCardSkeleton,
 } from '@/components/feedback';
 import { PublicApiError } from '@/lib/public-api';
+import {
+  AppearanceProvider,
+  useAppearance,
+} from '@/features/appearance/AppearanceContext';
+import { darkColors, lightColors, setActiveAppearance } from '@/theme/tokens';
 import type {
   PredictionListResponse,
   PublicFixtureSummary,
@@ -84,7 +91,152 @@ const prediction = (
   blockers: [],
 });
 
-beforeEach(() => capturedHrefs.splice(0));
+beforeEach(async () => {
+  capturedHrefs.splice(0);
+  await AsyncStorage.clear();
+});
+afterEach(() => setActiveAppearance('dark'));
+
+function ChooseLight() {
+  const { setPreference } = useAppearance();
+  return <Text onPress={() => setPreference('light')}>choose-light</Text>;
+}
+
+describe('discovery surface themes', () => {
+  it('updates a retained Today card when appearance changes', async () => {
+    const view = await render(
+      <AppearanceProvider systemSchemeOverride="dark">
+        <ChooseLight />
+        <TodayView
+          data={today([fixture(42, '2026-09-14T17:00:00Z')])}
+          error={null}
+          initialLoading={false}
+          onRefresh={jest.fn()}
+          refreshing={false}
+        />
+      </AppearanceProvider>,
+    );
+    const card = await view.findByRole('button', {
+      name: /Home 42 versus Away 42/,
+    });
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+      darkColors.surface,
+    );
+    await fireEvent.press(view.getByText('choose-light'));
+    await waitFor(() =>
+      expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+        lightColors.surface,
+      ),
+    );
+    expect(
+      StyleSheet.flatten(view.getByTestId('screen-safe-area').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.background);
+  });
+
+  it('updates a retained Explore result when appearance changes', async () => {
+    const view = await render(
+      <AppearanceProvider systemSchemeOverride="dark">
+        <ChooseLight />
+        <ExploreView
+          data={{ predictions: [prediction(84, 'HOME')], count: 1 }}
+          error={null}
+          initialLoading={false}
+          onRefresh={jest.fn()}
+          refreshing={false}
+        />
+      </AppearanceProvider>,
+    );
+    const card = await view.findByRole('button', {
+      name: 'HOME published analysis',
+    });
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+      darkColors.surface,
+    );
+    await fireEvent.press(view.getByText('choose-light'));
+    await waitFor(() =>
+      expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+        lightColors.surface,
+      ),
+    );
+    expect(
+      StyleSheet.flatten(view.getByTestId('screen-safe-area').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.background);
+  });
+
+  it('uses the Light canvas and canonical card on the rendered Today path', async () => {
+    setActiveAppearance('light');
+    const view = await render(
+      <TodayView
+        data={today([fixture(42, '2026-09-14T17:00:00Z')])}
+        error={null}
+        initialLoading={false}
+        onRefresh={jest.fn()}
+        refreshing={false}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(view.getByTestId('screen-safe-area').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.background);
+    expect(
+      StyleSheet.flatten(
+        view.getByRole('button', { name: /Home 42 versus Away 42/ }).props
+          .style,
+      ).backgroundColor,
+    ).toBe(lightColors.surface);
+  });
+
+  it('uses the Light canvas and canonical card on the rendered Explore path', async () => {
+    setActiveAppearance('light');
+    const view = await render(
+      <ExploreView
+        data={{ predictions: [prediction(84, 'HOME')], count: 1 }}
+        error={null}
+        initialLoading={false}
+        onRefresh={jest.fn()}
+        refreshing={false}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(view.getByTestId('screen-safe-area').props.style)
+        .backgroundColor,
+    ).toBe(lightColors.background);
+    expect(
+      StyleSheet.flatten(
+        view.getByRole('button', { name: 'HOME published analysis' }).props
+          .style,
+      ).backgroundColor,
+    ).toBe(lightColors.surface);
+  });
+
+  it('retains the existing Dark canvas and card on both discovery paths', async () => {
+    setActiveAppearance('dark');
+    const todayView = await render(
+      <TodayFixtureCard
+        fixture={fixture(42, '2026-09-14T17:00:00Z')}
+        timezone="Europe/Istanbul"
+      />,
+    );
+    expect(
+      StyleSheet.flatten(
+        todayView.getByRole('button', { name: /Home 42 versus Away 42/ }).props
+          .style,
+      ).backgroundColor,
+    ).toBe(darkColors.surface);
+    await todayView.unmount();
+    const exploreView = await render(
+      <ExplorePredictionCard prediction={prediction(84, 'HOME')} />,
+    );
+    expect(
+      StyleSheet.flatten(
+        exploreView.getByRole('button', { name: 'HOME published analysis' })
+          .props.style,
+      ).backgroundColor,
+    ).toBe(darkColors.surface);
+  });
+});
 
 describe('Today production states', () => {
   it('renders a structural loading skeleton hidden from accessibility', async () => {

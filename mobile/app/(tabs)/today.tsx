@@ -22,6 +22,7 @@ import type {
 } from '@/types/public-api';
 
 import { useLanguage } from '@/features/language/LanguageContext';
+import { useOptionalAppearanceResolution } from '@/features/appearance/AppearanceContext';
 
 export function chronologicalFixtures(
   fixtures: readonly PublicFixtureSummary[],
@@ -62,6 +63,7 @@ export function TodayView({
   onRefresh: () => void;
   refreshing: boolean;
 }) {
+  useOptionalAppearanceResolution();
   const { t, language } = useLanguage();
 
   if (initialLoading && data === null) {
@@ -152,6 +154,7 @@ function TodayProductionScreen() {
 }
 
 function TodayPreviewScreen() {
+  useOptionalAppearanceResolution();
   const { t } = useLanguage();
   return (
     <Screen>

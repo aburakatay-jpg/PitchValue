@@ -15,6 +15,7 @@ import { getExplorePredictions, type PublicApiError } from '@/lib/public-api';
 import type { PredictionListResponse } from '@/types/public-api';
 
 import { useLanguage } from '@/features/language/LanguageContext';
+import { useOptionalAppearanceResolution } from '@/features/appearance/AppearanceContext';
 
 export function ExploreView({
   data,
@@ -29,6 +30,7 @@ export function ExploreView({
   onRefresh: () => void;
   refreshing: boolean;
 }) {
+  useOptionalAppearanceResolution();
   const { t } = useLanguage();
 
   if (initialLoading && data === null) {
@@ -99,6 +101,7 @@ function ExploreProductionScreen() {
 }
 
 function ExplorePreviewScreen() {
+  useOptionalAppearanceResolution();
   const { t } = useLanguage();
   return (
     <Screen>
