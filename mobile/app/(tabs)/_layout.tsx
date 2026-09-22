@@ -14,14 +14,16 @@ import { useLanguage } from '@/features/language/LanguageContext';
 const tabIconNames: Record<string, SFSymbol> = {
   Today: 'calendar',
   Explore: 'magnifyingglass',
-  AI: 'sparkles',
+  PvE: 'sparkles',
   'My Bets': 'list.clipboard',
   Profile: 'person.crop.circle',
 };
 
 function TabIcon({ name, focused }: { name: SFSymbol; focused: boolean }) {
   return (
-    <View style={styles.iconContainer}>
+    <View
+      style={[styles.iconContainer, focused && styles.iconContainerFocused]}
+    >
       <SymbolView
         name={name}
         tintColor={focused ? colors.tabActive : colors.textSecondary}
@@ -71,7 +73,10 @@ export default function TabLayout() {
 const styles = createThemedStyleSheet({
   iconContainer: {
     alignItems: 'center',
+    borderRadius: 16,
     justifyContent: 'center',
     height: 32,
+    width: 40,
   },
+  iconContainerFocused: { backgroundColor: colors.tabActiveIndicator },
 });

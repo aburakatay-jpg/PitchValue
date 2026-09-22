@@ -1,6 +1,12 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Text } from 'react-native';
 
 import { AiView, AssistantSkeleton } from '@/components/Assistant';
+import {
+  LanguageProvider,
+  useLanguage,
+} from '@/features/language/LanguageContext';
 import {
   assistantContract,
   assistantFeatures,
@@ -51,6 +57,20 @@ const baseProps = {
   refreshing: false,
 } as const;
 
+function TurkishSwitch() {
+  const { setLanguage, t } = useLanguage();
+  return (
+    <>
+      <Text onPress={() => setLanguage('tr')}>switch-to-turkish</Text>
+      <Text testID="localized-pve">{t('PvE')}</Text>
+    </>
+  );
+}
+
+afterEach(async () => {
+  await AsyncStorage.clear();
+});
+
 describe('AI and Coupon Builder contract audit', () => {
   it('records missing production services without pretending availability', () => {
     expect(productionAssistantAvailable).toBe(false);
@@ -78,10 +98,31 @@ describe('AI landing and safe assistant surfaces', () => {
     ).toBeNull();
   });
 
-  it('uses one honest Premium boundary for Guest and no simulated upgrade', async () => {
+  it('uses PV Engine branding without a generic Premium promotion', async () => {
     const view = await render(<AiView {...baseProps} />);
-    expect(view.getAllByLabelText('Premium content locked')).toHaveLength(1);
-    expect(view.getByText(/AI access is not available yet/i)).toBeTruthy();
+    expect(view.getByText('PV Engine')).toBeTruthy();
+    expect(view.queryByText('PitchValue AI')).toBeNull();
+    expect(view.queryByLabelText('Premium content locked')).toBeNull();
+  });
+
+  it('keeps PV Engine terminology unchanged in Turkish', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <TurkishSwitch />
+        <AiView {...baseProps} />
+      </LanguageProvider>,
+    );
+    await fireEvent.press(await view.findByText('switch-to-turkish'));
+    expect(await view.findByText('PV Engine')).toBeTruthy();
+    expect(view.getByTestId('localized-pve')).toHaveTextContent('PvE');
+    expect(view.queryByText('PitchValue AI')).toBeNull();
+  });
+
+  it('does not expose sequential card numbers', async () => {
+    const view = await render(<AiView {...baseProps} />);
+    for (const value of ['01', '02', '03', '04']) {
+      expect(view.queryByText(value)).toBeNull();
+    }
   });
 
   it('keeps Today’s Best Value empty when the public pool is empty', async () => {

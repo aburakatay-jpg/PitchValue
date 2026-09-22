@@ -10,7 +10,8 @@ interface Translations {
 const en: Translations = {
   Today: 'Today',
   Explore: 'Explore',
-  AI: 'AI',
+  PvE: 'PvE',
+  'PV Engine': 'PV Engine',
   'My Bets': 'My Bets',
   Profile: 'Profile',
   Account: 'Account',
@@ -82,7 +83,7 @@ const en: Translations = {
   'Bet Score details': 'Bet Score details',
   'Model agreement when authoritative data is available':
     'Model agreement when authoritative data is available',
-  'AI explanations': 'AI explanations',
+  'PV Engine explanations': 'PV Engine explanations',
   Monthly: 'Monthly',
   '3 Months': '3 Months',
   Annual: 'Annual',
@@ -179,18 +180,12 @@ const en: Translations = {
   'Coupon Builder unavailable': 'Coupon Builder unavailable',
   'Coupon generation is not available. Eligible public analyses are not combined automatically.':
     'Coupon generation is not available. Eligible public analyses are not combined automatically.',
-  'PitchValue AI': 'PitchValue AI',
-  'AI explains PitchValue analysis. It does not create independent predictions.':
-    'AI explains PitchValue analysis. It does not create independent predictions.',
   'Published analysis context could not be loaded. Please try again shortly.':
     'Published analysis context could not be loaded. Please try again shortly.',
   'Public analysis unavailable': 'Public analysis unavailable',
   'Showing the last available public analysis context.':
     'Showing the last available public analysis context.',
   'Could not refresh public analysis': 'Could not refresh public analysis',
-  'AI access is not available yet. Viewing Premium options will not change access.':
-    'AI access is not available yet. Viewing Premium options will not change access.',
-  'Premium AI foundation': 'Premium AI foundation',
   Active: 'Active',
   History: 'History',
   Performance: 'Performance',
@@ -301,7 +296,8 @@ const en: Translations = {
 const tr: Translations = {
   Today: 'Bugün',
   Explore: 'Keşfet',
-  AI: 'AI',
+  PvE: 'PvE',
+  'PV Engine': 'PV Engine',
   'My Bets': 'Bahislerim',
   Profile: 'Profil',
   Account: 'Hesap',
@@ -374,7 +370,7 @@ const tr: Translations = {
   'Bet Score details': 'Bet Score ayrıntıları',
   'Model agreement when authoritative data is available':
     'Yetkili veri mevcut olduğunda model uyumu',
-  'AI explanations': 'AI açıklamaları',
+  'PV Engine explanations': 'PV Engine açıklamaları',
   Monthly: 'Aylık',
   '3 Months': '3 Aylık',
   Annual: 'Yıllık',
@@ -474,18 +470,12 @@ const tr: Translations = {
   'Coupon Builder unavailable': 'Kupon Oluşturucu mevcut değil',
   'Coupon generation is not available. Eligible public analyses are not combined automatically.':
     'Kupon oluşturma mevcut değil. Uygun açık analizler otomatik olarak birleştirilmez.',
-  'PitchValue AI': 'PitchValue AI',
-  'AI explains PitchValue analysis. It does not create independent predictions.':
-    'Yapay zeka PitchValue analizini açıklar. Bağımsız tahminler üretmez.',
   'Published analysis context could not be loaded. Please try again shortly.':
     'Yayınlanan analiz bağlamı yüklenemedi. Lütfen kısa süre sonra tekrar deneyin.',
   'Public analysis unavailable': 'Açık analiz mevcut değil',
   'Showing the last available public analysis context.':
     'Kullanılabilen son açık analiz bağlamı gösteriliyor.',
   'Could not refresh public analysis': 'Açık analiz yenilenemedi',
-  'AI access is not available yet. Viewing Premium options will not change access.':
-    'Yapay zeka erişimi henüz mevcut değil. Premium seçenekleri görüntülemek erişimi değiştirmez.',
-  'Premium AI foundation': 'Premium AI temeli',
   Active: 'Aktif',
   History: 'Geçmiş',
   Performance: 'Performans',

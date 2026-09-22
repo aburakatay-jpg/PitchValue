@@ -48,5 +48,7 @@ describe('Navigation Regression', () => {
     expect(names).toContain('ai');
     expect(names).toContain('bets');
     expect(names).not.toContain('profile'); // Fail if profile is accidentally re-added to bottom tabs
+    const pve = screenProps.find((screen: any) => screen.name === 'ai');
+    expect(pve.options.title).toBe('PvE');
   });
 });

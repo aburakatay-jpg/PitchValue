@@ -12,7 +12,7 @@ describe('mobile foundation', () => {
     expect(tabRoutes.map((route) => route.title)).toEqual([
       'Today',
       'Explore',
-      'AI',
+      'PvE',
       'My Bets',
     ]);
   });

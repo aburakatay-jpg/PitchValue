@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 import {
   createThemedStyleSheet,
   colors,
@@ -10,7 +11,6 @@ import {
 } from '@/theme/tokens';
 
 import { InlineNotice, PredictionCardSkeleton } from '@/components/feedback';
-import { LockedPremiumSection } from '@/components/PremiumGuard';
 import {
   AppHeader,
   Badge,
@@ -41,6 +41,13 @@ const featureDetails: Readonly<Record<AssistantFeature, string>> = {
   'Explain a Pick': 'Choose a published analysis as authoritative context.',
   'Ask PitchValue':
     'Ask grounded questions when the assistant service is available.',
+};
+
+const featureIcons: Readonly<Record<AssistantFeature, SFSymbol>> = {
+  'Coupon Builder': 'square.stack.3d.up',
+  'Today’s Best Value': 'chart.line.uptrend.xyaxis',
+  'Explain a Pick': 'text.magnifyingglass',
+  'Ask PitchValue': 'bubble.left.and.bubble.right',
 };
 
 function featureAvailability(
@@ -74,7 +81,7 @@ function FeatureCards({
   const { t } = useLanguage();
   return (
     <View style={styles.stack}>
-      {assistantFeatures.map((feature, index) => (
+      {assistantFeatures.map((feature) => (
         <Pressable
           accessibilityHint={t(featureDetails[feature])}
           accessibilityLabel={t(feature)}
@@ -86,7 +93,13 @@ function FeatureCards({
             pressed && styles.pressed,
           ]}
         >
-          <Text style={styles.number}>0{index + 1}</Text>
+          <View accessible={false} style={styles.featureIcon}>
+            <SymbolView
+              name={featureIcons[feature]}
+              size={21}
+              tintColor={colors.secondary}
+            />
+          </View>
           <View style={styles.flex}>
             <Text style={styles.featureTitle}>{t(feature)}</Text>
             <Text style={styles.secondary}>{t(featureDetails[feature])}</Text>
@@ -326,17 +339,13 @@ export function AiView({
   data,
   error,
   initialLoading,
-  onOpenPremium,
   onRefresh,
-  premiumAccess,
   refreshing,
 }: {
   data: PredictionListResponse | null;
   error: PublicApiError | null;
   initialLoading: boolean;
-  onOpenPremium: () => void;
   onRefresh: () => void;
-  premiumAccess: boolean;
   refreshing: boolean;
 }) {
   const { t } = useLanguage();
@@ -345,7 +354,7 @@ export function AiView({
   );
   return (
     <Screen keyboardAware onRefresh={onRefresh} refreshing={refreshing}>
-      <AppHeader title={t('PitchValue AI')} />
+      <AppHeader title={t('PV Engine')} />
       <FeatureCards onSelect={setActiveFeature} />
       {initialLoading && data === null ? <AssistantSkeleton /> : null}
       {error && data === null ? (
@@ -369,15 +378,6 @@ export function AiView({
       !(error && data === null) ? (
         <FeatureSurface data={data} feature={activeFeature} />
       ) : null}
-      {!premiumAccess ? (
-        <LockedPremiumSection
-          detail={t(
-            'AI access is not available yet. Viewing Premium options will not change access.',
-          )}
-          onUnlock={onOpenPremium}
-          title={t('Premium AI foundation')}
-        />
-      ) : null}
     </Screen>
   );
 }
@@ -390,7 +390,12 @@ const styles = createThemedStyleSheet({
     minHeight: touchTarget,
   },
   signalCard: { ...sharedStyles.card, minHeight: touchTarget },
-  number: { color: colors.secondary, ...typography.caption },
+  featureIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget,
+    width: touchTarget,
+  },
   flex: { flex: 1, gap: spacing.xs },
   featureTitle: {
     color: colors.text,

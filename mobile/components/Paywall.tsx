@@ -17,7 +17,7 @@ export const premiumBenefits = [
   'Bet Score details',
   'Model agreement when authoritative data is available',
   'Final Check',
-  'AI explanations',
+  'PV Engine explanations',
   'Coupon Builder',
 ] as const;
 

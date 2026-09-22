@@ -69,9 +69,13 @@ describe('appearance foundation', () => {
     expect(darkColors.tabBarBackground).toBe(darkColors.surface);
     expect(lightColors.controlSelected).not.toBe(lightColors.brandPrimary);
     expect(lightColors.controlSelectedText).toBe(lightColors.textPrimary);
+    expect(lightColors.controlSelectedAccent).toBe('#F2B84B');
+    expect(darkColors.controlSelectedAccent).toBe(darkColors.brandPrimary);
     expect(darkColors.controlSelected).toBe(darkColors.brandPrimary);
     expect(lightColors.tabActive).toBe(lightColors.textPrimary);
+    expect(lightColors.tabActiveIndicator).toBe('#F2B84B');
     expect(darkColors.tabActive).toBe(darkColors.brandSecondary);
+    expect(darkColors.tabActiveIndicator).toBe('transparent');
   });
 
   it('holds the app at a theme-safe bootstrap surface until storage resolves', async () => {

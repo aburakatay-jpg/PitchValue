@@ -275,7 +275,11 @@ const styles = createThemedStyleSheet({
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.sm,
   },
-  tabSelected: { backgroundColor: colors.controlSelected },
+  tabSelected: {
+    backgroundColor: colors.controlSelected,
+    borderBottomColor: colors.controlSelectedAccent,
+    borderBottomWidth: 3,
+  },
   tabText: {
     color: colors.textSecondary,
     textAlign: 'center',
