@@ -23,6 +23,14 @@ const planNames: Readonly<Record<CanonicalPlan, string>> = {
   annual: 'Annual',
 };
 const planOrder: readonly CanonicalPlan[] = ['monthly', 'quarterly', 'annual'];
+const premiumBenefits = [
+  'More powerful analysis with PV Engine',
+  'Discover value opportunities faster',
+  'Edge and Bet Score visibility',
+  'Deeper insights across supported markets',
+  'A final review with Final Check',
+  'Premium filtering experience',
+] as const;
 
 export function annualPlanDetail(
   eligibility: TrialEligibility,
@@ -176,6 +184,26 @@ export function PaywallShell({
         <Text accessibilityRole="header" style={styles.benefitTitle}>
           {t('With Premium')}
         </Text>
+        <View style={styles.benefitList}>
+          {premiumBenefits.map((benefit, index) => (
+            <View
+              key={benefit}
+              style={styles.benefitRow}
+              testID={`paywall-benefit-${index + 1}`}
+            >
+              <View style={styles.benefitIcon}>
+                <SymbolView
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                  name={'circle.fill' as SFSymbol}
+                  size={7}
+                  tintColor={colors.interactiveTextAccent}
+                />
+              </View>
+              <Text style={styles.benefitText}>{t(benefit)}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <Pressable
@@ -216,7 +244,12 @@ const styles = createThemedStyleSheet({
     minWidth: touchTarget,
   },
   context: { color: colors.textSecondary, ...typography.caption },
-  headline: { color: colors.text, ...typography.pageTitle },
+  headline: {
+    color: colors.text,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800',
+  },
   planGroup: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -269,6 +302,14 @@ const styles = createThemedStyleSheet({
   placeholderPrice: { color: colors.textSecondary },
   benefits: { gap: spacing.sm },
   benefitTitle: { color: colors.text, ...typography.sectionTitle },
+  benefitList: { gap: spacing.sm },
+  benefitRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  benefitIcon: { paddingTop: spacing.sm },
+  benefitText: { color: colors.text, flex: 1, ...typography.body },
   unavailable: { color: colors.textSecondary, ...typography.body },
   restoreAction: {
     alignItems: 'center',

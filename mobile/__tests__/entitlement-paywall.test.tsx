@@ -245,18 +245,35 @@ describe('premium UI foundation', () => {
     expect(purchase).toHaveBeenCalledWith('monthly');
   });
 
-  it('keeps the approved hierarchy without unsupported Premium-only claims', async () => {
+  it('uses a reduced headline and renders the six approved V1 benefits in order', async () => {
     setActiveAppearance('light');
     const view = await render(<PaywallShell />);
-    expect(
-      await view.findByText('Not more predictions.\nBetter filtering.'),
-    ).toHaveProp('accessibilityRole', 'header');
+    const headline = await view.findByText(
+      'Not more predictions.\nBetter filtering.',
+    );
+    expect(headline).toHaveProp('accessibilityRole', 'header');
+    expect(StyleSheet.flatten(headline.props.style)).toMatchObject({
+      fontSize: 28,
+      lineHeight: 34,
+      fontWeight: '800',
+    });
     expect(view.getByText('With Premium')).toBeTruthy();
+    const benefits = [
+      'More powerful analysis with PV Engine',
+      'Discover value opportunities faster',
+      'Edge and Bet Score visibility',
+      'Deeper insights across supported markets',
+      'A final review with Final Check',
+      'Premium filtering experience',
+    ];
+    for (const [index, benefit] of benefits.entries()) {
+      expect(view.getByTestId(`paywall-benefit-${index + 1}`)).toBeTruthy();
+      expect(view.getByText(benefit)).toBeTruthy();
+    }
     expect(
       view.queryByText('Premium feature details are not available yet.'),
     ).toBeNull();
     expect(view.queryByText(/Model Agreement/i)).toBeNull();
-    expect(view.queryByText(/Premium filtering experience/i)).toBeNull();
     expect(
       view.queryByText(/Payment, restoration, trial confirmation/),
     ).toBeNull();
@@ -266,6 +283,9 @@ describe('premium UI foundation', () => {
     const tree = JSON.stringify(view.toJSON());
     expect(tree.indexOf('paywall-primary')).toBeLessThan(
       tree.indexOf('paywall-benefits'),
+    );
+    expect(tree.indexOf('paywall-benefit-6')).toBeLessThan(
+      tree.indexOf('paywall-restore'),
     );
     expect(
       StyleSheet.flatten(view.getByTestId('paywall-primary').props.style)
@@ -306,6 +326,16 @@ describe('premium UI foundation', () => {
     expect(view.getByText('Yıllık')).toBeTruthy();
     expect(view.getByLabelText("Premium'a Geç")).toBeDisabled();
     expect(view.getByText('Premium ile')).toBeTruthy();
+    for (const benefit of [
+      'PV Engine ile daha güçlü analizler',
+      'Değer fırsatlarını daha hızlı keşfet',
+      'Edge ve Bet Score görünümü',
+      'Desteklenen marketlerde daha derin içgörüler',
+      'Final Check ile son kontrol',
+      'Premium filtreleme deneyimi',
+    ]) {
+      expect(view.getByText(benefit)).toBeTruthy();
+    }
     expect(view.getByLabelText('Satın alımları geri yükle')).toBeTruthy();
   });
 

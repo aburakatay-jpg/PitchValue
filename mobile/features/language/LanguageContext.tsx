@@ -104,6 +104,14 @@ const en: Translations = {
   'Purchase is temporarily unavailable.':
     'Purchase is temporarily unavailable.',
   'With Premium': 'With Premium',
+  'More powerful analysis with PV Engine':
+    'More powerful analysis with PV Engine',
+  'Discover value opportunities faster': 'Discover value opportunities faster',
+  'Edge and Bet Score visibility': 'Edge and Bet Score visibility',
+  'Deeper insights across supported markets':
+    'Deeper insights across supported markets',
+  'A final review with Final Check': 'A final review with Final Check',
+  'Premium filtering experience': 'Premium filtering experience',
   'Premium feature details are not available yet.':
     'Premium feature details are not available yet.',
   'Review the planned Premium experience. Store purchases are not available yet.':
@@ -409,6 +417,13 @@ const tr: Translations = {
   'Purchase is temporarily unavailable.':
     'Satın alma işlemi geçici olarak kullanılamıyor.',
   'With Premium': 'Premium ile',
+  'More powerful analysis with PV Engine': 'PV Engine ile daha güçlü analizler',
+  'Discover value opportunities faster': 'Değer fırsatlarını daha hızlı keşfet',
+  'Edge and Bet Score visibility': 'Edge ve Bet Score görünümü',
+  'Deeper insights across supported markets':
+    'Desteklenen marketlerde daha derin içgörüler',
+  'A final review with Final Check': 'Final Check ile son kontrol',
+  'Premium filtering experience': 'Premium filtreleme deneyimi',
   'Premium feature details are not available yet.':
     'Premium özellik ayrıntıları henüz kullanılamıyor.',
   'Review the planned Premium experience. Store purchases are not available yet.':
