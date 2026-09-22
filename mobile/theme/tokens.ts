@@ -131,6 +131,10 @@ export function setActiveAppearance(appearance: ResolvedAppearance) {
   activeAppearance = appearance;
 }
 
+export function getActiveAppearance(): ResolvedAppearance {
+  return activeAppearance;
+}
+
 export function getThemeColors(appearance: ResolvedAppearance) {
   return palettes[appearance];
 }

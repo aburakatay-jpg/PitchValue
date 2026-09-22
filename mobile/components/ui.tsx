@@ -18,6 +18,7 @@ import {
   typography,
   typeScale,
   createThemedStyleSheet,
+  getActiveAppearance,
 } from '@/theme/tokens';
 import { useRouter } from 'expo-router';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
@@ -229,15 +230,22 @@ export function Badge({
 export function EmptyState({
   title,
   detail,
+  cardSurface = false,
 }: {
   title: string;
   detail: string;
+  cardSurface?: boolean;
 }) {
   return (
     <View
       accessibilityLabel={title}
       accessibilityRole="summary"
-      style={styles.stateCard}
+      style={[
+        styles.stateCard,
+        cardSurface &&
+          getActiveAppearance() === 'light' &&
+          styles.emptyStateCard,
+      ]}
     >
       <Text style={styles.stateTitle}>{title}</Text>
       <Text style={styles.secondary}>{detail}</Text>
@@ -418,6 +426,7 @@ const styles = createThemedStyleSheet({
     gap: spacing.sm,
     padding: spacing.lg,
   },
+  emptyStateCard: { backgroundColor: colors.surface },
   stateTitle: {
     color: colors.text,
     ...typography.sectionTitle,

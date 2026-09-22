@@ -76,6 +76,7 @@ export function ExploreView({
       ) : null}
       {(data?.predictions.length ?? 0) === 0 ? (
         <EmptyState
+          cardSurface
           title={t('No publishable signals right now')}
           detail={t(
             'PitchValue only surfaces analyses that meet its publication criteria.',

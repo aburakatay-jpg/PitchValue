@@ -132,6 +132,7 @@ export function TodayView({
         />
       ) : fixtures.length === 0 ? (
         <EmptyState
+          cardSurface
           title={t('No matches scheduled')}
           detail={t('There are no fixtures available for this day.')}
         />

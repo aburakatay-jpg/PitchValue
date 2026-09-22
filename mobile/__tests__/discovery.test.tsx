@@ -342,6 +342,45 @@ describe('Today production states', () => {
     ).toBeTruthy();
   });
 
+  it('uses the canonical Light card for the rendered Today empty state', async () => {
+    setActiveAppearance('light');
+    const view = await render(
+      <TodayView
+        data={today([], 'NO_FIXTURES')}
+        error={null}
+        initialLoading={false}
+        onRefresh={jest.fn()}
+        refreshing={false}
+      />,
+    );
+    const card = view.getByText('No matches scheduled').parent;
+    if (!card) throw new Error('Today empty-state container is missing');
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+      lightColors.surface,
+    );
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).not.toBe(
+      lightColors.surfaceRaised,
+    );
+  });
+
+  it('preserves the existing Dark raised surface for the Today empty state', async () => {
+    setActiveAppearance('dark');
+    const view = await render(
+      <TodayView
+        data={today([], 'NO_FIXTURES')}
+        error={null}
+        initialLoading={false}
+        onRefresh={jest.fn()}
+        refreshing={false}
+      />,
+    );
+    const card = view.getByText('No matches scheduled').parent;
+    if (!card) throw new Error('Today empty-state container is missing');
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+      darkColors.surfaceRaised,
+    );
+  });
+
   it('keeps retained fixtures visible after refresh failure', async () => {
     const view = await render(
       <TodayView
@@ -369,6 +408,27 @@ describe('Explore production states', () => {
       />,
     );
     expect(view.getByText('No publishable signals right now')).toBeTruthy();
+  });
+
+  it('uses the canonical Light card for the rendered Explore empty state', async () => {
+    setActiveAppearance('light');
+    const view = await render(
+      <ExploreView
+        data={{ predictions: [], count: 0 }}
+        error={null}
+        initialLoading={false}
+        onRefresh={jest.fn()}
+        refreshing={false}
+      />,
+    );
+    const card = view.getByText('No publishable signals right now').parent;
+    if (!card) throw new Error('Explore empty-state container is missing');
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).toBe(
+      lightColors.surface,
+    );
+    expect(StyleSheet.flatten(card.props.style).backgroundColor).not.toBe(
+      lightColors.surfaceRaised,
+    );
   });
 
   it('preserves server order, server edge, and null score semantics', async () => {
