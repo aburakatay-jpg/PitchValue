@@ -24,7 +24,7 @@ function TabIcon({ name, focused }: { name: SFSymbol; focused: boolean }) {
     <View style={styles.iconContainer}>
       <SymbolView
         name={name}
-        tintColor={focused ? colors.secondary : colors.textSecondary}
+        tintColor={focused ? colors.tabActive : colors.textSecondary}
         size={24}
       />
     </View>
@@ -38,7 +38,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
-        tabBarActiveTintColor: colors.brandSecondary,
+        tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.tabBarBackground,

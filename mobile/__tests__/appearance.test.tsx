@@ -67,6 +67,11 @@ describe('appearance foundation', () => {
     expect(lightColors.tabBarBackground).toBe(lightColors.surface);
     expect(darkColors.headerBackground).toBe(darkColors.surface);
     expect(darkColors.tabBarBackground).toBe(darkColors.surface);
+    expect(lightColors.controlSelected).not.toBe(lightColors.brandPrimary);
+    expect(lightColors.controlSelectedText).toBe(lightColors.textPrimary);
+    expect(darkColors.controlSelected).toBe(darkColors.brandPrimary);
+    expect(lightColors.tabActive).toBe(lightColors.textPrimary);
+    expect(darkColors.tabActive).toBe(darkColors.brandSecondary);
   });
 
   it('holds the app at a theme-safe bootstrap surface until storage resolves', async () => {

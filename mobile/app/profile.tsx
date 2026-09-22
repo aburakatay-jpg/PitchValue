@@ -72,14 +72,18 @@ async function openSupportedUrl(url: string) {
 function ProfileGroup({
   title,
   children,
+  account = false,
 }: {
   title: string;
   children: React.ReactNode;
+  account?: boolean;
 }) {
   return (
     <View style={styles.group}>
       <SectionHeader title={title} />
-      <View style={sharedStyles.card}>{children}</View>
+      <View style={[sharedStyles.card, account && styles.accountCard]}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -224,7 +228,7 @@ export function ProfileView({
 
   return (
     <Screen safeAreaEdges={stackScreenEdges}>
-      <ProfileGroup title={t('Account')}>
+      <ProfileGroup account title={t('Account')}>
         {guest ? (
           <Button onPress={onSignIn} variant="secondary">
             {t('Sign In')}
@@ -252,13 +256,13 @@ export function ProfileView({
           <Text style={styles.label}>{t('Language')}</Text>
           <View style={styles.languageActions}>
             <Button
-              variant={language === 'en' ? 'primary' : 'secondary'}
+              variant={language === 'en' ? 'secondary' : 'quiet'}
               onPress={() => setLanguage('en')}
             >
               EN
             </Button>
             <Button
-              variant={language === 'tr' ? 'primary' : 'secondary'}
+              variant={language === 'tr' ? 'secondary' : 'quiet'}
               onPress={() => setLanguage('tr')}
             >
               TR
@@ -363,6 +367,7 @@ export default function ProfileScreen() {
 
 const styles = createThemedStyleSheet({
   group: { gap: spacing.sm },
+  accountCard: { gap: spacing.md, paddingVertical: spacing.sm },
   label: {
     color: colors.text,
     flexShrink: 1,
@@ -406,8 +411,8 @@ const styles = createThemedStyleSheet({
     paddingVertical: spacing.sm,
   },
   appearanceOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.controlSelected,
+    borderColor: colors.controlSelected,
   },
   appearanceOptionText: {
     color: colors.textSecondary,
@@ -415,7 +420,10 @@ const styles = createThemedStyleSheet({
     textAlign: 'center',
     ...typography.caption,
   },
-  appearanceOptionTextSelected: { color: colors.onBrand },
+  appearanceOptionTextSelected: {
+    color: colors.controlSelectedText,
+    fontWeight: '700',
+  },
   legalRow: {
     alignItems: 'center',
     borderBottomColor: colors.border,

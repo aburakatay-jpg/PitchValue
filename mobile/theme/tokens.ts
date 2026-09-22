@@ -26,6 +26,9 @@ export type ThemeColors = Readonly<{
   headerBackground: string;
   overlay: string;
   onBrand: string;
+  controlSelected: string;
+  controlSelectedText: string;
+  tabActive: string;
   transparent: string;
   // Compatibility aliases keep existing semantic call sites focused.
   primary: string;
@@ -53,6 +56,9 @@ export const darkColors: ThemeColors = {
   headerBackground: '#111D2E',
   overlay: 'rgba(0, 0, 0, 0.62)',
   onBrand: '#F4F7FB',
+  controlSelected: '#4169E1',
+  controlSelectedText: '#F4F7FB',
+  tabActive: '#7696F5',
   transparent: 'transparent',
   primary: '#4169E1',
   secondary: '#7696F5',
@@ -79,6 +85,9 @@ export const lightColors: ThemeColors = {
   headerBackground: '#FFFFFF',
   overlay: 'rgba(8, 17, 31, 0.42)',
   onBrand: '#FFFFFF',
+  controlSelected: '#E1E8F1',
+  controlSelectedText: '#0B1728',
+  tabActive: '#0B1728',
   transparent: 'transparent',
   primary: '#4169E1',
   secondary: '#3158C9',

@@ -376,15 +376,15 @@ const styles = createThemedStyleSheet({
     paddingHorizontal: spacing.md,
   },
   chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.controlSelected,
+    borderColor: colors.controlSelected,
   },
   chipText: {
     color: colors.textSecondary,
     fontSize: typeScale.caption,
     fontWeight: '700',
   },
-  chipTextSelected: { color: colors.onBrand },
+  chipTextSelected: { color: colors.controlSelectedText },
   badge: {
     alignSelf: 'flex-start',
     borderRadius: radii.pill,
@@ -394,11 +394,9 @@ const styles = createThemedStyleSheet({
   },
   badgeText: { fontSize: typeScale.caption, fontWeight: '800' },
   stateCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.md,
-    borderStyle: 'dashed',
-    borderWidth: 1,
+    borderWidth: 0,
     gap: spacing.sm,
     padding: spacing.lg,
   },
