@@ -86,6 +86,28 @@ const en: Translations = {
   Monthly: 'Monthly',
   '3 Months': '3 Months',
   Annual: 'Annual',
+  'Annual billing': 'Annual billing',
+  'Unlock full PitchValue analysis': 'Unlock full PitchValue analysis',
+  'Review the planned Premium experience. Store purchases are not available yet.':
+    'Review the planned Premium experience. Store purchases are not available yet.',
+  'Annual option': 'Annual option',
+  'Localized price unavailable': 'Localized price unavailable',
+  'Pricing will be supplied by the App Store.':
+    'Pricing will be supplied by the App Store.',
+  'Purchase unavailable': 'Purchase unavailable',
+  Purchase: 'Purchase',
+  'Restore Purchases': 'Restore Purchases',
+  'Restore purchases': 'Restore purchases',
+  'Close Premium options': 'Close Premium options',
+  Close: 'Close',
+  'A trial may be offered after App Store eligibility is verified.':
+    'A trial may be offered after App Store eligibility is verified.',
+  'Trial eligibility and localized pricing require the App Store.':
+    'Trial eligibility and localized pricing require the App Store.',
+  'Payment, restoration, and trial confirmation will use the App Store.':
+    'Payment, restoration, and trial confirmation will use the App Store.',
+  'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.':
+    'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.',
   'Not found': 'Not found',
   'Coupon Builder': 'Coupon Builder',
   'Organize eligible published analyses into 1–4 selections.':
@@ -356,6 +378,28 @@ const tr: Translations = {
   Monthly: 'Aylık',
   '3 Months': '3 Aylık',
   Annual: 'Yıllık',
+  'Annual billing': 'Yıllık faturalandırma',
+  'Unlock full PitchValue analysis': 'PitchValue analizlerinin tamamını açın',
+  'Review the planned Premium experience. Store purchases are not available yet.':
+    'Planlanan Premium deneyimini inceleyin. Mağaza satın alımları henüz kullanıma açık değil.',
+  'Annual option': 'Yıllık seçenek',
+  'Localized price unavailable': 'Yerelleştirilmiş fiyat mevcut değil',
+  'Pricing will be supplied by the App Store.':
+    'Fiyatlandırma App Store tarafından sağlanacaktır.',
+  'Purchase unavailable': 'Satın alma kullanılamıyor',
+  Purchase: 'Satın al',
+  'Restore Purchases': 'Satın Alımları Geri Yükle',
+  'Restore purchases': 'Satın alımları geri yükle',
+  'Close Premium options': 'Premium seçeneklerini kapat',
+  Close: 'Kapat',
+  'A trial may be offered after App Store eligibility is verified.':
+    'Deneme, App Store uygunluğu doğrulandıktan sonra sunulabilir.',
+  'Trial eligibility and localized pricing require the App Store.':
+    'Deneme uygunluğu ve yerelleştirilmiş fiyatlandırma App Store gerektirir.',
+  'Payment, restoration, and trial confirmation will use the App Store.':
+    'Ödeme, geri yükleme ve deneme onayı App Store üzerinden yapılacaktır.',
+  'Payment, restoration, trial confirmation, and entitlement changes are currently unavailable.':
+    'Ödeme, geri yükleme, deneme onayı ve erişim değişiklikleri şu anda kullanılamıyor.',
   'Not found': 'Bulunamadı',
   'Published analysis': 'Yayınlanan analiz',
   'Synthetic fixture preview. No public analysis is attached.':

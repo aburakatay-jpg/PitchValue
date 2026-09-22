@@ -8,11 +8,17 @@ import {
 } from '@/components/Paywall';
 import { LockedPremiumSection, PremiumGuard } from '@/components/PremiumGuard';
 import * as CommerceContext from '@/features/entitlement/CommerceContext';
+import { useLanguage } from '@/features/language/LanguageContext';
 
 jest.mock('@/features/entitlement/CommerceContext', () => ({
   useCommerce: jest.fn(),
   CommerceProvider: ({ children }: any) => children,
 }));
+
+function TurkishSwitch() {
+  const { setLanguage } = useLanguage();
+  return <Text onPress={() => setLanguage('tr')}>switch-to-turkish</Text>;
+}
 
 describe('premium UI foundation', () => {
   const mockProducts = [
@@ -143,5 +149,23 @@ describe('premium UI foundation', () => {
     const view = await render(<PaywallPresentation onClose={onClose} />);
     await fireEvent.press(view.getByLabelText('Close Premium options'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('localizes all app-owned Paywall controls in Turkish', async () => {
+    const view = await render(
+      <>
+        <TurkishSwitch />
+        <PaywallShell />
+      </>,
+    );
+    await fireEvent.press(await view.findByText('switch-to-turkish'));
+    expect(
+      await view.findByText('PitchValue analizlerinin tamamını açın'),
+    ).toBeTruthy();
+    expect(
+      view.getAllByText('Yerelleştirilmiş fiyat mevcut değil'),
+    ).toHaveLength(3);
+    expect(view.getAllByText('Satın alma kullanılamıyor')).toHaveLength(3);
+    expect(view.getByLabelText('Satın alımları geri yükle')).toBeTruthy();
   });
 });

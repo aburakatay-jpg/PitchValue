@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
+import { Button, SectionHeader, sharedStyles } from '@/components/ui';
 import { useCommerce } from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { CanonicalPlan } from '@/lib/commerce';
@@ -52,10 +52,12 @@ function PaywallPlanCard({
 }) {
   const { t } = useLanguage();
   return (
-    <View style={[sharedStyles.card, annual && styles.highlighted]}>
+    <View style={styles.planCard}>
       <View style={sharedStyles.rowBetween}>
         <Text style={styles.name}>{t(name)}</Text>
-        {annual ? <Badge label={t('Annual option')} tone="accent" /> : null}
+        {annual ? (
+          <Text style={styles.planMeta}>{t('Annual billing')}</Text>
+        ) : null}
       </View>
       <Text style={styles.price}>
         {localizedPrice ?? t('Localized price unavailable')}
@@ -94,7 +96,7 @@ export function PaywallShell({
           'Review the planned Premium experience. Store purchases are not available yet.',
         )}
       />
-      <View style={sharedStyles.card}>
+      <View style={styles.benefitList}>
         {premiumBenefits.map((benefit) => (
           <Text key={benefit} style={styles.benefit}>
             • {t(benefit)}
@@ -157,9 +159,16 @@ export function PaywallPresentation({ onClose }: { onClose: () => void }) {
 }
 
 const styles = createThemedStyleSheet({
-  stack: { gap: spacing.md },
-  highlighted: { borderColor: colors.accent },
+  stack: { gap: spacing.lg },
+  benefitList: { gap: spacing.sm, paddingVertical: spacing.sm },
+  planCard: {
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: 14,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
   name: { color: colors.text, ...typography.sectionTitle },
+  planMeta: { color: colors.textSecondary, ...typography.caption },
   price: { color: colors.text, ...typography.featured },
   detail: { color: colors.textSecondary, ...typography.body },
   benefit: { color: colors.text, ...typography.body },
