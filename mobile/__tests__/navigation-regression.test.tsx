@@ -56,7 +56,7 @@ describe('Navigation Regression', () => {
     expect(pve.options.title).toBe('PvE');
   });
 
-  it('uses a compact Light Mode yellow indicator without an icon background', () => {
+  it('keeps the old selected-tab structure with only the Light interaction color changed', () => {
     setActiveAppearance('light');
     const layout = TabLayout();
     const screens = layout.props.children;
@@ -66,16 +66,22 @@ describe('Navigation Regression', () => {
     const pve = screenProps.find((screen: any) => screen.name === 'ai');
     const icon = pve.options.tabBarIcon({ focused: true });
     const renderedIcon = icon.type(icon.props);
-    const [symbol, indicator] = React.Children.toArray(
-      renderedIcon.props.children,
-    );
+    const children = React.Children.toArray(renderedIcon.props.children);
+    const [symbol] = children;
 
     expect(symbol).toBeTruthy();
     expect(
       StyleSheet.flatten(renderedIcon.props.style).backgroundColor,
     ).toBeUndefined();
-    expect(StyleSheet.flatten((indicator as any).props.style)).toMatchObject({
-      backgroundColor: lightColors.tabActiveIndicator,
-    });
+    expect(children).toHaveLength(1);
+    expect((symbol as any).props.tintColor).toBe(
+      lightColors.interactiveTextAccent,
+    );
+    expect(layout.props.screenOptions.tabBarActiveTintColor).toBe(
+      lightColors.interactiveTextAccent,
+    );
+    expect(layout.props.screenOptions.tabBarInactiveTintColor).toBe(
+      lightColors.textSecondary,
+    );
   });
 });

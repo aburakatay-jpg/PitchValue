@@ -35,8 +35,7 @@ export type ThemeColors = Readonly<{
   appearanceSelectedText: string;
   authPrimaryBackground: string;
   authPrimaryText: string;
-  tabActive: string;
-  tabActiveIndicator: string;
+  interactiveTextAccent: string;
   transparent: string;
   // Compatibility aliases keep existing semantic call sites focused.
   primary: string;
@@ -66,15 +65,16 @@ export const darkColors: ThemeColors = {
   onBrand: '#F4F7FB',
   controlSelected: '#4169E1',
   controlSelectedText: '#F4F7FB',
-  controlSelectedAccent: '#4169E1',
+  controlSelectedAccent: 'rgba(65, 105, 225, 1)',
   segmentedSelectedBackground: 'rgba(65, 105, 225, 1)',
   segmentedSelectedText: '#F4F7FB',
   appearanceSelectedBackground: 'rgba(65, 105, 225, 1)',
   appearanceSelectedText: '#F4F7FB',
   authPrimaryBackground: 'rgba(65, 105, 225, 1)',
   authPrimaryText: '#F4F7FB',
-  tabActive: '#7696F5',
-  tabActiveIndicator: 'rgba(0, 0, 0, 0)',
+  // Kept visually equivalent to the established Dark Mode secondary blue,
+  // but unique so the Light Mode semantic mapping remains unambiguous.
+  interactiveTextAccent: 'rgba(118, 150, 245, 1)',
   transparent: 'transparent',
   primary: '#4169E1',
   secondary: '#7696F5',
@@ -110,8 +110,9 @@ export const lightColors: ThemeColors = {
   appearanceSelectedText: '#0B1728',
   authPrimaryBackground: '#F2B84B',
   authPrimaryText: '#0B1728',
-  tabActive: '#0B1728',
-  tabActiveIndicator: '#F2B84B',
+  // Accessible amber foreground for interactive text on the Light surface.
+  // #966300 has a 4.75:1 contrast ratio against #F3F6FA.
+  interactiveTextAccent: '#966300',
   transparent: 'transparent',
   primary: '#4169E1',
   secondary: '#3158C9',

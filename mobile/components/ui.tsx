@@ -148,7 +148,9 @@ export function Button({
   style,
   variant = 'primary',
   ...props
-}: PressableProps & { variant?: 'primary' | 'secondary' | 'quiet' | 'auth' }) {
+}: PressableProps & {
+  variant?: 'primary' | 'secondary' | 'quiet' | 'auth' | 'preference';
+}) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -162,6 +164,7 @@ export function Button({
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'quiet' && styles.buttonQuiet,
         variant === 'auth' && styles.buttonAuth,
+        variant === 'preference' && styles.buttonPreference,
         disabled && styles.buttonDisabled,
         state.pressed && !disabled && styles.pressed,
         typeof style === 'function' ? style(state) : style,
@@ -172,7 +175,12 @@ export function Button({
         style={[
           styles.buttonText,
           variant === 'auth' && !disabled && styles.buttonTextAuth,
-          (variant !== 'primary' || disabled) && styles.buttonTextOnSurface,
+          variant === 'preference' && !disabled && styles.buttonTextPreference,
+          (disabled ||
+            (variant !== 'primary' &&
+              variant !== 'auth' &&
+              variant !== 'preference')) &&
+            styles.buttonTextOnSurface,
         ]}
       >
         {children as ReactNode}
@@ -362,6 +370,11 @@ const styles = createThemedStyleSheet({
   buttonSecondary: { backgroundColor: colors.surfaceRaised },
   buttonQuiet: { backgroundColor: colors.transparent },
   buttonAuth: { backgroundColor: colors.authPrimaryBackground },
+  buttonPreference: {
+    backgroundColor: colors.appearanceSelectedBackground,
+    borderColor: colors.appearanceSelectedBackground,
+    borderWidth: 1,
+  },
   buttonText: {
     color: colors.text,
     flexShrink: 1,
@@ -370,6 +383,7 @@ const styles = createThemedStyleSheet({
     textAlign: 'center',
   },
   buttonTextAuth: { color: colors.authPrimaryText },
+  buttonTextPreference: { color: colors.appearanceSelectedText },
   pressed: { opacity: 0.8 },
   chip: {
     minHeight: 40,

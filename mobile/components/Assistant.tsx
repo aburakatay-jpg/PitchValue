@@ -432,5 +432,5 @@ const styles = createThemedStyleSheet({
     minHeight: touchTarget,
     padding: spacing.md,
   },
-  riskSelected: { borderColor: colors.secondary },
+  riskSelected: { borderColor: colors.controlSelectedAccent },
 });

@@ -61,6 +61,17 @@ describe('auth-safe presentation', () => {
     ).toMatchObject({ backgroundColor: lightColors.authPrimaryBackground });
   });
 
+  it('keeps disabled auth actions neutral and secondary auth links accessible amber in Light Mode', async () => {
+    setActiveAppearance('light');
+    const view = await render(<SignInShell onCreateAccount={jest.fn()} />);
+    expect(
+      StyleSheet.flatten(view.getByTestId('auth-primary').props.style),
+    ).toMatchObject({ backgroundColor: lightColors.surface });
+    expect(
+      StyleSheet.flatten(view.getByText('Sign Up').props.style),
+    ).toMatchObject({ color: lightColors.interactiveTextAccent });
+  });
+
   it('opens the email/password sign-in form directly without chooser tabs or Guest CTA', async () => {
     const view = await render(<AuthEntryScreen />);
     expect(await view.findByText('Welcome back')).toBeTruthy();
@@ -236,6 +247,7 @@ describe('Profile foundation', () => {
   });
 
   it('opens existing Premium options for Guest without forcing registration', async () => {
+    setActiveAppearance('light');
     const onSignIn = jest.fn();
     const onOpenPremium = jest.fn();
     const view = await render(
@@ -254,6 +266,9 @@ describe('Profile foundation', () => {
     expect(StyleSheet.flatten(premiumRow.props.style).minHeight).toBe(
       touchTarget,
     );
+    expect(
+      StyleSheet.flatten(view.getByTestId('profile-premium-value').props.style),
+    ).toMatchObject({ color: lightColors.interactiveTextAccent });
     await fireEvent.press(premiumRow);
     expect(onOpenPremium).toHaveBeenCalledTimes(1);
     expect(onSignIn).not.toHaveBeenCalled();

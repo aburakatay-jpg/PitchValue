@@ -123,7 +123,12 @@ function PremiumStatusRow({
     >
       <Text style={styles.label}>{label}</Text>
       <View style={styles.premiumValueArea}>
-        <Text style={styles.value}>{value}</Text>
+        <Text
+          style={styles.premiumInteractiveValue}
+          testID="profile-premium-value"
+        >
+          {value}
+        </Text>
         <SymbolView
           accessibilityElementsHidden
           name={'chevron.right' as SFSymbol}
@@ -256,13 +261,15 @@ export function ProfileView({
           <Text style={styles.label}>{t('Language')}</Text>
           <View style={styles.languageActions}>
             <Button
-              variant={language === 'en' ? 'secondary' : 'quiet'}
+              testID="language-en"
+              variant={language === 'en' ? 'preference' : 'quiet'}
               onPress={() => setLanguage('en')}
             >
               EN
             </Button>
             <Button
-              variant={language === 'tr' ? 'secondary' : 'quiet'}
+              testID="language-tr"
+              variant={language === 'tr' ? 'preference' : 'quiet'}
               onPress={() => setLanguage('tr')}
             >
               TR
@@ -377,6 +384,12 @@ const styles = createThemedStyleSheet({
   },
   value: {
     color: colors.secondary,
+    flexShrink: 1,
+    textAlign: 'right',
+    ...typography.body,
+  },
+  premiumInteractiveValue: {
+    color: colors.interactiveTextAccent,
     flexShrink: 1,
     textAlign: 'right',
     ...typography.body,

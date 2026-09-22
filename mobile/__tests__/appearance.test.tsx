@@ -71,13 +71,17 @@ describe('appearance foundation', () => {
     expect(lightColors.controlSelected).not.toBe(lightColors.brandPrimary);
     expect(lightColors.controlSelectedText).toBe(lightColors.textPrimary);
     expect(lightColors.controlSelectedAccent).toBe('#F2B84B');
-    expect(darkColors.controlSelectedAccent).toBe(darkColors.brandPrimary);
+    expect(darkColors.controlSelectedAccent).toBe('rgba(65, 105, 225, 1)');
     expect(lightColors.segmentedSelectedBackground).toBe('#F2B84B');
     expect(lightColors.segmentedSelectedText).toBe(lightColors.textPrimary);
     expect(lightColors.appearanceSelectedBackground).toBe('#F2B84B');
     expect(lightColors.appearanceSelectedText).toBe(lightColors.textPrimary);
     expect(lightColors.authPrimaryBackground).toBe('#F2B84B');
     expect(lightColors.authPrimaryText).toBe(lightColors.textPrimary);
+    expect(lightColors.interactiveTextAccent).toBe('#966300');
+    expect(lightColors.interactiveTextAccent).not.toBe(
+      lightColors.brandPrimary,
+    );
     expect(darkColors.segmentedSelectedBackground).toBe(
       'rgba(65, 105, 225, 1)',
     );
@@ -86,10 +90,7 @@ describe('appearance foundation', () => {
     );
     expect(darkColors.authPrimaryBackground).toBe('rgba(65, 105, 225, 1)');
     expect(darkColors.controlSelected).toBe(darkColors.brandPrimary);
-    expect(lightColors.tabActive).toBe(lightColors.textPrimary);
-    expect(lightColors.tabActiveIndicator).toBe('#F2B84B');
-    expect(darkColors.tabActive).toBe(darkColors.brandSecondary);
-    expect(darkColors.tabActiveIndicator).toBe('rgba(0, 0, 0, 0)');
+    expect(darkColors.interactiveTextAccent).toBe('rgba(118, 150, 245, 1)');
   });
 
   it('holds the app at a theme-safe bootstrap surface until storage resolves', async () => {
@@ -215,6 +216,12 @@ describe('appearance foundation', () => {
     );
     const lightOption = view.getByTestId('appearance-light');
     expect(StyleSheet.flatten(lightOption.props.style)).toMatchObject({
+      backgroundColor: lightColors.appearanceSelectedBackground,
+      borderColor: lightColors.appearanceSelectedBackground,
+    });
+    expect(
+      StyleSheet.flatten(view.getByTestId('language-en').props.style),
+    ).toMatchObject({
       backgroundColor: lightColors.appearanceSelectedBackground,
       borderColor: lightColors.appearanceSelectedBackground,
     });

@@ -668,8 +668,12 @@ const styles = createThemedStyleSheet({
     gap: spacing.xs,
     justifyContent: 'center',
   },
-  textLink: { color: colors.secondary, ...typography.body, fontWeight: '700' },
-  inlineLink: { color: colors.secondary, fontWeight: '700' },
+  textLink: {
+    color: colors.interactiveTextAccent,
+    ...typography.body,
+    fontWeight: '700',
+  },
+  inlineLink: { color: colors.interactiveTextAccent, fontWeight: '700' },
   socialStack: { gap: spacing.sm },
   socialButton: {
     alignItems: 'center',
@@ -718,8 +722,8 @@ const styles = createThemedStyleSheet({
     width: 22,
   },
   checkboxChecked: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
+    backgroundColor: colors.controlSelectedAccent,
+    borderColor: colors.controlSelectedAccent,
   },
   informationRow: {
     alignItems: 'flex-start',

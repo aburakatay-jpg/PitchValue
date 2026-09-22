@@ -24,12 +24,11 @@ function TabIcon({ name, focused }: { name: SFSymbol; focused: boolean }) {
     <View style={styles.iconContainer}>
       <SymbolView
         name={name}
-        tintColor={focused ? colors.tabActive : colors.textSecondary}
+        tintColor={
+          focused ? colors.interactiveTextAccent : colors.textSecondary
+        }
         size={24}
       />
-      {focused ? (
-        <View accessible={false} style={styles.iconIndicator} />
-      ) : null}
     </View>
   );
 }
@@ -41,7 +40,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
-        tabBarActiveTintColor: colors.tabActive,
+        tabBarActiveTintColor: colors.interactiveTextAccent,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.tabBarBackground,
@@ -76,12 +75,5 @@ const styles = createThemedStyleSheet({
     alignItems: 'center',
     justifyContent: 'center',
     height: 32,
-  },
-  iconIndicator: {
-    backgroundColor: colors.tabActiveIndicator,
-    bottom: 0,
-    height: 3,
-    position: 'absolute',
-    width: 18,
   },
 });
