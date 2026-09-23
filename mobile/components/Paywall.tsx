@@ -6,6 +6,7 @@ import { Button } from '@/components/ui';
 import { useCommerce } from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
+import { useOptionalAppearanceResolution } from '@/features/appearance/AppearanceContext';
 import type { CanonicalPlan, CommerceProduct } from '@/lib/commerce';
 import {
   colors,
@@ -14,6 +15,7 @@ import {
   touchTarget,
   typography,
   createThemedStyleSheet,
+  getActiveAppearance,
 } from '@/theme/tokens';
 import type { TrialEligibility } from '@/types/entitlement';
 
@@ -86,12 +88,13 @@ function PaywallPlanRow({
 }
 
 export function PaywallShell({
-  onClose,
+  trialEligibility: _trialEligibility,
 }: {
   trialEligibility?: TrialEligibility;
-  onClose?: () => void;
 }) {
   const { t } = useLanguage();
+  const resolvedAppearance = useOptionalAppearanceResolution();
+  const isLight = (resolvedAppearance ?? getActiveAppearance()) === 'light';
   const commerce = useCommerce();
   const session = useProductSession();
   const [selectedPlan, setSelectedPlan] = useState<CanonicalPlan | null>(null);
@@ -111,29 +114,6 @@ export function PaywallShell({
 
   return (
     <View style={styles.stack}>
-      <View style={styles.topRow}>
-        <Text style={styles.context}>{t('PitchValue Premium')}</Text>
-        {onClose ? (
-          <Pressable
-            accessibilityLabel={t('Close')}
-            accessibilityRole="button"
-            onPress={onClose}
-            style={({ pressed }) => [
-              styles.closeControl,
-              pressed && styles.pressed,
-            ]}
-            testID="paywall-close"
-          >
-            <SymbolView
-              accessibilityElementsHidden
-              importantForAccessibility="no"
-              name={'xmark' as SFSymbol}
-              size={18}
-              tintColor={colors.text}
-            />
-          </Pressable>
-        ) : null}
-      </View>
       <Text accessibilityRole="header" style={styles.headline}>
         {t('Not more predictions.\nBetter filtering.')}
       </Text>
@@ -171,6 +151,7 @@ export function PaywallShell({
         }}
         testID="paywall-primary"
         variant="auth"
+        style={isLight ? styles.lightPrimary : undefined}
       >
         {commerce.isPurchasing ? t('Please wait') : t('Go Premium')}
       </Button>
@@ -226,24 +207,44 @@ export function PaywallShell({
   );
 }
 
-export function PaywallPresentation({ onClose }: { onClose: () => void }) {
-  return <PaywallShell onClose={onClose} />;
+export function PaywallPresentation() {
+  return <PaywallShell />;
+}
+
+export function PaywallHeaderClose({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
+  useOptionalAppearanceResolution();
+  return (
+    <Pressable
+      accessibilityLabel={t('Close')}
+      accessibilityRole="button"
+      onPress={onClose}
+      style={({ pressed }) => [styles.closeControl, pressed && styles.pressed]}
+      testID="paywall-close"
+    >
+      <SymbolView
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+        name={'xmark' as SFSymbol}
+        size={18}
+        tintColor={colors.text}
+      />
+    </Pressable>
+  );
 }
 
 const styles = createThemedStyleSheet({
   stack: { gap: spacing.lg },
-  topRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   closeControl: {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: touchTarget,
     minWidth: touchTarget,
   },
-  context: { color: colors.textSecondary, ...typography.caption },
+  lightPrimary: {
+    backgroundColor: colors.authPrimaryBackground,
+    borderWidth: 0,
+  },
   headline: {
     color: colors.text,
     fontSize: 28,

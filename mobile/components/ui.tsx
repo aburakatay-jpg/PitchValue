@@ -22,6 +22,7 @@ import {
 } from '@/theme/tokens';
 import { useRouter } from 'expo-router';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
+import { useOptionalAppearanceResolution } from '@/features/appearance/AppearanceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { SymbolView } from 'expo-symbols';
 
@@ -94,7 +95,14 @@ export function AppHeader({
 function ProfileAction() {
   const router = useRouter();
   const { state } = useEntitlement();
+  const resolvedAppearance = useOptionalAppearanceResolution();
+  const isLight = (resolvedAppearance ?? getActiveAppearance()) === 'light';
   const isPremium = state === 'PREMIUM_ACTIVE' || state === 'PREMIUM_TRIAL';
+  const glyphColor = isLight
+    ? colors.authPrimaryText
+    : isPremium
+      ? colors.accent
+      : colors.textSecondary;
 
   return (
     <Pressable
@@ -104,16 +112,22 @@ function ProfileAction() {
       style={({ pressed }) => [styles.profileButton, pressed && styles.pressed]}
     >
       <View
-        style={[styles.profileAvatar, isPremium && styles.profileAvatarPremium]}
+        style={[
+          styles.profileAvatar,
+          isPremium && styles.profileAvatarPremium,
+          isLight && styles.profileAvatarLight,
+        ]}
+        testID="profile-header-avatar"
       >
         <SymbolView
           name="person.fill"
-          tintColor={isPremium ? colors.accent : colors.textSecondary}
+          testID="profile-header-glyph"
+          tintColor={glyphColor}
           fallback={
             <Text
               style={{
                 fontSize: 18,
-                color: isPremium ? colors.accent : colors.textSecondary,
+                color: glyphColor,
               }}
             >
               👤
@@ -455,5 +469,9 @@ const styles = createThemedStyleSheet({
   },
   profileAvatarPremium: {
     borderColor: colors.accent,
+  },
+  profileAvatarLight: {
+    backgroundColor: colors.authPrimaryBackground,
+    borderColor: colors.authPrimaryBackground,
   },
 });

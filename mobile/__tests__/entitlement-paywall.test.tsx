@@ -1,12 +1,16 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
+import React from 'react';
 
 import {
+  PaywallHeaderClose,
   PaywallPresentation,
   PaywallShell,
   annualPlanDetail,
 } from '@/components/Paywall';
+import PaywallScreen from '@/app/paywall';
 import { LockedPremiumSection, PremiumGuard } from '@/components/PremiumGuard';
+import { AppearanceProvider } from '@/features/appearance/AppearanceContext';
 import * as CommerceContext from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import * as SessionContext from '@/features/session/ProductSessionContext';
@@ -245,6 +249,31 @@ describe('premium UI foundation', () => {
     expect(purchase).toHaveBeenCalledWith('monthly');
   });
 
+  it('retains the existing Dark enabled Paywall CTA treatment', async () => {
+    (CommerceContext.useCommerce as jest.Mock).mockReturnValue({
+      isConfigured: true,
+      products: [
+        { ...mockProducts[0], provider: 'APPLE', localizedPrice: '£4.99' },
+      ],
+      isFetchingProducts: false,
+      isPurchasing: false,
+      isRestoring: false,
+      purchase: jest.fn(),
+      restore: jest.fn(),
+    });
+    (SessionContext.useProductSession as jest.Mock).mockReturnValue({
+      state: 'AUTHENTICATED',
+    });
+    setActiveAppearance('dark');
+    const view = await render(<PaywallShell />);
+    await fireEvent.press(view.getByTestId('paywall-plan-monthly'));
+    const cta = view.getByTestId('paywall-primary');
+    expect(cta).toBeEnabled();
+    expect(StyleSheet.flatten(cta.props.style).backgroundColor).toBe(
+      darkColors.authPrimaryBackground,
+    );
+  });
+
   it('uses a reduced headline and renders the six approved V1 benefits in order', async () => {
     setActiveAppearance('light');
     const view = await render(<PaywallShell />);
@@ -294,7 +323,38 @@ describe('premium UI foundation', () => {
     expect(
       StyleSheet.flatten(view.getByTestId('paywall-primary').props.style)
         .backgroundColor,
-    ).toBe(lightColors.surface);
+    ).toBe(lightColors.authPrimaryBackground);
+  });
+
+  it('preserves the Dark disabled CTA surface', async () => {
+    setActiveAppearance('dark');
+    const view = await render(<PaywallShell />);
+    expect(
+      StyleSheet.flatten(view.getByTestId('paywall-primary').props.style)
+        .backgroundColor,
+    ).toBe(darkColors.surface);
+  });
+
+  it('follows System appearance for the Paywall CTA without changing purchase state', async () => {
+    const view = await render(
+      <AppearanceProvider systemSchemeOverride="dark">
+        <PaywallShell />
+      </AppearanceProvider>,
+    );
+    const cta = await view.findByTestId('paywall-primary');
+    expect(StyleSheet.flatten(cta.props.style).backgroundColor).toBe(
+      darkColors.surface,
+    );
+    expect(cta).toBeDisabled();
+    await view.rerender(
+      <AppearanceProvider systemSchemeOverride="light">
+        <PaywallShell />
+      </AppearanceProvider>,
+    );
+    expect(StyleSheet.flatten(cta.props.style).backgroundColor).toBe(
+      lightColors.authPrimaryBackground,
+    );
+    expect(cta).toBeDisabled();
   });
 
   it('contains no casino or urgency copy', async () => {
@@ -307,10 +367,29 @@ describe('premium UI foundation', () => {
 
   it('keeps an accessible close control available', async () => {
     const onClose = jest.fn();
-    const view = await render(<PaywallPresentation onClose={onClose} />);
+    const view = await render(<PaywallHeaderClose onClose={onClose} />);
     expect(view.queryByText('Close')).toBeNull();
     await fireEvent.press(await view.findByLabelText('Close'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('places a single close action in the native Paywall header', () => {
+    const route = PaywallScreen();
+    const [header] = React.Children.toArray(route.props.children);
+    expect((header as any).props.options.headerRight).toEqual(
+      expect.any(Function),
+    );
+    const nativeClose = (header as any).props.options.headerRight();
+    expect(nativeClose.type).toBe(PaywallHeaderClose);
+    expect(nativeClose.props.onClose).toEqual(expect.any(Function));
+  });
+
+  it('keeps the native header as the sole PitchValue Premium title', async () => {
+    const view = await render(<PaywallPresentation />);
+    expect(view.queryByText('PitchValue Premium')).toBeNull();
+    expect(
+      view.getByText('Not more predictions.\nBetter filtering.'),
+    ).toBeTruthy();
   });
 
   it('localizes all app-owned Paywall controls in Turkish', async () => {
@@ -347,7 +426,7 @@ describe('premium UI foundation', () => {
     const view = await render(
       <>
         <TurkishSwitch />
-        <PaywallPresentation onClose={jest.fn()} />
+        <PaywallHeaderClose onClose={jest.fn()} />
       </>,
     );
     await fireEvent.press(view.getByText('switch-to-turkish'));

@@ -108,6 +108,7 @@ function RootNavigation() {
               options={{
                 ...nativeHeaderOptions,
                 presentation: 'modal',
+                headerBackVisible: false,
                 title: t('PitchValue Premium'),
               }}
             />

@@ -5,7 +5,8 @@ import { Text, View } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 import { ProfileView } from '@/app/profile';
-import { Screen, sharedStyles } from '@/components/ui';
+import { AppHeader, Screen, sharedStyles } from '@/components/ui';
+import { createNativeHeaderOptions } from '@/lib/navigation-options';
 import {
   APPEARANCE_STORAGE_KEY,
   AppearanceProvider,
@@ -32,6 +33,12 @@ function AppearanceProbe() {
       <Text onPress={() => setPreference('light')}>choose-light</Text>
     </View>
   );
+}
+
+function NativeHeaderProbe() {
+  const { colors } = useAppearance();
+  const options = createNativeHeaderOptions(colors);
+  return <Text testID="native-header-tint">{options.headerTintColor}</Text>;
 }
 
 function BareWrapper({ children }: { children: ReactNode }) {
@@ -263,6 +270,73 @@ describe('appearance foundation', () => {
     expect(view.getByTestId('resolved')).toHaveTextContent('light');
     expect(view.getByTestId('background')).toHaveTextContent(
       lightColors.background,
+    );
+  });
+
+  it('updates the shared Profile action with resolved Light, Dark, and System themes', async () => {
+    const view = await render(
+      <AppearanceProvider systemSchemeOverride="dark">
+        <AppearanceProbe />
+        <AppHeader title="Today" />
+      </AppearanceProvider>,
+      { wrapper: BareWrapper },
+    );
+    await view.findByTestId('profile-header-avatar');
+    const avatar = view.getByTestId('profile-header-avatar');
+    const glyph = view.getByTestId('profile-header-glyph');
+    const action = view.getByRole('button', { name: 'Open Profile, Guest' });
+    expect(action).toBeTruthy();
+    expect(StyleSheet.flatten(avatar.props.style).backgroundColor).toBe(
+      darkColors.surface,
+    );
+    expect(glyph.props.tintColor).toBe(darkColors.textSecondary);
+
+    await fireEvent.press(view.getByText('choose-light'));
+    expect(StyleSheet.flatten(avatar.props.style).backgroundColor).toBe(
+      lightColors.authPrimaryBackground,
+    );
+    expect(glyph.props.tintColor).toBe(lightColors.authPrimaryText);
+
+    await fireEvent.press(view.getByText('choose-system'));
+    await view.rerender(
+      <AppearanceProvider systemSchemeOverride="light">
+        <AppearanceProbe />
+        <AppHeader title="Today" />
+      </AppearanceProvider>,
+    );
+    expect(StyleSheet.flatten(avatar.props.style).backgroundColor).toBe(
+      lightColors.authPrimaryBackground,
+    );
+  });
+
+  it('propagates resolved appearance to native header options without navigation', async () => {
+    const view = await render(
+      <AppearanceProvider systemSchemeOverride="light">
+        <AppearanceProbe />
+        <NativeHeaderProbe />
+      </AppearanceProvider>,
+      { wrapper: BareWrapper },
+    );
+    expect(await view.findByTestId('native-header-tint')).toHaveTextContent(
+      lightColors.textPrimary,
+    );
+    await fireEvent.press(view.getByText('choose-dark'));
+    expect(view.getByTestId('native-header-tint')).toHaveTextContent(
+      darkColors.textPrimary,
+    );
+    await fireEvent.press(view.getByText('choose-light'));
+    expect(view.getByTestId('native-header-tint')).toHaveTextContent(
+      lightColors.textPrimary,
+    );
+    await fireEvent.press(view.getByText('choose-system'));
+    await view.rerender(
+      <AppearanceProvider systemSchemeOverride="dark">
+        <AppearanceProbe />
+        <NativeHeaderProbe />
+      </AppearanceProvider>,
+    );
+    expect(view.getByTestId('native-header-tint')).toHaveTextContent(
+      darkColors.textPrimary,
     );
   });
 
