@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 
 # First load .env if present
 env_path = Path(".env")
@@ -18,20 +19,27 @@ if env_path.is_file():
 # Force environment to test
 os.environ["PITCHVALUE_ENV"] = "test"
 
-# Rewrite DATABASE_URL to target pitchvalue_test if it targets pitchvalue
-if "DATABASE_URL" in os.environ:
-    url = os.environ["DATABASE_URL"]
-    if url.endswith("/pitchvalue"):
-        # Split by / and replace the last part
-        parts = url.rsplit("/", 1)
-        if len(parts) == 2 and parts[1] == "pitchvalue":
-            os.environ["DATABASE_URL"] = f"{parts[0]}/pitchvalue_test"
+# Never let test setup write to a remote database, even if its name resembles
+# the local development database. Migrations in tests must share this isolation.
+_test_database_url = os.environ.get("DATABASE_URL", "")
+try:
+    _parsed_test_url = make_url(_test_database_url)
+except Exception:
+    pytest.exit("Tests require a valid local PostgreSQL test database URL")
+if _parsed_test_url.host not in {"localhost", "127.0.0.1", "::1"}:
+    pytest.exit("Tests may only connect to a local PostgreSQL database")
+if _parsed_test_url.database == "pitchvalue":
+    _parsed_test_url = _parsed_test_url.set(database="pitchvalue_test")
+elif _parsed_test_url.database != "pitchvalue_test":
+    pytest.exit("Tests must target the dedicated pitchvalue_test database")
+os.environ["DATABASE_URL"] = _parsed_test_url.render_as_string(hide_password=False)
+os.environ["DATABASE_DIRECT_URL"] = os.environ["DATABASE_URL"]
 
 
 @pytest.fixture(scope="session", autouse=True)
 def guard_against_dev_database() -> None:
     db_url = os.environ.get("DATABASE_URL", "")
-    if db_url.endswith("/pitchvalue"):
+    if make_url(db_url).database != "pitchvalue_test":
         pytest.exit(
             "HARD SAFETY GUARD TRIGGERED: Tests are attempting to"
             " run against the development database ('pitchvalue')."

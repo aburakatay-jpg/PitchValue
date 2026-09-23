@@ -7,6 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
+from sqlalchemy.engine import make_url
+
 
 class ConfigurationError(ValueError):
     """Raised when required project configuration is absent or invalid."""
@@ -17,6 +19,7 @@ class Settings:
     """Runtime settings whose representation never reveals credentials."""
 
     database_url: str
+    database_direct_url: str | None = None
     environment_name: str = "development"
     api_host: str = "127.0.0.1"
     api_port: int = 8000
@@ -39,12 +42,13 @@ class Settings:
             f"api_host={self.api_host!r}, "
             f"api_port={self.api_port!r}, "
             "database_url='<redacted>', "
+            "database_direct_url='<redacted>', "
             f"cors_allowed_origins={self.cors_allowed_origins!r}, "
             f"log_level={self.log_level!r})"
         )
 
 
-_ENVIRONMENTS = frozenset({"development", "test", "production"})
+_ENVIRONMENTS = frozenset({"development", "test", "staging", "production"})
 _LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
 
 
@@ -78,6 +82,16 @@ def _load_origins(raw_value: str) -> tuple[str, ...]:
     return origins
 
 
+def _require_verified_tls(database_url: str, setting_name: str) -> None:
+    """Reject deployed database URLs that bypass certificate/host verification."""
+    try:
+        mode = make_url(database_url).query.get("sslmode")
+    except Exception as error:
+        raise ConfigurationError(f"{setting_name} is not a valid PostgreSQL URL") from error
+    if mode != "verify-full":
+        raise ConfigurationError(f"{setting_name} must use sslmode=verify-full")
+
+
 def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
     """Load and validate settings from an environment-like mapping."""
     try:
@@ -99,15 +113,28 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
         raise ConfigurationError("DATABASE_URL is required")
     if not database_url.startswith(("postgresql://", "postgresql+psycopg://")):
         raise ConfigurationError("DATABASE_URL must use PostgreSQL")
+    database_direct_url = values.get("DATABASE_DIRECT_URL", "").strip() or None
+    if database_direct_url is not None and not database_direct_url.startswith(
+        ("postgresql://", "postgresql+psycopg://")
+    ):
+        raise ConfigurationError("DATABASE_DIRECT_URL must use PostgreSQL")
     environment_name = values.get("PITCHVALUE_ENV", "development").strip().lower()
     if environment_name not in _ENVIRONMENTS:
-        raise ConfigurationError("PITCHVALUE_ENV must be development, test, or production")
+        raise ConfigurationError("PITCHVALUE_ENV must be development, test, staging, or production")
+    if environment_name in {"staging", "production"} and database_direct_url is None:
+        raise ConfigurationError("DATABASE_DIRECT_URL is required for staging and production")
+    if environment_name in {"staging", "production"}:
+        _require_verified_tls(database_url, "DATABASE_URL")
+        assert database_direct_url is not None
+        _require_verified_tls(database_direct_url, "DATABASE_DIRECT_URL")
     api_host = values.get("API_HOST", "127.0.0.1").strip()
     if not api_host:
         raise ConfigurationError("API_HOST must not be empty")
     api_port = _load_port(values.get("API_PORT", "8000").strip())
     default_origins = (
-        "" if environment_name == "production" else "http://localhost:8081,http://localhost:19006"
+        ""
+        if environment_name in {"staging", "production"}
+        else "http://localhost:8081,http://localhost:19006"
     )
     cors_allowed_origins = _load_origins(
         values.get("CORS_ALLOWED_ORIGINS", default_origins).strip()
@@ -125,6 +152,7 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
 
     return Settings(
         database_url=database_url,
+        database_direct_url=database_direct_url,
         environment_name=environment_name,
         api_host=api_host,
         api_port=api_port,
@@ -138,5 +166,11 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
 
 
 def get_database_url() -> str:
-    """Return the validated database URL for migration and runtime clients."""
+    """Return the validated runtime database URL."""
     return load_settings().database_url
+
+
+def get_database_direct_url() -> str:
+    """Return a direct migration URL; local/test may reuse the runtime URL."""
+    settings = load_settings()
+    return settings.database_direct_url or settings.database_url
