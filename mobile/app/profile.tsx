@@ -12,12 +12,12 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  Button,
   Screen,
   SectionHeader,
   sharedStyles,
   stackScreenEdges,
 } from '@/components/ui';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
@@ -245,7 +245,7 @@ export function ProfileView({
   authenticated?: boolean;
 }) {
   const guest = !authenticated;
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
   const { preference, setPreference } = useAppearance();
   const version = Constants.expoConfig?.version ?? t('Unavailable');
   const premiumOpensPaywall =
@@ -300,25 +300,7 @@ export function ProfileView({
       </ProfileGroup>
 
       <ProfileGroup title={t('Preferences')}>
-        <View style={sharedStyles.rowBetween}>
-          <Text style={styles.label}>{t('Language')}</Text>
-          <View style={styles.languageActions}>
-            <Button
-              testID="language-en"
-              variant={language === 'en' ? 'preference' : 'quiet'}
-              onPress={() => setLanguage('en')}
-            >
-              EN
-            </Button>
-            <Button
-              testID="language-tr"
-              variant={language === 'tr' ? 'preference' : 'quiet'}
-              onPress={() => setLanguage('tr')}
-            >
-              TR
-            </Button>
-          </View>
-        </View>
+        <LanguageSelector />
         <View style={styles.preferenceDivider} />
         <View style={styles.appearancePreference}>
           <Text style={styles.label}>{t('Appearance')}</Text>
@@ -506,7 +488,6 @@ const styles = createThemedStyleSheet({
     minHeight: touchTarget,
   },
   signOutText: { color: colors.negative, ...typography.body },
-  languageActions: { flexDirection: 'row', gap: spacing.sm },
   preferenceDivider: {
     backgroundColor: colors.border,
     height: StyleSheet.hairlineWidth,

@@ -215,6 +215,96 @@ describe('Profile foundation', () => {
     jest.restoreAllMocks();
   });
 
+  it('replaces inline language buttons with one accessible settings row and native-name options', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    const row = await view.findByTestId('profile-language-row');
+    expect(row.props.accessibilityRole).toBe('button');
+    expect(row.props.accessibilityLabel).toBe('Language: English');
+    expect(StyleSheet.flatten(row.props.style).minHeight).toBe(touchTarget);
+    expect(view.queryByTestId('language-en')).toBeNull();
+    expect(view.queryByTestId('language-tr')).toBeNull();
+
+    await fireEvent.press(row);
+    expect(view.getByTestId('language-selector-modal')).toBeTruthy();
+    expect(
+      view.getByTestId('language-option-en').props.accessibilityLabel,
+    ).toBe('English');
+    expect(
+      view.getByTestId('language-option-tr').props.accessibilityLabel,
+    ).toBe('Türkçe');
+    expect(
+      view.getByTestId('language-option-en').props.accessibilityState,
+    ).toMatchObject({ checked: true });
+    expect(
+      view.getByTestId('language-option-tr').props.accessibilityState,
+    ).toMatchObject({ checked: false });
+    expect(
+      view.getByTestId('language-selected-en', { includeHiddenElements: true }),
+    ).toBeTruthy();
+    expect(
+      view.queryByTestId('language-selected-tr', {
+        includeHiddenElements: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('switches English and Turkish immediately through the existing persisted context', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByTestId('profile-language-row');
+    await fireEvent.press(view.getByTestId('profile-language-row'));
+    await fireEvent.press(view.getByTestId('language-option-tr'));
+    expect(view.queryByTestId('language-selector-modal')).toBeNull();
+    expect(
+      view.getByTestId('profile-language-row').props.accessibilityLabel,
+    ).toBe('Dil: Türkçe');
+    expect(view.getByText('Tercihler')).toBeTruthy();
+    await waitFor(() =>
+      expect(AsyncStorage.getItem('pitchvalue_language')).resolves.toBe('tr'),
+    );
+
+    await fireEvent.press(view.getByTestId('profile-language-row'));
+    expect(
+      view.getByTestId('language-option-tr').props.accessibilityState,
+    ).toMatchObject({ checked: true });
+    await fireEvent.press(view.getByTestId('language-option-en'));
+    expect(view.queryByTestId('language-selector-modal')).toBeNull();
+    expect(
+      view.getByTestId('profile-language-row').props.accessibilityLabel,
+    ).toBe('Language: English');
+    expect(view.getByText('Preferences')).toBeTruthy();
+    await waitFor(() =>
+      expect(AsyncStorage.getItem('pitchvalue_language')).resolves.toBe('en'),
+    );
+  });
+
+  it('loads the previously selected language without adding a second persistence path', async () => {
+    await AsyncStorage.setItem('pitchvalue_language', 'tr');
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    const row = await view.findByTestId('profile-language-row');
+    expect(row.props.accessibilityLabel).toBe('Dil: Türkçe');
+    await fireEvent.press(row);
+    expect(
+      view.getByTestId('language-selected-tr', { includeHiddenElements: true }),
+    ).toBeTruthy();
+    expect(
+      view.getByTestId('language-selector-close').props.accessibilityLabel,
+    ).toBe('Dil seçiciyi kapat');
+    await fireEvent.press(view.getByTestId('language-selector-close'));
+    expect(view.queryByTestId('language-selector-modal')).toBeNull();
+  });
+
   it('renders all canonical groups and a truthful Guest state', async () => {
     const onSignIn = jest.fn();
     const view = await render(
@@ -607,10 +697,8 @@ describe('Profile foundation', () => {
         </LanguageProvider>,
       );
       await view.findByText(/Account|Hesap/);
-      const turkishControl = view.queryByText('TR');
-      if (turkishControl) {
-        await fireEvent.press(turkishControl);
-      }
+      await fireEvent.press(view.getByTestId('profile-language-row'));
+      await fireEvent.press(view.getByTestId('language-option-tr'));
       expect(await view.findByText('Hesap')).toBeTruthy();
       expect(view.getByTestId('profile-premium-value')).toHaveTextContent(
         turkishStatusLabels[state],

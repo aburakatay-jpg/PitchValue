@@ -368,10 +368,36 @@ describe('appearance foundation', () => {
       borderColor: lightColors.appearanceSelectedBackground,
     });
     expect(
-      StyleSheet.flatten(view.getByTestId('language-en').props.style),
-    ).toMatchObject({
-      backgroundColor: lightColors.appearanceSelectedBackground,
-      borderColor: lightColors.appearanceSelectedBackground,
-    });
+      StyleSheet.flatten(
+        view.getByTestId('profile-language-value').props.style,
+      ),
+    ).toMatchObject({ color: lightColors.interactiveTextAccent });
+    await fireEvent.press(view.getByTestId('profile-language-row'));
+    expect(
+      view.getByTestId('language-selected-en', { includeHiddenElements: true })
+        .props.tintColor,
+    ).toBe(lightColors.interactiveTextAccent);
+  });
+
+  it('keeps the language selector on the existing Dark Mode interaction colors', async () => {
+    const view = await render(
+      <AppearanceProvider systemSchemeOverride="dark">
+        <LanguageProvider>
+          <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+        </LanguageProvider>
+      </AppearanceProvider>,
+      { wrapper: BareWrapper },
+    );
+    await view.findByTestId('profile-language-row');
+    expect(
+      StyleSheet.flatten(
+        view.getByTestId('profile-language-value').props.style,
+      ),
+    ).toMatchObject({ color: darkColors.interactiveTextAccent });
+    await fireEvent.press(view.getByTestId('profile-language-row'));
+    expect(
+      view.getByTestId('language-selected-en', { includeHiddenElements: true })
+        .props.tintColor,
+    ).toBe(darkColors.interactiveTextAccent);
   });
 });
