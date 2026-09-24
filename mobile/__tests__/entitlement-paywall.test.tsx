@@ -379,7 +379,7 @@ describe('premium UI foundation', () => {
   });
 
   it.each(['light', 'dark'] as const)(
-    'keeps the native-header close control circular in %s mode',
+    'owns a circular close background inside a 48pt target in %s mode',
     async (scheme) => {
       const view = await render(
         <AppearanceProvider systemSchemeOverride={scheme}>
@@ -387,12 +387,21 @@ describe('premium UI foundation', () => {
         </AppearanceProvider>,
       );
       const close = await view.findByTestId('paywall-close');
-      const style = StyleSheet.flatten(close.props.style);
-      expect(style.width).toBe(touchTarget);
-      expect(style.height).toBe(touchTarget);
-      expect(style.borderRadius).toBe(touchTarget / 2);
-      expect(style.alignItems).toBe('center');
-      expect(style.justifyContent).toBe('center');
+      const targetStyle = StyleSheet.flatten(close.props.style);
+      const circle = view.getByTestId('paywall-close-circle');
+      const circleStyle = StyleSheet.flatten(circle.props.style);
+      expect(targetStyle.width).toBe(touchTarget);
+      expect(targetStyle.height).toBe(touchTarget);
+      expect(targetStyle.alignItems).toBe('center');
+      expect(targetStyle.justifyContent).toBe('center');
+      expect(circleStyle.width).toBe(36);
+      expect(circleStyle.height).toBe(36);
+      expect(circleStyle.borderRadius).toBe(18);
+      expect(circleStyle.backgroundColor).toBe(
+        scheme === 'light'
+          ? lightColors.surfaceElevated
+          : darkColors.surfaceElevated,
+      );
       expect(close.props.accessibilityRole).toBe('button');
     },
   );
@@ -400,12 +409,16 @@ describe('premium UI foundation', () => {
   it('places a single close action in the native Paywall header', () => {
     const route = PaywallScreen();
     const [header] = React.Children.toArray(route.props.children);
-    expect((header as any).props.options.headerRight).toEqual(
-      expect.any(Function),
-    );
-    const nativeClose = (header as any).props.options.headerRight();
+    const options = (header as any).props.options;
+    expect(options.headerRight).toEqual(expect.any(Function));
+    const nativeClose = options.headerRight();
     expect(nativeClose.type).toBe(PaywallHeaderClose);
     expect(nativeClose.props.onClose).toEqual(expect.any(Function));
+    const [iosItem] = options.unstable_headerRightItems();
+    expect(iosItem.type).toBe('custom');
+    expect(iosItem.hidesSharedBackground).toBe(true);
+    expect(iosItem.element.type).toBe(PaywallHeaderClose);
+    expect(iosItem.element.props.onClose).toEqual(expect.any(Function));
   });
 
   it('keeps the native header as the sole PitchValue Premium title', async () => {

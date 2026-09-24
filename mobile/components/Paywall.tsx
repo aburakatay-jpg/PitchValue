@@ -25,6 +25,7 @@ const planNames: Readonly<Record<CanonicalPlan, string>> = {
   annual: 'Annual',
 };
 const planOrder: readonly CanonicalPlan[] = ['monthly', 'quarterly', 'annual'];
+const closeCircleSize = 36;
 const premiumBenefits = [
   'More powerful analysis with PV Engine',
   'Discover value opportunities faster',
@@ -222,13 +223,15 @@ export function PaywallHeaderClose({ onClose }: { onClose: () => void }) {
       style={({ pressed }) => [styles.closeControl, pressed && styles.pressed]}
       testID="paywall-close"
     >
-      <SymbolView
-        accessibilityElementsHidden
-        importantForAccessibility="no"
-        name={'xmark' as SFSymbol}
-        size={18}
-        tintColor={colors.text}
-      />
+      <View style={styles.closeCircle} testID="paywall-close-circle">
+        <SymbolView
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          name={'xmark' as SFSymbol}
+          size={18}
+          tintColor={colors.text}
+        />
+      </View>
     </Pressable>
   );
 }
@@ -237,10 +240,17 @@ const styles = createThemedStyleSheet({
   stack: { gap: spacing.lg },
   closeControl: {
     alignItems: 'center',
-    borderRadius: touchTarget / 2,
     height: touchTarget,
     justifyContent: 'center',
     width: touchTarget,
+  },
+  closeCircle: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: closeCircleSize / 2,
+    height: closeCircleSize,
+    justifyContent: 'center',
+    width: closeCircleSize,
   },
   lightPrimary: {
     backgroundColor: colors.authPrimaryBackground,

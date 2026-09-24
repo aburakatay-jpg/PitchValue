@@ -12,6 +12,13 @@ export default function PaywallScreen() {
           headerRight: () => (
             <PaywallHeaderClose onClose={() => router.back()} />
           ),
+          unstable_headerRightItems: () => [
+            {
+              type: 'custom',
+              element: <PaywallHeaderClose onClose={() => router.back()} />,
+              hidesSharedBackground: true,
+            },
+          ],
         }}
       />
       <Screen safeAreaEdges={stackScreenEdges}>
