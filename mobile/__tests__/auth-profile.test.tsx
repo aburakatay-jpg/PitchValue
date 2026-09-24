@@ -230,6 +230,22 @@ describe('Profile foundation', () => {
 
     await fireEvent.press(row);
     expect(view.getByTestId('language-selector-modal')).toBeTruthy();
+    const backdrop = view.getByTestId('language-selector-backdrop-motion');
+    const sheet = view.getByTestId('language-selector-sheet-motion');
+    expect(backdrop.parent).toBe(view.getByTestId('language-selector-modal'));
+    expect(sheet.parent).toBe(view.getByTestId('language-selector-modal'));
+    expect(StyleSheet.flatten(backdrop.props.style)).toMatchObject({
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    });
+    expect(StyleSheet.flatten(backdrop.props.style).transform).toBeUndefined();
+    expect(StyleSheet.flatten(sheet.props.style).transform).toBeDefined();
+    expect(
+      view.getByTestId('language-selector-backdrop').props.accessible,
+    ).toBe(false);
     expect(
       view.getByTestId('language-option-en').props.accessibilityLabel,
     ).toBe('English');
@@ -261,7 +277,9 @@ describe('Profile foundation', () => {
     await view.findByTestId('profile-language-row');
     await fireEvent.press(view.getByTestId('profile-language-row'));
     await fireEvent.press(view.getByTestId('language-option-tr'));
-    expect(view.queryByTestId('language-selector-modal')).toBeNull();
+    await waitFor(() =>
+      expect(view.queryByTestId('language-selector-modal')).toBeNull(),
+    );
     expect(
       view.getByTestId('profile-language-row').props.accessibilityLabel,
     ).toBe('Dil: Türkçe');
@@ -275,7 +293,9 @@ describe('Profile foundation', () => {
       view.getByTestId('language-option-tr').props.accessibilityState,
     ).toMatchObject({ checked: true });
     await fireEvent.press(view.getByTestId('language-option-en'));
-    expect(view.queryByTestId('language-selector-modal')).toBeNull();
+    await waitFor(() =>
+      expect(view.queryByTestId('language-selector-modal')).toBeNull(),
+    );
     expect(
       view.getByTestId('profile-language-row').props.accessibilityLabel,
     ).toBe('Language: English');
@@ -302,7 +322,26 @@ describe('Profile foundation', () => {
       view.getByTestId('language-selector-close').props.accessibilityLabel,
     ).toBe('Dil seçiciyi kapat');
     await fireEvent.press(view.getByTestId('language-selector-close'));
-    expect(view.queryByTestId('language-selector-modal')).toBeNull();
+    await waitFor(() =>
+      expect(view.queryByTestId('language-selector-modal')).toBeNull(),
+    );
+  });
+
+  it('closes on a backdrop tap without changing the selected language', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByTestId('profile-language-row');
+    await fireEvent.press(view.getByTestId('profile-language-row'));
+    await fireEvent.press(view.getByTestId('language-selector-backdrop'));
+    await waitFor(() =>
+      expect(view.queryByTestId('language-selector-modal')).toBeNull(),
+    );
+    expect(view.getByTestId('profile-language-value').props.children).toBe(
+      'English',
+    );
   });
 
   it('renders all canonical groups and a truthful Guest state', async () => {

@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
+  type LayoutChangeEvent,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
@@ -31,9 +35,71 @@ const languageOptions: readonly { value: Language; name: string }[] = [
 export function LanguageSelector() {
   const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const { height: windowHeight } = useWindowDimensions();
+  const [backdropOpacity] = useState(() => new Animated.Value(0));
+  const [sheetOffset] = useState(() => new Animated.Value(windowHeight));
+  const sheetHeight = useRef(0);
+  const opening = useRef(false);
+  const closing = useRef(false);
   const selectedName =
     languageOptions.find((option) => option.value === language)?.name ?? '';
   const closeLabel = t('Close language selector');
+
+  useEffect(
+    () => () => {
+      backdropOpacity.stopAnimation();
+      sheetOffset.stopAnimation();
+    },
+    [backdropOpacity, sheetOffset],
+  );
+
+  const openSelector = () => {
+    backdropOpacity.setValue(0);
+    sheetOffset.setValue(windowHeight);
+    opening.current = true;
+    closing.current = false;
+    setOpen(true);
+    Animated.timing(backdropOpacity, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onSheetLayout = (event: LayoutChangeEvent) => {
+    sheetHeight.current = event.nativeEvent.layout.height;
+    if (!opening.current || sheetHeight.current <= 0) return;
+    opening.current = false;
+    sheetOffset.setValue(sheetHeight.current);
+    Animated.timing(sheetOffset, {
+      toValue: 0,
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeSelector = () => {
+    if (closing.current || !open) return;
+    closing.current = true;
+    opening.current = false;
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetOffset, {
+        toValue: sheetHeight.current || windowHeight,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) setOpen(false);
+      closing.current = false;
+    });
+  };
 
   return (
     <>
@@ -41,7 +107,7 @@ export function LanguageSelector() {
         accessibilityLabel={`${t('Language')}: ${selectedName}`}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        onPress={() => setOpen(true)}
+        onPress={openSelector}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}
         testID="profile-language-row"
       >
@@ -60,72 +126,88 @@ export function LanguageSelector() {
       </Pressable>
 
       <Modal
-        animationType="slide"
-        onRequestClose={() => setOpen(false)}
+        animationType="none"
+        onRequestClose={closeSelector}
         transparent
         visible={open}
       >
         <View style={styles.modalRoot} testID="language-selector-modal">
-          <Pressable
-            accessibilityLabel={closeLabel}
-            accessibilityRole="button"
-            onPress={() => setOpen(false)}
-            style={styles.backdrop}
-          />
-          <SafeAreaView edges={['bottom']} style={styles.sheet}>
-            <View style={styles.sheetHeader}>
-              <Text accessibilityRole="header" style={styles.sheetTitle}>
-                {t('Language')}
-              </Text>
-              <Pressable
-                accessibilityLabel={closeLabel}
-                accessibilityRole="button"
-                onPress={() => setOpen(false)}
-                style={styles.closeButton}
-                testID="language-selector-close"
-              >
-                <SymbolView
-                  accessibilityElementsHidden
-                  name={'xmark' as SFSymbol}
-                  size={18}
-                  tintColor={colors.text}
-                />
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.options}>
-              {languageOptions.map((option) => {
-                const selected = language === option.value;
-                return (
-                  <Pressable
-                    accessibilityLabel={option.name}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected }}
-                    key={option.value}
-                    onPress={() => {
-                      setLanguage(option.value);
-                      setOpen(false);
-                    }}
-                    style={({ pressed }) => [
-                      styles.option,
-                      pressed && styles.pressed,
-                    ]}
-                    testID={`language-option-${option.value}`}
-                  >
-                    <Text style={styles.optionText}>{option.name}</Text>
-                    {selected ? (
-                      <SymbolView
-                        accessibilityElementsHidden
-                        name={'checkmark' as SFSymbol}
-                        size={18}
-                        tintColor={colors.interactiveTextAccent}
-                        testID={`language-selected-${option.value}`}
-                      />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </SafeAreaView>
+          <Animated.View
+            pointerEvents="box-none"
+            style={[styles.backdrop, { opacity: backdropOpacity }]}
+            testID="language-selector-backdrop-motion"
+          >
+            <Pressable
+              accessible={false}
+              focusable={false}
+              onPress={closeSelector}
+              style={styles.backdropHitArea}
+              testID="language-selector-backdrop"
+            />
+          </Animated.View>
+          <Animated.View
+            onLayout={onSheetLayout}
+            style={[
+              styles.sheetMotion,
+              { transform: [{ translateY: sheetOffset }] },
+            ]}
+            testID="language-selector-sheet-motion"
+          >
+            <SafeAreaView edges={['bottom']} style={styles.sheet}>
+              <View style={styles.sheetHeader}>
+                <Text accessibilityRole="header" style={styles.sheetTitle}>
+                  {t('Language')}
+                </Text>
+                <Pressable
+                  accessibilityLabel={closeLabel}
+                  accessibilityRole="button"
+                  onPress={closeSelector}
+                  style={styles.closeButton}
+                  testID="language-selector-close"
+                >
+                  <SymbolView
+                    accessibilityElementsHidden
+                    name={'xmark' as SFSymbol}
+                    size={18}
+                    tintColor={colors.text}
+                  />
+                </Pressable>
+              </View>
+              <ScrollView contentContainerStyle={styles.options}>
+                {languageOptions.map((option) => {
+                  const selected = language === option.value;
+                  return (
+                    <Pressable
+                      accessibilityLabel={option.name}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: selected }}
+                      key={option.value}
+                      onPress={() => {
+                        setLanguage(option.value);
+                        closeSelector();
+                      }}
+                      style={({ pressed }) => [
+                        styles.option,
+                        pressed && styles.pressed,
+                      ]}
+                      testID={`language-option-${option.value}`}
+                    >
+                      <Text style={styles.optionText}>{option.name}</Text>
+                      {selected ? (
+                        <SymbolView
+                          accessibilityElementsHidden
+                          name={'checkmark' as SFSymbol}
+                          size={18}
+                          tintColor={colors.interactiveTextAccent}
+                          testID={`language-selected-${option.value}`}
+                        />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </SafeAreaView>
+          </Animated.View>
         </View>
       </Modal>
     </>
@@ -168,11 +250,12 @@ const styles = createThemedStyleSheet({
     right: 0,
     top: 0,
   },
+  backdropHitArea: { flex: 1 },
+  sheetMotion: { maxHeight: '78%' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
-    maxHeight: '78%',
     paddingTop: spacing.md,
   },
   sheetHeader: {
