@@ -7,8 +7,9 @@ import {
 } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { View } from 'react-native';
 
+import { BrandedLaunchSplash } from '@/components/BrandedLaunchSplash';
 import { CommerceProvider } from '@/features/entitlement/CommerceContext';
 import { EntitlementProvider } from '@/features/entitlement/EntitlementContext';
 import {
@@ -64,11 +65,6 @@ function RootNavigation() {
       border: themeColors.border,
     },
   };
-  useEffect(() => {
-    void SplashScreen.hideAsync().catch(() => {
-      // A development host may already have dismissed the native splash.
-    });
-  }, []);
   return (
     <ThemeProvider value={navigationTheme}>
       <EntitlementProvider
@@ -76,43 +72,51 @@ function RootNavigation() {
         openPaywall={() => router.push('/paywall')}
       >
         <CommerceProvider>
-          <StatusBar style={resolvedAppearance === 'dark' ? 'light' : 'dark'} />
-          <Stack screenOptions={nativeHeaderOptions}>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="(tabs)"
-              options={{ headerShown: false, title: '' }}
+          <View style={{ flex: 1 }}>
+            <StatusBar
+              style={resolvedAppearance === 'dark' ? 'light' : 'dark'}
             />
-            <Stack.Screen
-              name="profile"
-              options={{
-                ...nativeHeaderOptions,
-                title: t('Profile'),
-                headerBackTitle: '',
-              }}
-            />
-            <Stack.Screen
-              name="match/[id]"
-              options={{ ...nativeHeaderOptions, title: t('Match detail') }}
-            />
-            <Stack.Screen
-              name="auth/index"
-              options={{ ...nativeHeaderOptions, ...signInScreenOptions }}
-            />
-            <Stack.Screen
-              name="auth/email"
-              options={{ ...nativeHeaderOptions, ...registrationScreenOptions }}
-            />
-            <Stack.Screen
-              name="paywall"
-              options={{
-                ...nativeHeaderOptions,
-                presentation: 'modal',
-                headerBackVisible: false,
-                title: t('PitchValue Premium'),
-              }}
-            />
-          </Stack>
+            <Stack screenOptions={nativeHeaderOptions}>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="(tabs)"
+                options={{ headerShown: false, title: '' }}
+              />
+              <Stack.Screen
+                name="profile"
+                options={{
+                  ...nativeHeaderOptions,
+                  title: t('Profile'),
+                  headerBackTitle: '',
+                }}
+              />
+              <Stack.Screen
+                name="match/[id]"
+                options={{ ...nativeHeaderOptions, title: t('Match detail') }}
+              />
+              <Stack.Screen
+                name="auth/index"
+                options={{ ...nativeHeaderOptions, ...signInScreenOptions }}
+              />
+              <Stack.Screen
+                name="auth/email"
+                options={{
+                  ...nativeHeaderOptions,
+                  ...registrationScreenOptions,
+                }}
+              />
+              <Stack.Screen
+                name="paywall"
+                options={{
+                  ...nativeHeaderOptions,
+                  presentation: 'modal',
+                  headerBackVisible: false,
+                  title: t('PitchValue Premium'),
+                }}
+              />
+            </Stack>
+            <BrandedLaunchSplash ready />
+          </View>
         </CommerceProvider>
       </EntitlementProvider>
     </ThemeProvider>
