@@ -339,6 +339,11 @@ def persist_current_season_payloads(
             "current_season",
             {
                 "provider": PROVIDER_NAME,
+                "provider_fixture_count": str(len(payloads)),
+                "parsed_fixture_count": str(len(parsed)),
+                "canonical_fixture_count": str(len(match_ids)),
+                "malformed_fixture_count": str(malformed),
+                "quarantine_count": str(quarantines),
                 "persistence_version": PERSISTENCE_VERSION,
                 "mapping_review_version": TEAM_MAPPING_REVIEW_VERSION,
             },

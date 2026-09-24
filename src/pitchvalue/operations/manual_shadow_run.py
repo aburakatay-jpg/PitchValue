@@ -506,6 +506,13 @@ def _gate_reasons(
     canonical = fixture.competition.canonical_name
     if canonical is not None and canonical not in contexts:
         reasons.append("PREVIOUS_SEASON_CONTEXT_UNAVAILABLE")
+    if canonical is not None and canonical not in (
+        "Premier League",
+        "Ligue 1",
+        "Bundesliga",
+        "La Liga",
+    ):
+        reasons.append("UNAUTHORIZED_COMPETITION")
     return tuple(sorted(set(reasons)))
 
 
