@@ -237,9 +237,10 @@ const styles = createThemedStyleSheet({
   stack: { gap: spacing.lg },
   closeControl: {
     alignItems: 'center',
+    borderRadius: touchTarget / 2,
+    height: touchTarget,
     justifyContent: 'center',
-    minHeight: touchTarget,
-    minWidth: touchTarget,
+    width: touchTarget,
   },
   lightPrimary: {
     backgroundColor: colors.authPrimaryBackground,

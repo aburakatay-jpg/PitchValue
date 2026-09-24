@@ -15,7 +15,12 @@ import * as CommerceContext from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import * as SessionContext from '@/features/session/ProductSessionContext';
 import { defaultCommerceAdapter } from '@/lib/commerce';
-import { darkColors, lightColors, setActiveAppearance } from '@/theme/tokens';
+import {
+  darkColors,
+  lightColors,
+  setActiveAppearance,
+  touchTarget,
+} from '@/theme/tokens';
 
 jest.mock('@/features/entitlement/CommerceContext', () => ({
   useCommerce: jest.fn(),
@@ -372,6 +377,25 @@ describe('premium UI foundation', () => {
     await fireEvent.press(await view.findByLabelText('Close'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['light', 'dark'] as const)(
+    'keeps the native-header close control circular in %s mode',
+    async (scheme) => {
+      const view = await render(
+        <AppearanceProvider systemSchemeOverride={scheme}>
+          <PaywallHeaderClose onClose={jest.fn()} />
+        </AppearanceProvider>,
+      );
+      const close = await view.findByTestId('paywall-close');
+      const style = StyleSheet.flatten(close.props.style);
+      expect(style.width).toBe(touchTarget);
+      expect(style.height).toBe(touchTarget);
+      expect(style.borderRadius).toBe(touchTarget / 2);
+      expect(style.alignItems).toBe('center');
+      expect(style.justifyContent).toBe('center');
+      expect(close.props.accessibilityRole).toBe('button');
+    },
+  );
 
   it('places a single close action in the native Paywall header', () => {
     const route = PaywallScreen();
