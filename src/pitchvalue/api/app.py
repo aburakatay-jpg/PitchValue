@@ -15,6 +15,7 @@ from pitchvalue.api.logging import configure_logging
 from pitchvalue.api.middleware import RequestContextMiddleware
 from pitchvalue.api.routes.system import router as system_router
 from pitchvalue.api.routes.v1 import router as v1_router
+from pitchvalue.api.routes.web import router as web_router
 from pitchvalue.config import Settings, load_settings
 from pitchvalue.product_services.abuse import InMemoryAuthLimiter
 
@@ -62,5 +63,6 @@ def create_app(
     application.add_middleware(RequestContextMiddleware)
     install_error_handlers(application)
     application.include_router(system_router)
+    application.include_router(web_router)
     application.include_router(v1_router)
     return application
