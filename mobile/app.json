@@ -5,7 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/pitchvalue-app-icon.png",
-    "scheme": ["pitchvalue", "pitchvalue-dev"],
+    "scheme": [
+      "pitchvalue",
+      "pitchvalue-dev"
+    ],
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -35,7 +38,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-video"
+      "expo-video",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

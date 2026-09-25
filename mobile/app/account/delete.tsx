@@ -19,6 +19,7 @@ import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 import { initiateAccountDeletion } from '@/lib/product-api';
+import { acquireAppleRevocationCredential, acquireGoogleRevocationCredential } from '@/lib/provider-auth';
 import { colors, spacing, touchTarget, typography, createThemedStyleSheet } from '@/theme/tokens';
 import type { AccountDeletionResponse } from '@/types/product-services';
 import * as SecureStore from 'expo-secure-store';
@@ -76,6 +77,9 @@ export default function DeleteAccountScreen() {
     }
   };
 
+  const [authProof, setAuthProof] = useState<string | null>(null);
+  const [providerCred, setProviderCred] = useState<any>(null);
+
   const executeDeletion = async () => {
     if (step === 'PROCESSING') return;
     setStep('PROCESSING');
@@ -83,14 +87,18 @@ export default function DeleteAccountScreen() {
     try {
       if (!session.accessToken) throw new Error('No token');
       
+      const payloadProof = isGuest ? null : (authProof || password);
+      
       const response = await initiateAccountDeletion(
         session.accessToken,
-        isGuest ? null : password,
-        null,
+        payloadProof,
+        providerCred,
         new AbortController().signal
       );
       
-      setPassword(''); // Clear password immediately
+      setPassword(''); // Clear immediately
+      setAuthProof(null); // Clear immediately
+      setProviderCred(null); // Clear immediately
       setDeletionState(response.deletion_state);
 
       if (response.deletion_state === 'DELETED') {
@@ -112,6 +120,8 @@ export default function DeleteAccountScreen() {
       setStep('REAUTH');
       setError(e?.message || t('Deletion failed'));
       setPassword('');
+      setAuthProof(null);
+      setProviderCred(null);
     }
   };
 
@@ -175,8 +185,54 @@ export default function DeleteAccountScreen() {
           <View style={styles.card}>
             <Text style={styles.title}>{t('Security Confirmation')}</Text>
             <Text style={styles.bodyText}>
-              {t('Please enter your password to confirm this action.')}
+              {t('Please verify your identity to confirm this action.')}
             </Text>
+            
+            <Pressable
+              accessibilityRole="button"
+              onPress={async () => {
+                setError(null);
+                try {
+                  const result = await acquireAppleRevocationCredential();
+                  if (result && result.authProof) {
+                    setAuthProof(result.authProof);
+                    setProviderCred(result.revocationCredential);
+                    setStep('FINAL_CONFIRM');
+                  }
+                } catch (e: any) {
+                  if (e.message !== 'CANCELED') {
+                    setError(t('Apple verification failed.'));
+                  }
+                }
+              }}
+              style={[styles.button, { backgroundColor: '#000', marginBottom: 12 }]}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600' }}>{t('Verify with Apple')}</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={async () => {
+                setError(null);
+                try {
+                  const result = await acquireGoogleRevocationCredential();
+                  if (result && result.authProof) {
+                    setAuthProof(result.authProof);
+                    setProviderCred(result.revocationCredential);
+                    setStep('FINAL_CONFIRM');
+                  }
+                } catch (e: any) {
+                  if (e.message !== 'CANCELED') {
+                    setError(t('Google verification failed.'));
+                  }
+                }
+              }}
+              style={[styles.button, { backgroundColor: '#4285F4', marginBottom: 24 }]}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600' }}>{t('Verify with Google')}</Text>
+            </Pressable>
+
+            <Text style={styles.bodyText}>{t('Or enter your password:')}</Text>
             <TextInput
               style={styles.input}
               secureTextEntry
@@ -192,7 +248,7 @@ export default function DeleteAccountScreen() {
               onPress={onNextFromReauth}
               style={styles.button}
             >
-              <Text style={styles.buttonText}>{t('Verify')}</Text>
+              <Text style={styles.buttonText}>{t('Verify with Password')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
