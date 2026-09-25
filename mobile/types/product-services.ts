@@ -99,3 +99,9 @@ export type CouponExecution = Readonly<{
   requested_count: number;
   selections: readonly PublicAssistantContext[];
 }>;
+
+export type AccountDeletionResponse = Readonly<{
+  deletion_state: string;
+  has_active_store_subscription: boolean;
+  subscription_provider: string | null;
+}>;

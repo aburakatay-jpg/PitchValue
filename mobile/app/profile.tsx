@@ -246,6 +246,7 @@ export function ProfileView({
 }) {
   const guest = !authenticated;
   const { t } = useLanguage();
+  const router = useRouter();
   const { preference, setPreference } = useAppearance();
   const version = Constants.expoConfig?.version ?? t('Unavailable');
   const premiumOpensPaywall =
@@ -297,6 +298,16 @@ export function ProfileView({
           actionLabel={t('View Premium')}
           onPress={premiumOpensPaywall ? onOpenPremium : undefined}
         />
+        <View style={styles.accountDivider} />
+        <Pressable
+          accessibilityLabel={t('Delete Account')}
+          accessibilityRole="button"
+          onPress={() => router.push('/account/delete' as Href)}
+          style={({ pressed }) => [styles.deleteAccountRow, pressed && styles.pressed]}
+          testID="profile-delete-account"
+        >
+          <Text style={styles.deleteAccountText}>{t('Delete Account')}</Text>
+        </Pressable>
       </ProfileGroup>
 
       <ProfileGroup title={t('Preferences')}>
@@ -481,6 +492,16 @@ const styles = createThemedStyleSheet({
     flexDirection: 'row',
     flexShrink: 1,
     gap: spacing.xs,
+  },
+  deleteAccountRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touchTarget,
+  },
+  deleteAccountText: {
+    color: colors.negative,
+    ...typography.body,
+    fontWeight: '700',
   },
   signOutRow: {
     alignItems: 'center',

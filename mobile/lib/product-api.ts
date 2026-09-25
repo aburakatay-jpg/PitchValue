@@ -10,6 +10,7 @@ import type {
   SavedSelectionList,
   ServerEntitlement,
   TrackingPerformance,
+  AccountDeletionResponse,
 } from '@/types/product-services';
 
 export class ProductServiceError extends Error {
@@ -142,6 +143,27 @@ export function logoutProductSession(
     '/api/v1/auth/logout',
     { method: 'POST', token, signal },
     isVoid,
+  );
+}
+
+export function initiateAccountDeletion(
+  token: string,
+  password_or_token: string | null,
+  provider_credential: { type: string; value: string } | null,
+  signal: AbortSignal,
+): Promise<AccountDeletionResponse> {
+  return productRequest(
+    '/api/v1/auth/account-deletion',
+    { 
+      method: 'POST', 
+      token, 
+      body: { 
+        password_or_token: password_or_token ?? undefined,
+        provider_credential: provider_credential ?? undefined
+      }, 
+      signal 
+    },
+    isAccountDeletionResponse,
   );
 }
 
@@ -447,5 +469,16 @@ export function restorePurchases(
     '/api/v1/commerce/restore',
     { method: 'POST', token, body: evidence, signal },
     isEntitlement,
+  );
+}
+
+function isAccountDeletionResponse(value: unknown): value is AccountDeletionResponse {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'deletion_state' in value &&
+    typeof (value as any).deletion_state === 'string' &&
+    'has_active_store_subscription' in value &&
+    typeof (value as any).has_active_store_subscription === 'boolean'
   );
 }

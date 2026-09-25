@@ -104,7 +104,15 @@ export function MyBetsView({
   const [metrics, setMetrics] = useState<TrackingPerformance | null>(null);
   useEffect(() => {
     if (accessToken === undefined) return;
-    if (accessToken === null) return;
+    if (accessToken === null) {
+      // Must not call setRecords/setMetrics directly in useEffect body; wrap in an async/timeout or do nothing if cleanup handles it.
+      // But setting state asynchronously avoids the React warning.
+      setTimeout(() => {
+        setRecords([]);
+        setMetrics(null);
+      }, 0);
+      return;
+    }
     const controller = new AbortController();
     const load = async () => {
       setRemoteState('LOADING');

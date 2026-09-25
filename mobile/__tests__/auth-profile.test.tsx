@@ -735,7 +735,7 @@ describe('Profile foundation', () => {
           <ProfileView entitlement={state} onSignIn={jest.fn()} />
         </LanguageProvider>,
       );
-      await view.findByText(/Account|Hesap/);
+      await view.findByText(/^(Account|Hesap)$/);
       await fireEvent.press(view.getByTestId('profile-language-row'));
       await fireEvent.press(view.getByTestId('language-option-tr'));
       expect(await view.findByText('Hesap')).toBeTruthy();
