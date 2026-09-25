@@ -77,11 +77,25 @@ export async function acquireAppleRevocationCredential(): Promise<ProviderAuthRe
   }
 }
 
+let isGoogleConfigured = false;
+
+function ensureGoogleConfigured() {
+  if (!isGoogleConfigured) {
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      offlineAccess: true, // Needed for serverAuthCode
+    });
+    isGoogleConfigured = true;
+  }
+}
+
 /**
  * Acquires a revocation credential for Google.
  */
 export async function acquireGoogleRevocationCredential(): Promise<ProviderAuthResult | null> {
   try {
+    ensureGoogleConfigured();
     await GoogleSignin.hasPlayServices();
     const credential = await GoogleSignin.signIn();
     // We get accessToken differently in v16 or using getTokens()

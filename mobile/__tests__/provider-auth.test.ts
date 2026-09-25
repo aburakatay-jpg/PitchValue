@@ -18,6 +18,7 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
     hasPlayServices: jest.fn().mockResolvedValue(true),
     signIn: jest.fn(),
     getTokens: jest.fn(),
+    configure: jest.fn(),
   },
 }));
 
@@ -100,6 +101,33 @@ describe('Provider Revocation Credential Acquisition', () => {
       let cred: any = mapAppleRevocationCredential({ authorizationCode: 'temp' } as any);
       cred = null; // simulate GC
       expect(cred).toBeNull();
+    });
+
+    it('Google config reads from environment without hardcoding secrets', async () => {
+      const originalWeb = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      const originalIos = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = 'test-web-id';
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = 'test-ios-id';
+      
+      let acquireFunc: any;
+      jest.isolateModules(() => {
+        const { acquireGoogleRevocationCredential } = require('../lib/provider-auth');
+        acquireFunc = acquireGoogleRevocationCredential;
+      });
+
+      (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: {} });
+      (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({});
+      
+      await acquireFunc();
+      
+      expect(GoogleSignin.configure).toHaveBeenCalledWith({
+        webClientId: 'test-web-id',
+        iosClientId: 'test-ios-id',
+        offlineAccess: true,
+      });
+
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWeb;
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = originalIos;
     });
   });
 });
