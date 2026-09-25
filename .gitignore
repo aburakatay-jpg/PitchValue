@@ -21,3 +21,24 @@ data/raw/football_data_uk/*
 !data/raw/football_data_uk/.gitkeep
 data/manual/football_data_uk/*
 !data/manual/football_data_uk/.gitkeep
+backend/reports/
+secrets/
+# Local diagnostics
+check_*.py
+scratch/
+
+# Local recovery / migration evidence
+*.copy
+schema_dump.txt
+schema_json.txt
+missing_*.json
+
+# Local operational outputs
+backend/reports/
+
+# Local secrets
+secrets/
+.env
+
+# Supabase local link state
+supabase.temp/

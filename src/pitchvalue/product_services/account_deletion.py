@@ -162,16 +162,16 @@ def initiate_account_deletion(
                             "SET provider_revocation_status = 'CREDENTIAL_REQUIRED' "
                             "WHERE request_id = :request_id"
                         ),
-                        {"request_id": request_id}
+                        {"request_id": request_id},
                     )
                 else:
                     if provider_credential["type"] not in {
-                        "AUTHORIZATION_CODE", 
-                        "ACCESS_TOKEN", 
-                        "REFRESH_TOKEN"
+                        "AUTHORIZATION_CODE",
+                        "ACCESS_TOKEN",
+                        "REFRESH_TOKEN",
                     }:
                         raise DeletionError("Invalid provider revocation credential type")
-                    
+
                     connection.execute(
                         text(
                             "INSERT INTO provider_revocation_jobs "
