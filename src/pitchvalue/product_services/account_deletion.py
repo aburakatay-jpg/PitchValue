@@ -113,12 +113,13 @@ def initiate_account_deletion(
 
     # Create request
     if existing_request is None:
-        connection.execute(
+        request_id = connection.execute(
             text(
                 "INSERT INTO account_deletion_requests "
                 "(user_id, pseudonymous_subject_id, deletion_state, "
                 "provider_revocation_status, requested_at) "
-                "VALUES (:user_id, :subject_id, 'PROCESSING', :provider_status, :now)"
+                "VALUES (:user_id, :subject_id, 'PROCESSING', :provider_status, :now) "
+                "RETURNING request_id"
             ),
             {
                 "user_id": user.user_id,
@@ -126,19 +127,46 @@ def initiate_account_deletion(
                 "provider_status": provider_status,
                 "now": executed_at,
             },
-        )
+        ).scalar_one()
     else:
-        connection.execute(
+        request_id = connection.execute(
             text(
                 "UPDATE account_deletion_requests "
                 "SET deletion_state = 'PROCESSING', provider_revocation_status = :provider_status "
-                "WHERE pseudonymous_subject_id = :subject_id AND deletion_state != 'DELETED'"
+                "WHERE pseudonymous_subject_id = :subject_id AND deletion_state != 'DELETED' "
+                "RETURNING request_id"
             ),
             {
                 "subject_id": subject_id,
                 "provider_status": provider_status,
             },
-        )
+        ).scalar_one()
+
+    # Handoff Provider Revocation Material
+    if provider_status == "PENDING":
+        ext_identities = [i for i in identities if i["provider"] in {"APPLE", "GOOGLE"}]
+        if ext_identities:
+            ext_identity = ext_identities[0]
+            existing_job = connection.execute(
+                text("SELECT 1 FROM provider_revocation_jobs WHERE request_id = :request_id"),
+                {"request_id": request_id},
+            ).scalar_one_or_none()
+
+            if existing_job is None:
+                connection.execute(
+                    text(
+                        "INSERT INTO provider_revocation_jobs "
+                        "(request_id, provider, provider_subject, provider_token, created_at) "
+                        "VALUES (:request_id, :provider, :subject, :token, :now)"
+                    ),
+                    {
+                        "request_id": request_id,
+                        "provider": ext_identity["provider"],
+                        "subject": ext_identity["provider_subject"],
+                        "token": password_or_token or "",
+                        "now": executed_at,
+                    },
+                )
 
     # 3. Session Revocation and Cleanup
     # Nullify self-references first
