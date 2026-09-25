@@ -156,8 +156,10 @@ def initiate_account_deletion(
                 connection.execute(
                     text(
                         "INSERT INTO provider_revocation_jobs "
-                        "(request_id, provider, provider_subject, provider_token, created_at) "
-                        "VALUES (:request_id, :provider, :subject, :token, :now)"
+                        "(request_id, provider, provider_subject, credential_value, "
+                        "credential_type, created_at) "
+                        "VALUES (:request_id, :provider, :subject, :token, "
+                        "'AUTHORIZATION_CODE', :now)"
                     ),
                     {
                         "request_id": request_id,
