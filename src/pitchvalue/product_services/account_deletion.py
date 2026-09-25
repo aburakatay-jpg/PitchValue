@@ -24,6 +24,7 @@ def initiate_account_deletion(
     connection: Connection,
     user: ProductUser,
     password_or_token: str | None = None,
+    provider_credential: dict[str, str] | None = None,
     *,
     now: datetime | None = None,
 ) -> str:
@@ -153,22 +154,41 @@ def initiate_account_deletion(
             ).scalar_one_or_none()
 
             if existing_job is None:
-                connection.execute(
-                    text(
-                        "INSERT INTO provider_revocation_jobs "
-                        "(request_id, provider, provider_subject, credential_value, "
-                        "credential_type, created_at) "
-                        "VALUES (:request_id, :provider, :subject, :token, "
-                        "'AUTHORIZATION_CODE', :now)"
-                    ),
-                    {
-                        "request_id": request_id,
-                        "provider": ext_identity["provider"],
-                        "subject": ext_identity["provider_subject"],
-                        "token": password_or_token or "",
-                        "now": executed_at,
-                    },
-                )
+                if not provider_credential:
+                    provider_status = "CREDENTIAL_REQUIRED"
+                    connection.execute(
+                        text(
+                            "UPDATE account_deletion_requests "
+                            "SET provider_revocation_status = 'CREDENTIAL_REQUIRED' "
+                            "WHERE request_id = :request_id"
+                        ),
+                        {"request_id": request_id}
+                    )
+                else:
+                    if provider_credential["type"] not in {
+                        "AUTHORIZATION_CODE", 
+                        "ACCESS_TOKEN", 
+                        "REFRESH_TOKEN"
+                    }:
+                        raise DeletionError("Invalid provider revocation credential type")
+                    
+                    connection.execute(
+                        text(
+                            "INSERT INTO provider_revocation_jobs "
+                            "(request_id, provider, provider_subject, credential_value, "
+                            "credential_type, created_at) "
+                            "VALUES (:request_id, :provider, :subject, :token, "
+                            ":cred_type, :now)"
+                        ),
+                        {
+                            "request_id": request_id,
+                            "provider": ext_identity["provider"],
+                            "subject": ext_identity["provider_subject"],
+                            "token": provider_credential["value"],
+                            "cred_type": provider_credential["type"],
+                            "now": executed_at,
+                        },
+                    )
 
     # 3. Session Revocation and Cleanup
     # Nullify self-references first

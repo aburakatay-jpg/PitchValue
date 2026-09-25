@@ -256,7 +256,17 @@ def account_deletion(
     )
 
     try:
-        state = initiate_account_deletion(connection, user, request.password_or_token)
+        provider_cred_dict = (
+            {
+                "type": request.provider_credential.credential_type, 
+                "value": request.provider_credential.credential_value
+            }
+            if request.provider_credential
+            else None
+        )
+        state = initiate_account_deletion(
+            connection, user, request.password_or_token, provider_credential=provider_cred_dict
+        )
         return AccountDeletionResponse(deletion_state=state)
     except DeletionError as error:
         raise ApiError(401, ErrorCode.UNAUTHORIZED, str(error)) from error

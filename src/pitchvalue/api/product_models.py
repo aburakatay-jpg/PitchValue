@@ -190,8 +190,14 @@ class ServiceReadinessResponse(BaseModel):
     COUPON_BUILDER_READY: str
 
 
+class ProviderCredential(BaseModel):
+    credential_type: str = Field(min_length=1, max_length=100)
+    credential_value: str = Field(min_length=1, max_length=8192)
+
+
 class AccountDeletionRequest(BaseModel):
     password_or_token: str | None = Field(default=None, max_length=8192)
+    provider_credential: ProviderCredential | None = None
 
 
 class AccountDeletionResponse(BaseModel):
