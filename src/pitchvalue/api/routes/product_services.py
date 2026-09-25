@@ -16,6 +16,8 @@ from pitchvalue.api.dependencies import (
 )
 from pitchvalue.api.errors import ApiError, ErrorCode
 from pitchvalue.api.product_models import (
+    AccountDeletionRequest,
+    AccountDeletionResponse,
     AskRequest,
     AssistantResponse,
     CommerceCatalogResponse,
@@ -240,6 +242,24 @@ def session_logout(
     del user
     logout(connection, token)
     return Response(status_code=204)
+
+
+@router.post("/auth/account-deletion", response_model=AccountDeletionResponse)
+def account_deletion(
+    request: AccountDeletionRequest,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> AccountDeletionResponse:
+    from pitchvalue.product_services.account_deletion import (
+        DeletionError,
+        initiate_account_deletion,
+    )
+
+    try:
+        state = initiate_account_deletion(connection, user, request.password_or_token)
+        return AccountDeletionResponse(deletion_state=state)
+    except DeletionError as error:
+        raise ApiError(401, ErrorCode.UNAUTHORIZED, str(error)) from error
 
 
 @router.get("/me", response_model=UserResponse)

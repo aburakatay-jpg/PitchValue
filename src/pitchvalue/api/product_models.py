@@ -188,3 +188,12 @@ class ServiceReadinessResponse(BaseModel):
     MY_BETS_READY: str
     AI_CONTRACT_READY: str
     COUPON_BUILDER_READY: str
+
+
+class AccountDeletionRequest(BaseModel):
+    password_or_token: str | None = Field(default=None, max_length=8192)
+
+
+class AccountDeletionResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    deletion_state: str
