@@ -203,3 +203,5 @@ class AccountDeletionRequest(BaseModel):
 class AccountDeletionResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
     deletion_state: str
+    has_active_store_subscription: bool = False
+    subscription_provider: str | None = None

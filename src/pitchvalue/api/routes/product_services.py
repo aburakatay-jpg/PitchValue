@@ -258,16 +258,27 @@ def account_deletion(
     try:
         provider_cred_dict = (
             {
-                "type": request.provider_credential.credential_type, 
-                "value": request.provider_credential.credential_value
+                "type": request.provider_credential.credential_type,
+                "value": request.provider_credential.credential_value,
             }
             if request.provider_credential
             else None
         )
+
+        from pitchvalue.product_services.entitlements import EntitlementState, resolve_entitlement
+
+        ent = resolve_entitlement(connection, user.user_id)
+        has_sub = ent.state in {EntitlementState.PREMIUM_ACTIVE, EntitlementState.PREMIUM_TRIAL}
+        sub_provider = ent.source if ent.source != "NONE" else None
+
         state = initiate_account_deletion(
             connection, user, request.password_or_token, provider_credential=provider_cred_dict
         )
-        return AccountDeletionResponse(deletion_state=state)
+        return AccountDeletionResponse(
+            deletion_state=state,
+            has_active_store_subscription=has_sub,
+            subscription_provider=sub_provider,
+        )
     except DeletionError as error:
         raise ApiError(401, ErrorCode.UNAUTHORIZED, str(error)) from error
 
