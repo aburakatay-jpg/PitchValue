@@ -1,0 +1,23 @@
+name: Fixture Visibility Report
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install project
+        run: pip install .
+
+      - name: Generate fixture visibility report
+        run: python backend/generate_fixture_visibility_report.py
