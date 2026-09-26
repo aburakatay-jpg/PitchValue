@@ -194,7 +194,9 @@ export default function DeleteAccountScreen() {
                 setError(null);
                 try {
                   const result = await acquireAppleRevocationCredential();
-                  if (result && result.authProof) {
+                  if (result?.providerUnavailable) {
+                    setError(t('Apple verification is unavailable in this build.'));
+                  } else if (result && result.authProof) {
                     setAuthProof(result.authProof);
                     setProviderCred(result.revocationCredential);
                     setStep('FINAL_CONFIRM');
@@ -216,7 +218,9 @@ export default function DeleteAccountScreen() {
                 setError(null);
                 try {
                   const result = await acquireGoogleRevocationCredential();
-                  if (result && result.authProof) {
+                  if (result?.providerUnavailable) {
+                    setError(t('Google verification is unavailable in this build.'));
+                  } else if (result && result.authProof) {
                     setAuthProof(result.authProof);
                     setProviderCred(result.revocationCredential);
                     setStep('FINAL_CONFIRM');

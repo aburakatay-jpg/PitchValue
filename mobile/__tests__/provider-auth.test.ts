@@ -84,6 +84,8 @@ describe('Provider Revocation Credential Acquisition', () => {
       (GoogleSignin.signIn as jest.Mock).mockRejectedValueOnce({ code: 'SIGN_IN_CANCELLED' });
       await expect(acquireGoogleRevocationCredential()).rejects.toThrow('CANCELED');
     });
+
+
   });
 
   describe('SECURITY', () => {

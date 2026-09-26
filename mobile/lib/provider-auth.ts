@@ -1,5 +1,4 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export type ProviderCredential = {
   type: 'AUTHORIZATION_CODE' | 'ACCESS_TOKEN' | 'REFRESH_TOKEN';
@@ -49,6 +48,7 @@ export function mapGoogleRevocationCredential(
 export type ProviderAuthResult = {
   authProof: string | null;
   revocationCredential: ProviderCredential | null;
+  providerUnavailable?: boolean;
 };
 
 /**
@@ -58,7 +58,7 @@ export async function acquireAppleRevocationCredential(): Promise<ProviderAuthRe
   try {
     const isAvailable = await AppleAuthentication.isAvailableAsync();
     if (!isAvailable) {
-      return null;
+      return { authProof: null, revocationCredential: null, providerUnavailable: true };
     }
     const credential = await AppleAuthentication.signInAsync({
       requestedScopes: [
@@ -78,8 +78,20 @@ export async function acquireAppleRevocationCredential(): Promise<ProviderAuthRe
 }
 
 let isGoogleConfigured = false;
+let GoogleSigninModule: any = null;
 
-function ensureGoogleConfigured() {
+function getGoogleSigninModule() {
+  if (GoogleSigninModule) return GoogleSigninModule;
+  try {
+    const module = require('@react-native-google-signin/google-signin');
+    GoogleSigninModule = module.GoogleSignin;
+    return GoogleSigninModule;
+  } catch (e) {
+    return null;
+  }
+}
+
+function ensureGoogleConfigured(GoogleSignin: any) {
   if (!isGoogleConfigured) {
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -94,8 +106,12 @@ function ensureGoogleConfigured() {
  * Acquires a revocation credential for Google.
  */
 export async function acquireGoogleRevocationCredential(): Promise<ProviderAuthResult | null> {
+  const GoogleSignin = getGoogleSigninModule();
+  if (!GoogleSignin) {
+    return { authProof: null, revocationCredential: null, providerUnavailable: true };
+  }
   try {
-    ensureGoogleConfigured();
+    ensureGoogleConfigured(GoogleSignin);
     await GoogleSignin.hasPlayServices();
     const credential = await GoogleSignin.signIn();
     // We get accessToken differently in v16 or using getTokens()
