@@ -89,7 +89,10 @@ function ProfileGroup({
   return (
     <View style={styles.group}>
       <SectionHeader title={title} />
-      <View style={[sharedStyles.card, account && styles.accountCard]}>
+      <View
+        style={[sharedStyles.card, account && styles.accountCard]}
+        testID={account ? 'profile-account-card' : undefined}
+      >
         {children}
       </View>
     </View>
@@ -298,16 +301,6 @@ export function ProfileView({
           actionLabel={t('View Premium')}
           onPress={premiumOpensPaywall ? onOpenPremium : undefined}
         />
-        <View style={styles.accountDivider} />
-        <Pressable
-          accessibilityLabel={t('Delete Account')}
-          accessibilityRole="button"
-          onPress={() => router.push('/account/delete' as Href)}
-          style={({ pressed }) => [styles.deleteAccountRow, pressed && styles.pressed]}
-          testID="profile-delete-account"
-        >
-          <Text style={styles.deleteAccountText}>{t('Delete Account')}</Text>
-        </Pressable>
       </ProfileGroup>
 
       <ProfileGroup title={t('Preferences')}>
@@ -378,19 +371,35 @@ export function ProfileView({
         />
       </View>
 
-      {authenticated && onSignOut ? (
-        <Pressable
-          accessibilityLabel={t('Sign out')}
-          accessibilityRole="button"
-          onPress={onSignOut}
-          style={({ pressed }) => [
-            styles.signOutRow,
-            pressed && styles.pressed,
-          ]}
-          testID="profile-sign-out"
-        >
-          <Text style={styles.signOutText}>{t('Sign out')}</Text>
-        </Pressable>
+      {authenticated ? (
+        <View testID="profile-account-actions">
+          <Pressable
+            accessibilityLabel={t('Delete Account')}
+            accessibilityRole="button"
+            onPress={() => router.push('/account/delete' as Href)}
+            style={({ pressed }) => [
+              styles.deleteAccountRow,
+              pressed && styles.pressed,
+            ]}
+            testID="profile-delete-account"
+          >
+            <Text style={styles.deleteAccountText}>{t('Delete Account')}</Text>
+          </Pressable>
+          {onSignOut ? (
+            <Pressable
+              accessibilityLabel={t('Sign Out')}
+              accessibilityRole="button"
+              onPress={onSignOut}
+              style={({ pressed }) => [
+                styles.signOutRow,
+                pressed && styles.pressed,
+              ]}
+              testID="profile-sign-out"
+            >
+              <Text style={styles.signOutText}>{t('Sign Out')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
 
       <SafeAreaView

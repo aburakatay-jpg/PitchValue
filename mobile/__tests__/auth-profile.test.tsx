@@ -1,4 +1,9 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import { Linking, StyleSheet } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -624,7 +629,7 @@ describe('Profile foundation', () => {
     },
   );
 
-  it('shows authoritative identity in Account and Sign Out below contacts', async () => {
+  it('keeps identity and Premium alone in Account, then Delete Account above Sign Out below contacts', async () => {
     setActiveAppearance('dark');
     const onSignOut = jest.fn();
     const view = await render(
@@ -642,17 +647,29 @@ describe('Profile foundation', () => {
     expect(view.getByText('person@example.com')).toBeTruthy();
     expect(view.getByText('Active')).toBeTruthy();
     expect(view.queryByText('Subscription')).toBeNull();
+    const accountCard = view.getByTestId('profile-account-card');
+    expect(within(accountCard).queryByText('Delete Account')).toBeNull();
+    expect(within(accountCard).queryByText('Sign Out')).toBeNull();
     const tree = JSON.stringify(view.toJSON());
-    expect(tree.indexOf('profile-sign-out')).toBeGreaterThan(
+    expect(tree.indexOf('profile-delete-account')).toBeGreaterThan(
       tree.indexOf('profile-x-link'),
+    );
+    expect(tree.indexOf('profile-delete-account')).toBeLessThan(
+      tree.indexOf('profile-sign-out'),
     );
     expect(tree.indexOf('profile-sign-out')).toBeLessThan(
       tree.indexOf('profile-footer'),
     );
+    expect(view.getAllByTestId('profile-delete-account')).toHaveLength(1);
+    expect(view.getAllByTestId('profile-sign-out')).toHaveLength(1);
+    expect(view.getByTestId('profile-delete-account')).toHaveProp(
+      'accessibilityLabel',
+      'Delete Account',
+    );
     expect(
       view.getByTestId('profile-account-identity').props.accessibilityLabel,
     ).toBe('person@example.com');
-    const signOutText = view.getByText('Sign out');
+    const signOutText = view.getByText('Sign Out');
     expect(StyleSheet.flatten(signOutText.props.style).color).toBe(
       darkColors.negative,
     );
@@ -674,8 +691,45 @@ describe('Profile foundation', () => {
       </LanguageProvider>,
     );
     expect(
-      StyleSheet.flatten(view.getByText('Sign out').props.style).color,
+      StyleSheet.flatten(view.getByText('Sign Out').props.style).color,
     ).toBe(lightColors.negative);
+  });
+
+  it('hides both lower account actions and their container for Guest', async () => {
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView entitlement="GUEST" onSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+    await view.findByText('Account');
+    expect(view.queryByTestId('profile-delete-account')).toBeNull();
+    expect(view.queryByTestId('profile-sign-out')).toBeNull();
+    expect(view.queryByTestId('profile-account-actions')).toBeNull();
+    expect(
+      within(view.getByTestId('profile-account-card')).getByText('Sign In'),
+    ).toBeTruthy();
+  });
+
+  it('localizes both lower account actions in Turkish', async () => {
+    await AsyncStorage.setItem('pitchvalue_language', 'tr');
+    const view = await render(
+      <LanguageProvider>
+        <ProfileView
+          authenticated
+          entitlement="PREMIUM_INACTIVE"
+          email="person@example.com"
+          onSignIn={jest.fn()}
+          onSignOut={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    expect(await view.findByText('Hesabı Sil')).toBeTruthy();
+    expect(view.getByText('Hesaptan Çık')).toBeTruthy();
+    expect(view.queryByText('Delete Account')).toBeNull();
+    expect(view.getByTestId('profile-delete-account')).toHaveProp(
+      'accessibilityLabel',
+      'Hesabı Sil',
+    );
   });
 
   it('keeps authenticated identity separate from a non-Premium entitlement', async () => {

@@ -1,27 +1,31 @@
-import { useRouter, type Href } from 'expo-router';
-import { useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
-  Alert,
   Linking,
   Pressable,
-  ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
   Platform,
 } from 'react-native';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen, sharedStyles, stackScreenEdges } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
 import { initiateAccountDeletion } from '@/lib/product-api';
-import { acquireAppleRevocationCredential, acquireGoogleRevocationCredential } from '@/lib/provider-auth';
-import { colors, spacing, touchTarget, typography, createThemedStyleSheet } from '@/theme/tokens';
-import type { AccountDeletionResponse } from '@/types/product-services';
+import {
+  acquireAppleRevocationCredential,
+  acquireGoogleRevocationCredential,
+} from '@/lib/provider-auth';
+import {
+  colors,
+  radii,
+  spacing,
+  touchTarget,
+  typography,
+  createThemedStyleSheet,
+} from '@/theme/tokens';
 import * as SecureStore from 'expo-secure-store';
 
 export default function DeleteAccountScreen() {
@@ -29,9 +33,14 @@ export default function DeleteAccountScreen() {
   const { t } = useLanguage();
   const session = useProductSession();
   const entitlement = useEntitlement();
-  
+
   const [step, setStep] = useState<
-    'CONSEQUENCES' | 'WARNING' | 'REAUTH' | 'FINAL_CONFIRM' | 'PROCESSING' | 'COMPLETED'
+    | 'CONSEQUENCES'
+    | 'WARNING'
+    | 'REAUTH'
+    | 'FINAL_CONFIRM'
+    | 'PROCESSING'
+    | 'COMPLETED'
   >('CONSEQUENCES');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +48,9 @@ export default function DeleteAccountScreen() {
 
   const isGuest = session.state === 'GUEST';
 
-  const hasSubscription = 
-    entitlement.state === 'PREMIUM_ACTIVE' || entitlement.state === 'PREMIUM_TRIAL';
+  const hasSubscription =
+    entitlement.state === 'PREMIUM_ACTIVE' ||
+    entitlement.state === 'PREMIUM_TRIAL';
 
   const onNextFromConsequences = () => {
     if (hasSubscription) {
@@ -86,16 +96,16 @@ export default function DeleteAccountScreen() {
     setError(null);
     try {
       if (!session.accessToken) throw new Error('No token');
-      
-      const payloadProof = isGuest ? null : (authProof || password);
-      
+
+      const payloadProof = isGuest ? null : authProof || password;
+
       const response = await initiateAccountDeletion(
         session.accessToken,
         payloadProof,
         providerCred,
-        new AbortController().signal
+        new AbortController().signal,
       );
-      
+
       setPassword(''); // Clear immediately
       setAuthProof(null); // Clear immediately
       setProviderCred(null); // Clear immediately
@@ -112,13 +122,16 @@ export default function DeleteAccountScreen() {
         await SecureStore.deleteItemAsync('pitchvalue.product.refresh.v1');
         await session.signOut();
         setStep('COMPLETED');
-      } else if (response.deletion_state === 'FAILED_RETRYABLE' || response.deletion_state === 'CREDENTIAL_REQUIRED') {
+      } else if (
+        response.deletion_state === 'FAILED_RETRYABLE' ||
+        response.deletion_state === 'CREDENTIAL_REQUIRED'
+      ) {
         setStep('REAUTH');
         setError(t('Additional authorization required or temporary failure.'));
       }
-    } catch (e: any) {
+    } catch {
       setStep('REAUTH');
-      setError(e?.message || t('Deletion failed'));
+      setError(t('Deletion failed'));
       setPassword('');
       setAuthProof(null);
       setProviderCred(null);
@@ -126,13 +139,17 @@ export default function DeleteAccountScreen() {
   };
 
   return (
-    <Screen safeAreaEdges={stackScreenEdges}>
-      <ScrollView contentContainerStyle={styles.container}>
+    <Screen keyboardAware safeAreaEdges={stackScreenEdges}>
+      <View style={styles.container}>
         {step === 'CONSEQUENCES' && (
           <View style={styles.card}>
-            <Text style={styles.title}>{t('Delete Account')}</Text>
+            <Text accessibilityRole="header" style={styles.title}>
+              {t('Delete Account')}
+            </Text>
             <Text style={styles.bodyText}>
-              {t('Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.')}
+              {t(
+                'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.',
+              )}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -153,16 +170,22 @@ export default function DeleteAccountScreen() {
 
         {step === 'WARNING' && (
           <View style={styles.card}>
-            <Text style={styles.title}>{t('Active Subscription')}</Text>
+            <Text accessibilityRole="header" style={styles.title}>
+              {t('Active Subscription')}
+            </Text>
             <Text style={styles.bodyText}>
-              {t('Deleting your PitchValue account does not automatically cancel your App Store or Google Play subscription. You must manage your billing separately.')}
+              {t(
+                'Deleting your PitchValue account does not automatically cancel your App Store or Google Play subscription. You must manage your billing separately.',
+              )}
             </Text>
             <Pressable
               accessibilityRole="button"
               onPress={openSubscriptionManagement}
               style={styles.buttonSecondary}
             >
-              <Text style={styles.buttonSecondaryText}>{t('Manage Subscription')}</Text>
+              <Text style={styles.buttonSecondaryText}>
+                {t('Manage Subscription')}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -183,11 +206,13 @@ export default function DeleteAccountScreen() {
 
         {step === 'REAUTH' && (
           <View style={styles.card}>
-            <Text style={styles.title}>{t('Security Confirmation')}</Text>
+            <Text accessibilityRole="header" style={styles.title}>
+              {t('Security Confirmation')}
+            </Text>
             <Text style={styles.bodyText}>
               {t('Please verify your identity to confirm this action.')}
             </Text>
-            
+
             <Pressable
               accessibilityRole="button"
               onPress={async () => {
@@ -195,7 +220,9 @@ export default function DeleteAccountScreen() {
                 try {
                   const result = await acquireAppleRevocationCredential();
                   if (result?.providerUnavailable) {
-                    setError(t('Apple verification is unavailable in this build.'));
+                    setError(
+                      t('Apple verification is unavailable in this build.'),
+                    );
                   } else if (result && result.authProof) {
                     setAuthProof(result.authProof);
                     setProviderCred(result.revocationCredential);
@@ -207,9 +234,11 @@ export default function DeleteAccountScreen() {
                   }
                 }
               }}
-              style={[styles.button, { backgroundColor: '#000', marginBottom: 12 }]}
+              style={[styles.button, styles.providerButton]}
             >
-              <Text style={{ color: '#fff', fontWeight: '600' }}>{t('Verify with Apple')}</Text>
+              <Text style={styles.providerButtonText}>
+                {t('Verify with Apple')}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -219,7 +248,9 @@ export default function DeleteAccountScreen() {
                 try {
                   const result = await acquireGoogleRevocationCredential();
                   if (result?.providerUnavailable) {
-                    setError(t('Google verification is unavailable in this build.'));
+                    setError(
+                      t('Google verification is unavailable in this build.'),
+                    );
                   } else if (result && result.authProof) {
                     setAuthProof(result.authProof);
                     setProviderCred(result.revocationCredential);
@@ -231,18 +262,22 @@ export default function DeleteAccountScreen() {
                   }
                 }
               }}
-              style={[styles.button, { backgroundColor: '#4285F4', marginBottom: 24 }]}
+              style={[styles.button, styles.providerButton]}
             >
-              <Text style={{ color: '#fff', fontWeight: '600' }}>{t('Verify with Google')}</Text>
+              <Text style={styles.providerButtonText}>
+                {t('Verify with Google')}
+              </Text>
             </Pressable>
 
             <Text style={styles.bodyText}>{t('Or enter your password:')}</Text>
             <TextInput
               style={styles.input}
+              accessibilityLabel={t('Password')}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
               placeholder={t('Password')}
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -266,14 +301,19 @@ export default function DeleteAccountScreen() {
 
         {step === 'FINAL_CONFIRM' && (
           <View style={styles.card}>
-            <Text style={styles.title}>{t('Final Confirmation')}</Text>
+            <Text accessibilityRole="header" style={styles.title}>
+              {t('Final Confirmation')}
+            </Text>
             <Text style={styles.bodyText}>
-              {t('Are you sure you want to permanently delete your account? This action cannot be undone.')}
+              {t(
+                'Are you sure you want to permanently delete your account? This action cannot be undone.',
+              )}
             </Text>
             <Pressable
               accessibilityRole="button"
               onPress={executeDeletion}
               style={[styles.button, styles.destructiveButton]}
+              testID="delete-account-confirm-action"
             >
               <Text style={styles.buttonText}>{t('Delete Account')}</Text>
             </Pressable>
@@ -289,18 +329,24 @@ export default function DeleteAccountScreen() {
 
         {step === 'PROCESSING' && (
           <View style={styles.card}>
-            <Text style={styles.title}>{t('Processing')}</Text>
+            <Text accessibilityRole="header" style={styles.title}>
+              {t('Processing')}
+            </Text>
             <Text style={styles.bodyText}>{t('Deleting your account...')}</Text>
           </View>
         )}
 
         {step === 'COMPLETED' && (
           <View style={styles.card}>
-            <Text style={styles.title}>{t('Account Deleted')}</Text>
+            <Text accessibilityRole="header" style={styles.title}>
+              {t('Account Deleted')}
+            </Text>
             <Text style={styles.bodyText}>
-              {deletionState === 'DELETED' 
+              {deletionState === 'DELETED'
                 ? t('Your account has been successfully deleted.')
-                : t('Your account deletion is processing. You have been securely signed out.')}
+                : t(
+                    'Your account deletion is processing. You have been securely signed out.',
+                  )}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -311,30 +357,28 @@ export default function DeleteAccountScreen() {
             </Pressable>
           </View>
         )}
-      </ScrollView>
+      </View>
     </Screen>
   );
 }
 
 const styles = createThemedStyleSheet({
   container: {
-    padding: spacing.md,
-    gap: spacing.md,
+    gap: spacing.lg,
+    paddingVertical: spacing.md,
   },
   card: {
     ...sharedStyles.card,
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: spacing.lg,
+    padding: spacing.lg,
   },
   title: {
-    ...typography.pageTitle,
+    ...typography.sectionTitle,
     color: colors.text,
-    textAlign: 'center',
   },
   bodyText: {
     ...typography.body,
     color: colors.textSecondary,
-    textAlign: 'center',
   },
   errorText: {
     ...typography.body,
@@ -345,7 +389,9 @@ const styles = createThemedStyleSheet({
     backgroundColor: colors.negative,
   },
   textButton: {
+    minHeight: touchTarget,
     padding: spacing.sm,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   textButtonText: {
@@ -353,21 +399,37 @@ const styles = createThemedStyleSheet({
     color: colors.interactiveTextAccent,
   },
   button: {
-    padding: spacing.md,
-    borderRadius: 8,
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     backgroundColor: colors.primary,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
     ...typography.body,
     fontWeight: '600',
+    color: colors.onBrand,
+  },
+  providerButton: {
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  providerButtonText: {
+    ...typography.body,
     color: colors.text,
+    fontWeight: '600',
   },
   buttonSecondary: {
-    padding: spacing.md,
-    borderRadius: 8,
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
     backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonSecondaryText: {
     ...typography.body,
@@ -377,8 +439,9 @@ const styles = createThemedStyleSheet({
   input: {
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
     padding: spacing.md,
-    borderRadius: 8,
+    borderRadius: radii.md,
     ...typography.body,
     color: colors.text,
   },

@@ -33,6 +33,44 @@ const en: Translations = {
   'Sign in': 'Sign in',
   'Sign In': 'Sign In',
   'Sign out': 'Sign out',
+  'Sign Out': 'Sign Out',
+  'Delete Account': 'Delete Account',
+  'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.':
+    'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.',
+  Continue: 'Continue',
+  Cancel: 'Cancel',
+  'Active Subscription': 'Active Subscription',
+  'Deleting your PitchValue account does not automatically cancel your App Store or Google Play subscription. You must manage your billing separately.':
+    'Deleting your PitchValue account does not automatically cancel your App Store or Google Play subscription. You must manage your billing separately.',
+  'Manage Subscription': 'Manage Subscription',
+  'Security Confirmation': 'Security Confirmation',
+  'Please verify your identity to confirm this action.':
+    'Please verify your identity to confirm this action.',
+  'Verify with Apple': 'Verify with Apple',
+  'Verify with Google': 'Verify with Google',
+  'Apple verification is unavailable in this build.':
+    'Apple verification is unavailable in this build.',
+  'Apple verification failed.': 'Apple verification failed.',
+  'Google verification is unavailable in this build.':
+    'Google verification is unavailable in this build.',
+  'Google verification failed.': 'Google verification failed.',
+  'Or enter your password:': 'Or enter your password:',
+  'Password is required': 'Password is required',
+  'Verify with Password': 'Verify with Password',
+  'Final Confirmation': 'Final Confirmation',
+  'Are you sure you want to permanently delete your account? This action cannot be undone.':
+    'Are you sure you want to permanently delete your account? This action cannot be undone.',
+  Processing: 'Processing',
+  'Deleting your account...': 'Deleting your account...',
+  'Account Deleted': 'Account Deleted',
+  'Your account has been successfully deleted.':
+    'Your account has been successfully deleted.',
+  'Your account deletion is processing. You have been securely signed out.':
+    'Your account deletion is processing. You have been securely signed out.',
+  'Return Home': 'Return Home',
+  'Additional authorization required or temporary failure.':
+    'Additional authorization required or temporary failure.',
+  'Deletion failed': 'Deletion failed',
   'Signed in': 'Signed in',
   'Welcome back': 'Welcome back',
   Email: 'Email',
@@ -346,6 +384,43 @@ const tr: Translations = {
   'Sign in': 'Giriş yap',
   'Sign In': 'Giriş Yap',
   'Sign out': 'Çıkış yap',
+  'Sign Out': 'Hesaptan Çık',
+  'Delete Account': 'Hesabı Sil',
+  'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.':
+    'Hesabınızı silmek kalıcıdır. Profiliniz, tercihleriniz, Bahislerim ve bu cihazdaki tüm kayıtlı seçimler kaldırılır.',
+  Continue: 'Devam Et',
+  Cancel: 'İptal',
+  'Active Subscription': 'Aktif Abonelik',
+  'Deleting your PitchValue account does not automatically cancel your App Store or Google Play subscription. You must manage your billing separately.':
+    'PitchValue hesabınızı silmek App Store veya Google Play aboneliğinizi otomatik olarak iptal etmez. Ödemelerinizi ayrıca yönetmeniz gerekir.',
+  'Manage Subscription': 'Aboneliği Yönet',
+  'Security Confirmation': 'Güvenlik Doğrulaması',
+  'Please verify your identity to confirm this action.':
+    'Bu işlemi onaylamak için kimliğinizi doğrulayın.',
+  'Verify with Apple': 'Apple ile Doğrula',
+  'Verify with Google': 'Google ile Doğrula',
+  'Apple verification is unavailable in this build.':
+    'Apple doğrulaması bu sürümde kullanılamıyor.',
+  'Apple verification failed.': 'Apple doğrulaması başarısız oldu.',
+  'Google verification is unavailable in this build.':
+    'Google doğrulaması bu sürümde kullanılamıyor.',
+  'Google verification failed.': 'Google doğrulaması başarısız oldu.',
+  'Or enter your password:': 'Veya şifrenizi girin:',
+  'Password is required': 'Şifre gerekli',
+  'Verify with Password': 'Şifre ile Doğrula',
+  'Final Confirmation': 'Son Onay',
+  'Are you sure you want to permanently delete your account? This action cannot be undone.':
+    'Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+  Processing: 'İşleniyor',
+  'Deleting your account...': 'Hesabınız siliniyor...',
+  'Account Deleted': 'Hesap Silindi',
+  'Your account has been successfully deleted.': 'Hesabınız başarıyla silindi.',
+  'Your account deletion is processing. You have been securely signed out.':
+    'Hesabınızı silme işlemi sürüyor. Güvenli bir şekilde çıkış yaptınız.',
+  'Return Home': 'Ana Sayfaya Dön',
+  'Additional authorization required or temporary failure.':
+    'Ek doğrulama gerekiyor veya geçici bir hata oluştu.',
+  'Deletion failed': 'Hesap silinemedi',
   'Signed in': 'Giriş yapıldı',
   'Welcome back': 'Tekrar hoş geldiniz',
   Email: 'E-posta',
