@@ -46,7 +46,7 @@ async function request<T>(
   if (__DEV__) console.log(`[API] Fetching ${fullUrl}`);
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 30000);
     signal.addEventListener('abort', () => {
       clearTimeout(timeout);
       controller.abort();
