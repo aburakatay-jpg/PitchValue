@@ -9,7 +9,7 @@ from pitchvalue.config import Settings
 
 @pytest.fixture
 def client() -> TestClient:
-    app = create_app(Settings(_env_file=None, database_url="sqlite+pysqlite:///:memory:"))
+    app = create_app(Settings(database_url="sqlite+pysqlite:///:memory:"))
     return TestClient(app)
 
 

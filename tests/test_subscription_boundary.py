@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from pitchvalue.product_services.entitlements import Entitlement, EntitlementState
 
 
-@patch("pitchvalue.api.routes.product_services.initiate_account_deletion")
-@patch("pitchvalue.api.routes.product_services.resolve_entitlement")
+@patch("pitchvalue.product_services.account_deletion.initiate_account_deletion")
+@patch("pitchvalue.product_services.entitlements.resolve_entitlement")
 def test_subscription_boundary_active_apple(mock_resolve, mock_initiate):
     # Simulate an active Apple subscription
     mock_resolve.return_value = Entitlement(
@@ -32,8 +32,8 @@ def test_subscription_boundary_active_apple(mock_resolve, mock_initiate):
     assert response.subscription_provider == "APPLE"
 
 
-@patch("pitchvalue.api.routes.product_services.initiate_account_deletion")
-@patch("pitchvalue.api.routes.product_services.resolve_entitlement")
+@patch("pitchvalue.product_services.account_deletion.initiate_account_deletion")
+@patch("pitchvalue.product_services.entitlements.resolve_entitlement")
 def test_subscription_boundary_none(mock_resolve, mock_initiate):
     # Simulate no subscription
     mock_resolve.return_value = Entitlement(

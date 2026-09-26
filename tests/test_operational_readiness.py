@@ -429,4 +429,4 @@ def test_concurrent_reads_are_deterministic_and_do_not_mutate_state(
 
 
 def test_database_readiness_constant_is_the_committed_schema_head() -> None:
-    assert EXPECTED_ALEMBIC_REVISION == "3af5899142ab"
+    assert EXPECTED_ALEMBIC_REVISION == "4633ed520904"

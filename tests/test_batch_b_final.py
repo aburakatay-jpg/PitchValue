@@ -30,6 +30,12 @@ def engine() -> Engine:
 
 @pytest.fixture(autouse=True)
 def clean_db(engine: Engine) -> typing.Generator[None, None, None]:
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO competitions (competition_id, canonical_name, country_code, competition_type, gender) VALUES (1, 'Test', 'GBR', 'domestic_league', 'men') ON CONFLICT DO NOTHING"))
+        conn.execute(text("INSERT INTO seasons (season_id, competition_id, season_name, start_year, end_year, status) VALUES (1, 1, '2020', 2020, 2021, 'active') ON CONFLICT DO NOTHING"))
+        conn.execute(text("INSERT INTO teams (team_id, canonical_name, normalized_name) VALUES (1, 'T1', 't1'), (2, 'T2', 't2') ON CONFLICT DO NOTHING"))
+        conn.execute(text("INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (1, 1, 1, 1, 2, '2026-09-13 12:00:00', 'SCHEDULED') ON CONFLICT DO NOTHING"))
+        conn.execute(text("INSERT INTO providers (provider_id, name, provider_type, priority) VALUES (1, 'P1', 'odds', 1) ON CONFLICT DO NOTHING"))
     yield
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM shadow_analysis_snapshots"))
