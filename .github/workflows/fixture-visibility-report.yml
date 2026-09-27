@@ -3,9 +3,7 @@ name: Fixture Visibility Report
 on:
   workflow_dispatch:
   schedule:
-    - cron: "10 9 * * *"
-      timezone: "Europe/Istanbul"
-
+    - cron: "10 6 * * *"
 jobs:
   generate-report:
     runs-on: ubuntu-latest
