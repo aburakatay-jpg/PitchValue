@@ -17,7 +17,9 @@ jobs:
           python-version: "3.14"
 
       - name: Install project
-        run: pip install .
+        run: |
+          pip install .
+          pip install python-dotenv
 
       - name: Generate fixture visibility report
         env:
