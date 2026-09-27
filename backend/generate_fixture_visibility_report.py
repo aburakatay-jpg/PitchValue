@@ -863,6 +863,11 @@ Provider Not Fresh: {provider_not_fresh_count}
 Engine Required: NO
 Publication Required: NO
 """
+        
+        if drive_success:
+            telegram_summary += "\nGoogle Drive: ✅ SUCCESS\n"
+        else:
+            telegram_summary += f"\nGoogle Drive: ❌ FAILED\nReason: {drive_status}\n"
 
         telegram_delivered, telegram_status = (
             send_telegram_message(
