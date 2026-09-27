@@ -15,15 +15,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14"
+          
 
       - name: Install project and reporting dependencies
         run: |
           pip install .
           pip install python-dotenv google-auth google-auth-oauthlib google-api-python-client
 
+          
       - name: Generate fixture visibility report
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GOOGLE_DRIVE_ROOT_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_ROOT_FOLDER_ID }}
+        run: python backend/generate_fixture_visibility_report.py
+
+
+      - name: Generate fixture visibility report
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GOOGLE_DRIVE_ROOT_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_ROOT_FOLDER_ID }}
         run: python backend/generate_fixture_visibility_report.py
