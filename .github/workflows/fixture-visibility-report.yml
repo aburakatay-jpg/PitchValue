@@ -15,11 +15,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-
-      - name: Install project
+     
+      
+      - name: Install project and reporting dependencies
         run: |
           pip install .
-          pip install python-dotenv
+          pip install python-dotenv google-auth google-auth-oauthlib google-api-python-client
+     
 
       - name: Generate fixture visibility report
         env:
