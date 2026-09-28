@@ -16,6 +16,7 @@ import {
   SectionHeader,
   sharedStyles,
   stackScreenEdges,
+  Button,
 } from '@/components/ui';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useLanguage } from '@/features/language/LanguageContext';
@@ -258,6 +259,13 @@ export function ProfileView({
     entitlement === 'PREMIUM_EXPIRED';
   const showLegalPlaceholder = (destination: string) =>
     Alert.alert(destination, t('Final legal content is not yet available.'));
+  const confirmSignOut = () => {
+    if (!onSignOut) return;
+    Alert.alert(t('Are you sure you want to sign out?'), undefined, [
+      { text: t('Cancel Sign Out'), style: 'cancel' },
+      { text: t('Sign Out'), style: 'destructive', onPress: onSignOut },
+    ]);
+  };
 
   return (
     <Screen safeAreaEdges={stackScreenEdges}>
@@ -389,7 +397,7 @@ export function ProfileView({
             <Pressable
               accessibilityLabel={t('Sign Out')}
               accessibilityRole="button"
-              onPress={onSignOut}
+              onPress={confirmSignOut}
               style={({ pressed }) => [
                 styles.signOutRow,
                 pressed && styles.pressed,
@@ -422,6 +430,27 @@ export default function ProfileScreen() {
   const router = useRouter();
   const entitlement = useEntitlement();
   const session = useProductSession();
+  const { t } = useLanguage();
+
+  if (session.state === 'UNVERIFIED') {
+    return (
+      <Screen safeAreaEdges={stackScreenEdges}>
+        <SectionHeader title={t('Account')} />
+        <View style={[sharedStyles.card, { padding: spacing.md, gap: spacing.md }]}>
+          <Text style={{ color: colors.text, textAlign: 'center' }}>
+            {t('Please verify your email address to access your profile.')}
+          </Text>
+          <Button onPress={() => router.push('/auth/email' as Href)}>
+            {t('Verify Email')}
+          </Button>
+          <Button onPress={() => void session.signOut()} variant="secondary">
+            {t('Sign Out')}
+          </Button>
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <ProfileView
       entitlement={entitlement.state}

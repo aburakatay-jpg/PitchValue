@@ -13,6 +13,7 @@ class UserResponse(BaseModel):
     user_id: str
     account_kind: str
     email: str | None
+    email_verified: bool
 
 
 class SessionResponse(BaseModel):
@@ -54,6 +55,11 @@ class PasswordResetRequest(BaseModel):
 class PasswordResetConfirmRequest(BaseModel):
     token: str = Field(min_length=10, max_length=512)
     new_password: str = Field(min_length=8, max_length=1024)
+
+
+class EmailVerificationResendResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    delivery_state: str
 
 
 class EmailVerificationConfirmRequest(BaseModel):

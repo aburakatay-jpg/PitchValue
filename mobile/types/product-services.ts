@@ -2,6 +2,7 @@ export type ProductUser = Readonly<{
   user_id: string;
   account_kind: 'GUEST' | 'AUTHENTICATED';
   email: string | null;
+  email_verified: boolean;
 }>;
 
 export type ProductSession = Readonly<{

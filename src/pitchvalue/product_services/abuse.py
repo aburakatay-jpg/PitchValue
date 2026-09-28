@@ -15,6 +15,7 @@ class AuthAction(StrEnum):
     LOGIN = "LOGIN"
     REGISTER = "REGISTER"
     REFRESH = "REFRESH"
+    RESEND = "RESEND"
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ DEFAULT_POLICIES = {
     AuthAction.LOGIN: LimitPolicy(5, 300),
     AuthAction.REGISTER: LimitPolicy(10, 3600),
     AuthAction.REFRESH: LimitPolicy(10, 300),
+    AuthAction.RESEND: LimitPolicy(3, 300),
 }
 MAX_TRACKED_KEYS = 10_000
 

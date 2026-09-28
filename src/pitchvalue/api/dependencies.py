@@ -54,6 +54,14 @@ def get_current_user(
     return user
 
 
+def get_verified_user(
+    user: Annotated[ProductUser, Depends(get_current_user)],
+) -> ProductUser:
+    if not user.email_verified:
+        raise ApiError(403, ErrorCode.FORBIDDEN, "Email verification required")
+    return user
+
+
 def get_bearer_token(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
 ) -> str:

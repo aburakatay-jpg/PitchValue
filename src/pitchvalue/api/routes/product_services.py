@@ -13,6 +13,7 @@ from pitchvalue.api.dependencies import (
     get_connection,
     get_current_user,
     get_transaction,
+    get_verified_user,
 )
 from pitchvalue.api.errors import ApiError, ErrorCode
 from pitchvalue.api.product_models import (
@@ -28,6 +29,7 @@ from pitchvalue.api.product_models import (
     EmailRegistrationRequest,
     EmailRegistrationResponse,
     EmailVerificationConfirmRequest,
+    EmailVerificationResendResponse,
     EntitlementResponse,
     ExplainRequest,
     ExternalAuthRequest,
@@ -73,6 +75,7 @@ from pitchvalue.product_services.auth import (
     refresh_session,
     register_email,
     request_password_reset,
+    resend_email_verification,
 )
 from pitchvalue.product_services.entitlements import (
     CommerceVerificationRequest,
@@ -187,6 +190,21 @@ def email_verification_confirm(
     return Response(status_code=204)
 
 
+@router.post("/auth/email/verification/resend", response_model=EmailVerificationResendResponse)
+def email_verification_resend(
+    http_request: Request,
+    limiter: Annotated[InMemoryAuthLimiter, Depends(get_auth_limiter)],
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> EmailVerificationResendResponse:
+    _guard_auth(limiter, AuthAction.RESEND, _client(http_request), user.user_id)
+    try:
+        delivery_state = resend_email_verification(connection, user)
+        return EmailVerificationResendResponse(delivery_state=delivery_state)
+    except AuthError as error:
+        raise ApiError(400, ErrorCode.VALIDATION_ERROR, str(error)) from error
+
+
 @router.post("/auth/external/{provider}", response_model=SessionResponse)
 def external_login(
     provider: str,
@@ -290,7 +308,7 @@ def current_user(user: Annotated[ProductUser, Depends(get_current_user)]) -> Use
 
 @router.get("/me/entitlement", response_model=EntitlementResponse)
 def current_entitlement(
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> EntitlementResponse:
     return EntitlementResponse(**resolve_entitlement(connection, user.user_id).__dict__)
@@ -309,7 +327,7 @@ def commerce_catalog() -> CommerceCatalogResponse:
 @router.post("/commerce/verify", response_model=EntitlementResponse)
 def verify_purchase(
     request: CommerceVerificationRequestModel,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
 ) -> EntitlementResponse:
     del user
     try:
@@ -333,7 +351,7 @@ def verify_purchase(
 
 @router.post("/commerce/restore", response_model=EntitlementResponse)
 def restore_purchases(
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
 ) -> EntitlementResponse:
     del user
     raise ApiError(
@@ -345,7 +363,7 @@ def restore_purchases(
 
 @router.get("/me/bets", response_model=SavedSelectionListResponse)
 def my_bets(
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
     section: Annotated[str, Query(pattern="^(active|history)$")] = "active",
 ) -> SavedSelectionListResponse:
@@ -357,7 +375,7 @@ def my_bets(
 
 @router.get("/me/bets/performance", response_model=PerformanceResponse)
 def my_bets_performance(
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> PerformanceResponse:
     return PerformanceResponse(**performance(connection, user.user_id).__dict__)
@@ -366,7 +384,7 @@ def my_bets_performance(
 @router.get("/me/bets/{saved_selection_id}", response_model=SavedSelectionResponse)
 def my_bet(
     saved_selection_id: str,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> SavedSelectionResponse:
     try:
@@ -378,7 +396,7 @@ def my_bet(
 @router.post("/me/bets", response_model=SavedSelectionResponse, status_code=201)
 def save_bet(
     request: SaveSelectionRequest,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     read_connection: Annotated[Connection, Depends(get_connection)],
     write_connection: Annotated[Connection, Depends(get_transaction)],
 ) -> SavedSelectionResponse:
@@ -411,7 +429,7 @@ def save_bet(
 @router.delete("/me/bets/{saved_selection_id}", status_code=204)
 def remove_bet(
     saved_selection_id: str,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_transaction)],
 ) -> Response:
     if not remove_saved_selection(connection, user.user_id, saved_selection_id):
@@ -421,7 +439,7 @@ def remove_bet(
 
 @router.get("/ai/best-value", response_model=CouponResponse)
 def best_value(
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> CouponResponse:
     _require_premium(connection, user)
@@ -434,7 +452,7 @@ def best_value(
 @router.post("/ai/explain", response_model=AssistantResponse)
 def explain_pick(
     request: ExplainRequest,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> AssistantResponse:
     _require_premium(connection, user)
@@ -454,7 +472,7 @@ def explain_pick(
 @router.post("/ai/ask", response_model=AssistantResponse)
 def ask_pitchvalue(
     request: AskRequest,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> AssistantResponse:
     _require_premium(connection, user)
@@ -475,7 +493,7 @@ def ask_pitchvalue(
 @router.post("/coupon-builder", response_model=CouponResponse)
 def coupon_builder(
     request: CouponRequest,
-    user: Annotated[ProductUser, Depends(get_current_user)],
+    user: Annotated[ProductUser, Depends(get_verified_user)],
     connection: Annotated[Connection, Depends(get_connection)],
 ) -> CouponResponse:
     _require_premium(connection, user)
@@ -534,7 +552,10 @@ def _client(request: Request) -> str:
 
 def _user(user: ProductUser) -> UserResponse:
     return UserResponse(
-        user_id=user.user_id, account_kind=user.account_kind.value, email=user.email
+        user_id=user.user_id,
+        account_kind=user.account_kind.value,
+        email=user.email,
+        email_verified=user.email_verified,
     )
 
 

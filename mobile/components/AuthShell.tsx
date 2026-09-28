@@ -230,6 +230,8 @@ type CreateAccountProps = Readonly<{
   onSignIn: () => void;
   onOpenTerms?: (() => void) | undefined;
   onOpenPrivacy?: (() => void) | undefined;
+  unverifiedSession?: boolean;
+  onResend?: (() => Promise<{ deliveryState: string }>) | undefined;
 }>;
 
 export function CreateAccountShell({
@@ -238,6 +240,8 @@ export function CreateAccountShell({
   onSignIn,
   onOpenTerms,
   onOpenPrivacy,
+  unverifiedSession,
+  onResend,
 }: CreateAccountProps) {
   const { language, t } = useLanguage();
   const passwordInput = useRef<TextInput>(null);
@@ -296,11 +300,12 @@ export function CreateAccountShell({
     }
   };
 
-  if (deliveryState) {
+  if (deliveryState || unverifiedSession) {
     return (
       <VerificationShell
-        deliveryState={deliveryState}
+        deliveryState={deliveryState || 'VERIFICATION_EMAIL_SENT'}
         onVerify={onVerify}
+        onResend={onResend}
         token={verificationToken}
         setToken={setVerificationToken}
       />
@@ -452,11 +457,13 @@ export function CreateAccountShell({
 function VerificationShell({
   deliveryState,
   onVerify,
+  onResend,
   token,
   setToken,
 }: Readonly<{
   deliveryState: string;
   onVerify?: ((token: string) => Promise<void>) | undefined;
+  onResend?: (() => Promise<{ deliveryState: string }>) | undefined;
   token: string;
   setToken: (value: string) => void;
 }>) {
@@ -504,6 +511,25 @@ function VerificationShell({
               value={token}
             />
             {error ? <InlineError message={t(error)} /> : null}
+            <Button
+              disabled={submitting || !onResend}
+              onPress={async () => {
+                if (!onResend) return;
+                setSubmitting(true);
+                setError(null);
+                try {
+                  await onResend();
+                } catch {
+                  setError(authErrorCopy.SERVICE_UNAVAILABLE);
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              variant="secondary"
+              style={{ marginBottom: spacing.sm }}
+            >
+              {submitting ? t('Please wait') : t('Resend Email')}
+            </Button>
             <Button
               disabled={!token.trim() || !onVerify || submitting}
               onPress={() => void verify()}

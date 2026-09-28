@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { CreateAccountShell } from '@/components/AuthShell';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
-import { confirmEmailVerification } from '@/lib/product-api';
+import { confirmEmailVerification, resendEmailVerification } from '@/lib/product-api';
 
 export default function EmailAuthScreen() {
   const router = useRouter();
@@ -27,8 +27,15 @@ export default function EmailAuthScreen() {
 
   const handleVerify = async (token: string) => {
     await confirmEmailVerification(token, new AbortController().signal);
+    await session.refreshUser();
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)/today');
+  };
+
+  const handleResend = async () => {
+    if (!session.accessToken) throw new Error('Unauthenticated');
+    const result = await resendEmailVerification(session.accessToken, new AbortController().signal);
+    return { deliveryState: result.delivery_state };
   };
 
   return (
@@ -48,6 +55,8 @@ export default function EmailAuthScreen() {
       onSignIn={returnToSignIn}
       onSignUp={handleSignUp}
       onVerify={handleVerify}
+      unverifiedSession={session.state === 'UNVERIFIED'}
+      onResend={handleResend}
     />
   );
 }

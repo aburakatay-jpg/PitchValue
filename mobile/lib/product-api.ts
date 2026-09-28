@@ -482,3 +482,17 @@ function isAccountDeletionResponse(value: unknown): value is AccountDeletionResp
     typeof (value as any).has_active_store_subscription === 'boolean'
   );
 }
+
+
+export function resendEmailVerification(
+  token: string,
+  signal: AbortSignal,
+): Promise<{ delivery_state: string }> {
+  return productRequest(
+    '/api/v1/auth/email/verification/resend',
+    { method: 'POST', token, signal },
+    (data: any): data is { delivery_state: string } =>
+      typeof data === 'object' && data !== null && typeof data.delivery_state === 'string',
+  );
+}
+

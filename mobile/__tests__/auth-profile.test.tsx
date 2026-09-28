@@ -673,8 +673,11 @@ describe('Profile foundation', () => {
     expect(StyleSheet.flatten(signOutText.props.style).color).toBe(
       darkColors.negative,
     );
+    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    alertSpy.mockImplementation((title, msg, buttons) => buttons[1].onPress());
     await fireEvent.press(view.getByTestId('profile-sign-out'));
     expect(onSignOut).toHaveBeenCalledTimes(1);
+    alertSpy.mockRestore();
   });
 
   it('keeps Sign Out destructive in Light appearance', async () => {

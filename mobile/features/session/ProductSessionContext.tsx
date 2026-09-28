@@ -27,7 +27,7 @@ import type {
 const ACCESS_KEY = 'pitchvalue.product.access.v1';
 const REFRESH_KEY = 'pitchvalue.product.refresh.v1';
 
-type SessionState = 'BOOTSTRAPPING' | 'GUEST' | 'AUTHENTICATED' | 'UNAVAILABLE';
+type SessionState = 'BOOTSTRAPPING' | 'GUEST' | 'AUTHENTICATED' | 'UNVERIFIED' | 'UNAVAILABLE';
 
 type ProductSessionContextValue = Readonly<{
   state: SessionState;
@@ -43,6 +43,7 @@ type ProductSessionContextValue = Readonly<{
   ) => Promise<{ deliveryState: string }>;
   signOut: () => Promise<void>;
   refreshEntitlement: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }>;
 
 const ProductSessionContext = createContext<ProductSessionContextValue | null>(
@@ -80,7 +81,7 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
     setAccessToken(session.access_token);
     setUser(session.user);
     setEntitlement(serverEntitlement.state);
-    setState('AUTHENTICATED');
+    setState(session.user.email_verified === false ? 'UNVERIFIED' : 'AUTHENTICATED');
   }, []);
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
         setAccessToken(storedAccess);
         setUser(current);
         setEntitlement(currentEntitlement.state);
-        setState('AUTHENTICATED');
+        setState(current.email_verified === false ? 'UNVERIFIED' : 'AUTHENTICATED');
       } catch (error) {
         if (
           error instanceof ProductServiceError &&
@@ -179,6 +180,19 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
     setState('GUEST');
   }, [accessToken]);
 
+
+  const refreshUser = useCallback(async () => {
+    if (!accessToken) return;
+    const controller = new AbortController();
+    try {
+      const current = await getCurrentUser(accessToken, controller.signal);
+      setUser(current);
+      setState(current.email_verified === false ? 'UNVERIFIED' : 'AUTHENTICATED');
+    } catch (e) {
+      // Ignored
+    }
+  }, [accessToken]);
+
   const refreshEntitlement = useCallback(async () => {
     if (!accessToken) return;
     try {
@@ -202,6 +216,7 @@ export function ProductSessionProvider({ children }: PropsWithChildren) {
       signUpEmail,
       signOut,
       refreshEntitlement,
+      refreshUser,
     }),
     [
       state,
@@ -237,6 +252,7 @@ export function useProductSession(): ProductSessionContextValue {
       },
       signOut: async () => undefined,
       refreshEntitlement: async () => undefined,
+      refreshUser: async () => undefined,
     }
   );
 }

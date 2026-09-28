@@ -41,6 +41,7 @@ class ProductUser:
     user_id: str
     account_kind: AccountKind
     email: str | None
+    email_verified: bool = True
 
 
 @dataclass(frozen=True)
@@ -253,7 +254,7 @@ def register_email(
 
     return _issue_session(
         connection,
-        ProductUser(user_id, AccountKind.AUTHENTICATED, normalized),
+        ProductUser(user_id, AccountKind.AUTHENTICATED, normalized, False),
         issued_at,
     ), delivery_state
 
@@ -270,7 +271,8 @@ def login_email(
     row = (
         connection.execute(
             text(
-                "SELECT u.user_id,u.account_kind,i.password_hash FROM auth_identities i "
+                "SELECT u.user_id,u.account_kind,i.password_hash,i.last_verified_at "
+                "FROM auth_identities i "
                 "JOIN app_users u ON u.user_id=i.user_id "
                 "WHERE i.provider='EMAIL' AND i.normalized_email=:email AND u.status='ACTIVE'"
             ),
@@ -283,7 +285,12 @@ def login_email(
         raise AuthError("invalid credentials")
     return _issue_session(
         connection,
-        ProductUser(str(row["user_id"]), AccountKind(str(row["account_kind"])), normalized),
+        ProductUser(
+            str(row["user_id"]),
+            AccountKind(str(row["account_kind"])),
+            normalized,
+            row["last_verified_at"] is not None,
+        ),
         issued_at,
     )
 
@@ -298,8 +305,11 @@ def authenticate_access_token(
     row = (
         connection.execute(
             text(
-                "SELECT u.user_id,u.account_kind,(SELECT i.normalized_email FROM auth_identities i "
-                "WHERE i.user_id=u.user_id AND i.provider='EMAIL' LIMIT 1) AS normalized_email "
+                "SELECT u.user_id,u.account_kind,"
+                "(SELECT i.normalized_email FROM auth_identities i "
+                "WHERE i.user_id=u.user_id AND i.provider='EMAIL' LIMIT 1) AS normalized_email,"
+                "(SELECT i.last_verified_at FROM auth_identities i "
+                "WHERE i.user_id=u.user_id AND i.provider='EMAIL' LIMIT 1) AS last_verified_at "
                 "FROM auth_sessions s "
                 "JOIN app_users u ON u.user_id=s.user_id "
                 "WHERE s.access_token_hash=:token_hash AND s.revoked_at IS NULL "
@@ -313,7 +323,12 @@ def authenticate_access_token(
     if row is None:
         return None
     email = None if row["normalized_email"] is None else str(row["normalized_email"])
-    return ProductUser(str(row["user_id"]), AccountKind(str(row["account_kind"])), email)
+    return ProductUser(
+        str(row["user_id"]),
+        AccountKind(str(row["account_kind"])),
+        email,
+        email_verified=(email is None or row["last_verified_at"] is not None),
+    )
 
 
 def refresh_session(
@@ -328,7 +343,9 @@ def refresh_session(
             text(
                 "SELECT s.session_id,u.user_id,u.account_kind,"
                 "(SELECT i.normalized_email FROM auth_identities i WHERE i.user_id=u.user_id "
-                "AND i.provider='EMAIL' LIMIT 1) AS normalized_email "
+                "AND i.provider='EMAIL' LIMIT 1) AS normalized_email,"
+                "(SELECT i.last_verified_at FROM auth_identities i WHERE i.user_id=u.user_id "
+                "AND i.provider='EMAIL' LIMIT 1) AS last_verified_at "
                 "FROM auth_sessions s JOIN app_users u ON u.user_id=s.user_id "
                 "WHERE s.refresh_token_hash=:token_hash AND s.revoked_at IS NULL "
                 "AND s.refresh_expires_at>:now AND u.status='ACTIVE'"
@@ -341,7 +358,12 @@ def refresh_session(
     if row is None:
         raise AuthError("refresh token is invalid or expired")
     email = None if row["normalized_email"] is None else str(row["normalized_email"])
-    user = ProductUser(str(row["user_id"]), AccountKind(str(row["account_kind"])), email)
+    user = ProductUser(
+        str(row["user_id"]),
+        AccountKind(str(row["account_kind"])),
+        email,
+        email_verified=(email is None or row["last_verified_at"] is not None),
+    )
     session = _issue_session(connection, user, issued_at)
     connection.execute(
         text(
@@ -600,3 +622,68 @@ def confirm_email_verification(
         ),
         {"now": checked_at, "user_id": user_id},
     )
+
+
+def resend_email_verification(
+    connection: Connection,
+    user: ProductUser,
+    *,
+    now: datetime | None = None,
+) -> str:
+    issued_at = _now(now)
+    if user.email_verified:
+        raise AuthError("Account is already verified")
+    if user.account_kind != AccountKind.AUTHENTICATED or not user.email:
+        raise AuthError("Invalid account type for email verification")
+
+    row = connection.execute(
+        text(
+            "SELECT MAX(expires_at) FROM auth_email_verifications "
+            "WHERE user_id=:user_id AND used_at IS NULL"
+        ),
+        {"user_id": user.user_id},
+    ).scalar_one_or_none()
+
+    recent_attempts = connection.execute(
+        text(
+            "SELECT COUNT(*) FROM auth_email_verifications "
+            "WHERE user_id=:user_id AND expires_at > :window_start"
+        ),
+        {"user_id": user.user_id, "window_start": issued_at - timedelta(hours=1)},
+    ).scalar_one()
+
+    if recent_attempts >= 3:
+        raise AuthError("Too many verification attempts. Please try again later.")
+
+    if row is not None:
+        diff = row - issued_at
+        if diff.total_seconds() > 86340:  # 24h = 86400, 86400 - 60 = 86340
+            raise AuthError("Please wait before requesting another verification email")
+
+    connection.execute(
+        text(
+            "UPDATE auth_email_verifications SET expires_at=:now "
+            "WHERE user_id=:user_id AND used_at IS NULL AND expires_at>:now"
+        ),
+        {"now": issued_at, "user_id": user.user_id},
+    )
+
+    raw_token = secrets.token_urlsafe(32)
+    expires_at = issued_at + timedelta(days=1)
+    connection.execute(
+        text(
+            "INSERT INTO auth_email_verifications (token_hash, user_id, expires_at) "
+            "VALUES (:hash, :user_id, :expires)"
+        ),
+        {"hash": _token_hash(raw_token), "user_id": user.user_id, "expires": expires_at},
+    )
+
+    from pitchvalue.product_services.email_delivery import ResendEmailVerificationDelivery
+
+    delivery_state = "VERIFICATION_EMAIL_SENT"
+    try:
+        ResendEmailVerificationDelivery().request_verification(user.email, raw_token)
+    except RuntimeError:
+        delivery_state = "VERIFICATION_DELIVERY_UNAVAILABLE"
+
+    return delivery_state
