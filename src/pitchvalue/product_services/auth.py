@@ -383,11 +383,19 @@ def logout(connection: Connection, access_token: str, *, now: datetime | None = 
     result = connection.execute(
         text(
             "UPDATE auth_sessions SET revoked_at=:now "
-            "WHERE access_token_hash=:token_hash AND revoked_at IS NULL"
+            "WHERE access_token_hash=:token_hash AND revoked_at IS NULL "
+            "RETURNING user_id"
         ),
         {"now": _now(now), "token_hash": _token_hash(access_token)},
     )
-    return bool(result.rowcount)
+    row = result.first()
+    if row is not None:
+        connection.execute(
+            text("UPDATE push_tokens SET user_id = NULL WHERE user_id = :user_id"),
+            {"user_id": row.user_id},
+        )
+        return True
+    return False
 
 
 def _issue_session(connection: Connection, user: ProductUser, issued_at: datetime) -> IssuedSession:

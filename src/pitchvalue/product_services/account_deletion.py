@@ -213,9 +213,19 @@ def initiate_account_deletion(
         {"user_id": user.user_id},
     )
 
-    # 5. Saved Selections
+    # 5. Saved Selections, Followed Matches, Push Tokens
     connection.execute(
         text("DELETE FROM saved_selections WHERE user_id = :user_id"),
+        {"user_id": user.user_id},
+    )
+
+    connection.execute(
+        text("DELETE FROM followed_matches WHERE user_id = :user_id"),
+        {"user_id": user.user_id},
+    )
+
+    connection.execute(
+        text("DELETE FROM push_tokens WHERE user_id = :user_id"),
         {"user_id": user.user_id},
     )
 
