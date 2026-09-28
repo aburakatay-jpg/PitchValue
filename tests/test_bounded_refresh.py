@@ -79,7 +79,7 @@ def _mark_fresh(engine, match_id: int, fresh_at) -> None:
                 "mapping_status, mapping_version, provenance,"
                 " canonical_match_id, first_seen_at, last_seen_at"
                 ") VALUES ("
-                "1, 'FIXTURE', 'mock', 'mock', 'RESOLVED',"
+                "(SELECT max(provider_id) FROM providers), 'FIXTURE', 'mock', 'mock', 'RESOLVED',"
                 " 'v1', 'mock', :match_id, :fresh_at, :fresh_at"
                 ")"
             ),

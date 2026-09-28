@@ -31,16 +31,49 @@ def engine() -> Engine:
 @pytest.fixture(autouse=True)
 def clean_db(engine: Engine) -> typing.Generator[None, None, None]:
     with engine.begin() as conn:
-        conn.execute(text("INSERT INTO competitions (competition_id, canonical_name, country_code, competition_type, gender) VALUES (1, 'Test', 'GBR', 'domestic_league', 'men') ON CONFLICT DO NOTHING"))
-        conn.execute(text("INSERT INTO seasons (season_id, competition_id, season_name, start_year, end_year, status) VALUES (1, 1, '2020', 2020, 2021, 'active') ON CONFLICT DO NOTHING"))
-        conn.execute(text("INSERT INTO teams (team_id, canonical_name, normalized_name) VALUES (1, 'T1', 't1'), (2, 'T2', 't2') ON CONFLICT DO NOTHING"))
-        conn.execute(text("INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (1, 1, 1, 1, 2, '2026-09-13 12:00:00', 'SCHEDULED') ON CONFLICT DO NOTHING"))
-        conn.execute(text("INSERT INTO providers (provider_id, name, provider_type, priority) VALUES (1, 'P1', 'odds', 1) ON CONFLICT DO NOTHING"))
+        conn.execute(
+            text(
+                "INSERT INTO competitions (competition_id, canonical_name, country_code, competition_type, gender) VALUES (99991, 'Test', 'GBR', 'domestic_league', 'men') ON CONFLICT DO NOTHING"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO seasons (season_id, competition_id, season_name, start_year, end_year, status) VALUES (99991, 99991, '2020', 2020, 2021, 'active') ON CONFLICT DO NOTHING"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO teams (team_id, canonical_name, normalized_name) VALUES (99991, 'T1', 't1'), (99992, 'T2', 't2') ON CONFLICT DO NOTHING"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (99991, 99991, 99991, 99991, 99992, '2026-09-13 12:00:00', 'SCHEDULED') ON CONFLICT DO NOTHING"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO providers (provider_id, name, provider_type, priority) VALUES (99991, 'P1', 'odds', 1) ON CONFLICT DO NOTHING"
+            )
+        )
     yield
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM shadow_analysis_snapshots"))
         conn.execute(text("DELETE FROM engine_runs"))
         conn.execute(text("DELETE FROM odds_snapshots"))
+        conn.execute(
+            text(
+                "DELETE FROM source_entity_references WHERE canonical_match_id IN (99991, 99992, 99993) OR canonical_team_id IN (99991, 99992) OR canonical_competition_id = 99991"
+            )
+        )
+        conn.execute(
+            text("DELETE FROM match_provider_refs WHERE match_id IN (99991, 99992, 99993)")
+        )
+        conn.execute(text("DELETE FROM matches WHERE match_id IN (99991, 99992, 99993)"))
+        conn.execute(text("DELETE FROM teams WHERE team_id IN (99991, 99992)"))
+        conn.execute(text("DELETE FROM seasons WHERE season_id = 99991"))
+        conn.execute(text("DELETE FROM competitions WHERE competition_id = 99991"))
+        conn.execute(text("DELETE FROM providers WHERE provider_id = 99991"))
 
 
 def _create_engine_run(logical_id: str) -> EngineRun:
@@ -69,8 +102,8 @@ def _create_engine_run(logical_id: str) -> EngineRun:
 
 @pytest.mark.integration
 def test_odds_persistence_proofs(engine: Engine) -> None:
-    match_id = 1
-    provider_id = 1
+    match_id = 99991
+    provider_id = 99991
     unique_fix = f"fix-{datetime.now().timestamp()}"
 
     obs1 = LiveOddsObservation(
@@ -163,7 +196,7 @@ def test_snapshot_same_payload_concurrency(engine: Engine) -> None:
     payload = ShadowAnalysisWrite(
         run_id=res.run_id,
         logical_run_id=logical_id,
-        match_id=1,
+        match_id=99991,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",
@@ -208,7 +241,7 @@ def test_snapshot_conflicting_payload_concurrency(engine: Engine) -> None:
     payload1 = ShadowAnalysisWrite(
         run_id=res.run_id,
         logical_run_id=logical_id,
-        match_id=1,
+        match_id=99991,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",
@@ -227,7 +260,7 @@ def test_snapshot_conflicting_payload_concurrency(engine: Engine) -> None:
     payload2 = ShadowAnalysisWrite(
         run_id=res.run_id,
         logical_run_id=logical_id,
-        match_id=1,
+        match_id=99991,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",
@@ -272,12 +305,12 @@ def test_partial_retry(engine: Engine) -> None:
     with engine.begin() as conn:
         conn.execute(
             text(
-                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (20002, 1, 1, 1, 2, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"
+                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (99992, 99991, 99991, 99991, 99992, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"
             )
         )
         conn.execute(
             text(
-                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (20003, 1, 1, 1, 2, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"
+                "INSERT INTO matches (match_id, competition_id, season_id, home_team_id, away_team_id, kickoff_at_utc, status) VALUES (99993, 99991, 99991, 99991, 99992, NOW(), 'SCHEDULED') ON CONFLICT DO NOTHING"
             )
         )
         res1 = persist_run(conn, _create_engine_run(logical_id))
@@ -285,7 +318,7 @@ def test_partial_retry(engine: Engine) -> None:
     payload_a = ShadowAnalysisWrite(
         run_id=res1.run_id,
         logical_run_id=logical_id,
-        match_id=1,
+        match_id=99991,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",
@@ -304,7 +337,7 @@ def test_partial_retry(engine: Engine) -> None:
     payload_b = ShadowAnalysisWrite(
         run_id=res1.run_id,
         logical_run_id=logical_id,
-        match_id=20002,
+        match_id=99992,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",
@@ -331,7 +364,7 @@ def test_partial_retry(engine: Engine) -> None:
     payload_c = ShadowAnalysisWrite(
         run_id=res2.run_id,
         logical_run_id=logical_id,
-        match_id=20003,
+        match_id=99993,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",
@@ -365,19 +398,19 @@ def test_partial_retry(engine: Engine) -> None:
 
         r1 = conn.execute(
             text(
-                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=1"
+                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=99991"
             ),
             {"lrid": logical_id},
         ).scalar()
         r2 = conn.execute(
             text(
-                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=20002"
+                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=99992"
             ),
             {"lrid": logical_id},
         ).scalar()
         r3 = conn.execute(
             text(
-                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=20003"
+                "SELECT run_id FROM shadow_analysis_snapshots WHERE logical_run_id=:lrid AND match_id=99993"
             ),
             {"lrid": logical_id},
         ).scalar()
@@ -397,7 +430,7 @@ def test_repeat_after_success_policy(engine: Engine) -> None:
     payload = ShadowAnalysisWrite(
         run_id=res1.run_id,
         logical_run_id=logical_id,
-        match_id=1,
+        match_id=99991,
         prediction_as_of=NOW,
         model_version="1",
         feature_version="1",

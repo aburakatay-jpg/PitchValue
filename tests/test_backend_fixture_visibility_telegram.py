@@ -1,27 +1,29 @@
 import sys
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 import unittest
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 # Add the backend dir so we can import it
 sys.path.append(str(Path(__file__).parent.parent / "backend"))
 
 import generate_fixture_visibility_report
 
+
 class TestTelegramSummary(unittest.TestCase):
     def test_telegram_summary_includes_drive_success(self):
-        with patch("generate_fixture_visibility_report.create_database") as mock_create_database, \
-             patch("generate_fixture_visibility_report.load_settings") as mock_load_settings, \
-             patch("generate_fixture_visibility_report.upload_reports_to_drive") as mock_upload, \
-             patch("generate_fixture_visibility_report.send_telegram_message") as mock_send:
-
+        with (
+            patch("generate_fixture_visibility_report.create_database") as mock_create_database,
+            patch("generate_fixture_visibility_report.load_settings"),
+            patch("generate_fixture_visibility_report.upload_reports_to_drive") as mock_upload,
+            patch("generate_fixture_visibility_report.send_telegram_message") as mock_send,
+        ):
             # Setup mock DB result
             mock_db = MagicMock()
             mock_create_database.return_value = mock_db
             mock_conn = MagicMock()
             mock_db.connect.return_value.__enter__.return_value = mock_conn
-            
+
             # Mocking the mapping execution for operational events
             mock_mappings = MagicMock()
             mock_mappings.mappings.return_value.one_or_none.return_value = {
@@ -33,17 +35,17 @@ class TestTelegramSummary(unittest.TestCase):
                     "parsed_fixture_count": 10,
                     "malformed_fixture_count": 0,
                     "quarantine_count": 0,
-                }
+                },
             }
-            
+
             # Mocking the scalar execution for canonical count
             mock_scalar = MagicMock()
             mock_scalar.scalar_one.return_value = 10
-            
+
             # Mocking the all execution for quarantine rows
             mock_all = MagicMock()
             mock_all.all.return_value = []
-            
+
             # Assign returns based on call order
             mock_conn.execute.side_effect = [mock_mappings, mock_scalar, mock_all]
 
@@ -59,17 +61,18 @@ class TestTelegramSummary(unittest.TestCase):
             self.assertNotIn("Google Drive: ❌ FAILED", summary)
 
     def test_telegram_summary_includes_drive_failure(self):
-        with patch("generate_fixture_visibility_report.create_database") as mock_create_database, \
-             patch("generate_fixture_visibility_report.load_settings") as mock_load_settings, \
-             patch("generate_fixture_visibility_report.upload_reports_to_drive") as mock_upload, \
-             patch("generate_fixture_visibility_report.send_telegram_message") as mock_send:
-
+        with (
+            patch("generate_fixture_visibility_report.create_database") as mock_create_database,
+            patch("generate_fixture_visibility_report.load_settings"),
+            patch("generate_fixture_visibility_report.upload_reports_to_drive") as mock_upload,
+            patch("generate_fixture_visibility_report.send_telegram_message") as mock_send,
+        ):
             # Setup mock DB result
             mock_db = MagicMock()
             mock_create_database.return_value = mock_db
             mock_conn = MagicMock()
             mock_db.connect.return_value.__enter__.return_value = mock_conn
-            
+
             # Mocking the mapping execution for operational events
             mock_mappings = MagicMock()
             mock_mappings.mappings.return_value.one_or_none.return_value = {
@@ -81,17 +84,17 @@ class TestTelegramSummary(unittest.TestCase):
                     "parsed_fixture_count": 10,
                     "malformed_fixture_count": 0,
                     "quarantine_count": 0,
-                }
+                },
             }
-            
+
             # Mocking the scalar execution for canonical count
             mock_scalar = MagicMock()
             mock_scalar.scalar_one.return_value = 10
-            
+
             # Mocking the all execution for quarantine rows
             mock_all = MagicMock()
             mock_all.all.return_value = []
-            
+
             # Assign returns based on call order
             mock_conn.execute.side_effect = [mock_mappings, mock_scalar, mock_all]
 
@@ -106,6 +109,7 @@ class TestTelegramSummary(unittest.TestCase):
             self.assertIn("Google Drive: ❌ FAILED", summary)
             self.assertIn("Reason: DRIVE_ERROR_RuntimeError", summary)
             self.assertNotIn("Google Drive: ✅ SUCCESS", summary)
+
 
 if __name__ == "__main__":
     unittest.main()
