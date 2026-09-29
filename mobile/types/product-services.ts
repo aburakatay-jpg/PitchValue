@@ -35,6 +35,9 @@ export type ServerEntitlement = Readonly<{
 
 export type SavedSelection = Readonly<{
   saved_selection_id: string;
+  prediction_snapshot_id: number | null;
+  saved_bet_score: string | null;
+  saved_policy_decision: string | null;
   match_id: number;
   market: string;
   selection: string;

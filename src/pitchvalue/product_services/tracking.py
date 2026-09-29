@@ -45,6 +45,8 @@ class SavedSelection:
     tracking_status: TrackingStatus
     outcome: SettlementOutcome | None
     created_at: datetime
+    saved_bet_score: Decimal | None = None
+    saved_policy_decision: str | None = None
 
 
 @dataclass(frozen=True)
@@ -160,11 +162,16 @@ def list_saved_selections(
     *,
     history: bool,
 ) -> tuple[SavedSelection, ...]:
-    statuses = ("SETTLED", "REVIEW_REQUIRED") if history else ("ACTIVE",)
+    statuses = ("SETTLED", "REVIEW_REQUIRED", "REMOVED") if history else ("ACTIVE",)
     rows = connection.execute(
         text(
-            "SELECT * FROM saved_selections WHERE user_id=:user_id "
-            "AND tracking_status = ANY(:statuses) ORDER BY created_at DESC,saved_selection_id"
+            "SELECT s.*,p.bet_score AS saved_bet_score,"
+            "p.policy_decision AS saved_policy_decision "
+            "FROM saved_selections s LEFT JOIN prediction_snapshots p "
+            "ON p.prediction_snapshot_id=s.prediction_snapshot_id "
+            "WHERE s.user_id=:user_id "
+            "AND s.tracking_status = ANY(:statuses) "
+            "ORDER BY s.created_at DESC,s.saved_selection_id"
         ),
         {"user_id": user_id, "statuses": list(statuses)},
     ).mappings()
@@ -177,8 +184,11 @@ def get_saved_selection(
     row = (
         connection.execute(
             text(
-                "SELECT * FROM saved_selections "
-                "WHERE saved_selection_id=:saved_id AND user_id=:user_id"
+                "SELECT s.*,p.bet_score AS saved_bet_score,"
+                "p.policy_decision AS saved_policy_decision "
+                "FROM saved_selections s LEFT JOIN prediction_snapshots p "
+                "ON p.prediction_snapshot_id=s.prediction_snapshot_id "
+                "WHERE s.saved_selection_id=:saved_id AND s.user_id=:user_id"
             ),
             {"saved_id": saved_selection_id, "user_id": user_id},
         )
@@ -344,6 +354,7 @@ def performance(connection: Connection, user_id: str) -> Performance:
 
 
 def _record(row: RowMapping) -> SavedSelection:
+    saved_score = row.get("saved_bet_score")
     return SavedSelection(
         str(row["saved_selection_id"]),
         str(row["user_id"]),
@@ -358,4 +369,6 @@ def _record(row: RowMapping) -> SavedSelection:
         TrackingStatus(str(row["tracking_status"])),
         None if row["outcome"] is None else SettlementOutcome(str(row["outcome"])),
         row["created_at"],
+        saved_score,
+        row.get("saved_policy_decision"),
     )

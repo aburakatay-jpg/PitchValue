@@ -13,6 +13,7 @@ import { lifecycleLabel, lifecycleTone } from '@/components/discovery';
 import { InlineNotice, StaleIndicator } from '@/components/feedback';
 import { Badge, Button, SectionHeader, sharedStyles } from '@/components/ui';
 import { useLanguage } from '@/features/language/LanguageContext';
+import { useFollow } from '@/features/session/useFollow';
 import type {
   FinalCheckState,
   MatchDetailResponse,
@@ -69,6 +70,8 @@ function formatDateTime(value: string, t: (k: string) => string): string {
 
 export function MatchHeader({ detail }: { detail: MatchDetailResponse }) {
   const { t } = useLanguage();
+  const { isFollowed, isLoading, error, toggleFollow, isAuthenticated } = useFollow(detail.match_id);
+
   return (
     <View style={styles.headerCard}>
       <View style={sharedStyles.rowBetween}>
@@ -79,6 +82,22 @@ export function MatchHeader({ detail }: { detail: MatchDetailResponse }) {
         />
       </View>
       <Text style={styles.kickoff}>{formatDateTime(detail.kickoff, t)}</Text>
+
+      {isAuthenticated && (
+        <View style={{ marginTop: spacing.sm }}>
+          <Button
+            disabled={isLoading}
+            variant={isFollowed ? 'secondary' : 'primary'}
+            onPress={toggleFollow}
+          >
+            <Text style={{ color: isFollowed ? colors.text : colors.onBrand }}>
+              {isFollowed ? t('Takibi Bırak') : t('Maçı Takip Et')}
+            </Text>
+          </Button>
+          {error && <Text style={{ color: colors.negative, marginTop: spacing.xs }}>{error}</Text>}
+        </View>
+      )}
+
       <View
         accessibilityLabel={`${detail.home_team.name} versus ${detail.away_team.name}`}
         style={styles.teams}

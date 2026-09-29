@@ -109,6 +109,9 @@ class SaveSelectionRequest(BaseModel):
 class SavedSelectionResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
     saved_selection_id: str
+    prediction_snapshot_id: int | None
+    saved_bet_score: Decimal | None
+    saved_policy_decision: str | None
     match_id: int
     market: str
     selection: str
@@ -211,3 +214,8 @@ class AccountDeletionResponse(BaseModel):
     deletion_state: str
     has_active_store_subscription: bool = False
     subscription_provider: str | None = None
+
+
+class PushRegistrationRequest(BaseModel):
+    provider: str = Field(min_length=1, max_length=50)
+    token: str = Field(min_length=1, max_length=500)

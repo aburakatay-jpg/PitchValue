@@ -37,6 +37,7 @@ from pitchvalue.api.product_models import (
     PasswordResetRequest,
     PerformanceResponse,
     PublicContextResponse,
+    PushRegistrationRequest,
     RefreshRequest,
     SavedSelectionListResponse,
     SavedSelectionResponse,
@@ -83,6 +84,12 @@ from pitchvalue.product_services.entitlements import (
     ExternalCommerceVerifier,
     resolve_entitlement,
 )
+from pitchvalue.product_services.followed_matches import (
+    follow_match,
+    get_followed_match_ids,
+    unfollow_match,
+)
+from pitchvalue.product_services.push_tokens import PushTokenError, register_push_token
 from pitchvalue.product_services.tracking import (
     SavedSelection,
     TrackingError,
@@ -262,6 +269,19 @@ def session_logout(
     return Response(status_code=204)
 
 
+@router.post("/auth/push/register", status_code=204)
+def register_push(
+    request: PushRegistrationRequest,
+    user: Annotated[ProductUser, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_transaction)],
+) -> Response:
+    try:
+        register_push_token(connection, user.user_id, request.provider, request.token)
+    except PushTokenError as error:
+        raise ApiError(422, ErrorCode.VALIDATION_ERROR, str(error)) from error
+    return Response(status_code=204)
+
+
 @router.post("/auth/account-deletion", response_model=AccountDeletionResponse)
 def account_deletion(
     request: AccountDeletionRequest,
@@ -391,6 +411,32 @@ def my_bet(
         return _saved(get_saved_selection(connection, user.user_id, saved_selection_id))
     except TrackingError as error:
         raise ApiError(404, ErrorCode.NOT_FOUND, "Tracked selection not found") from error
+
+
+@router.get("/me/follows", response_model=list[int])
+def get_follows(
+    user: Annotated[ProductUser, Depends(get_verified_user)],
+    db: Annotated[Connection, Depends(get_connection)],
+) -> list[int]:
+    return get_followed_match_ids(db, user.user_id)
+
+
+@router.post("/me/follows/{match_id}", status_code=204)
+def follow(
+    match_id: int,
+    user: Annotated[ProductUser, Depends(get_verified_user)],
+    db: Annotated[Connection, Depends(get_transaction)],
+) -> None:
+    follow_match(db, user.user_id, match_id)
+
+
+@router.delete("/me/follows/{match_id}", status_code=204)
+def unfollow(
+    match_id: int,
+    user: Annotated[ProductUser, Depends(get_verified_user)],
+    db: Annotated[Connection, Depends(get_transaction)],
+) -> None:
+    unfollow_match(db, user.user_id, match_id)
 
 
 @router.post("/me/bets", response_model=SavedSelectionResponse, status_code=201)
@@ -572,6 +618,9 @@ def _session(value: IssuedSession) -> SessionResponse:
 def _saved(value: SavedSelection) -> SavedSelectionResponse:
     return SavedSelectionResponse(
         saved_selection_id=value.saved_selection_id,
+        prediction_snapshot_id=value.prediction_snapshot_id,
+        saved_bet_score=value.saved_bet_score,
+        saved_policy_decision=value.saved_policy_decision,
         match_id=value.match_id,
         market=value.market,
         selection=value.selection,

@@ -8,8 +8,9 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import Connection, Engine, create_engine, text
 
+from pitchvalue.api.routes.product_services import _saved
 from pitchvalue.config import load_settings
-from pitchvalue.prediction.repository import persist_match_prediction
+from pitchvalue.prediction.repository import invalidate_prediction, persist_match_prediction
 from pitchvalue.product_services.auth import (
     authenticate_access_token,
     create_guest_session,
@@ -132,11 +133,65 @@ def test_my_bets_enforces_ownership_and_retains_removed_history(product_engine: 
             get_saved_selection(connection, other.user_id, saved.saved_selection_id)
         assert not remove_saved_selection(connection, other.user_id, saved.saved_selection_id)
         assert remove_saved_selection(connection, owner_id, saved.saved_selection_id)
+        removed_history = list_saved_selections(connection, owner_id, history=True)
+        assert len(removed_history) == 1
+        assert removed_history[0].tracking_status.value == "REMOVED"
         count = connection.execute(
             text("SELECT count(*) FROM saved_selections WHERE saved_selection_id=:saved_id"),
             {"saved_id": saved.saved_selection_id},
         ).scalar_one()
     assert count == 1
+
+
+@pytest.mark.integration
+def test_saved_selection_keeps_pinned_snapshot_evidence_after_new_prediction(
+    product_engine: Engine,
+) -> None:
+    with product_engine.begin() as connection:
+        user_id, match_id, snapshot_a = _public_prediction(connection)
+        saved = save_public_selection(
+            connection, user_id=user_id, prediction_snapshot_id=snapshot_a
+        )
+        request_b = _request(
+            connection,
+            exact=True,
+            publication_eligible=True,
+            bet_score=Decimal("90"),
+            model_version="later-model",
+        )
+        result_b = persist_match_prediction(connection, request_b)
+        snapshot_b = result_b.prediction_snapshot_ids[0]
+        assert invalidate_prediction(
+            connection,
+            snapshot_a,
+            invalidated_at=datetime(2026, 9, 16, tzinfo=UTC),
+            reason="NEW_PUBLIC_SNAPSHOT",
+            superseded=True,
+        )
+        reread = get_saved_selection(connection, user_id, saved.saved_selection_id)
+        active = list_saved_selections(connection, user_id, history=False)
+        assert int(request_b.decision.match_id) == match_id
+        assert snapshot_a != snapshot_b
+        current_b = (
+            connection.execute(
+                text(
+                    "SELECT record_status,bet_score FROM prediction_snapshots "
+                    "WHERE prediction_snapshot_id=:snapshot_b"
+                ),
+                {"snapshot_b": snapshot_b},
+            )
+            .mappings()
+            .one()
+        )
+        assert current_b["record_status"] == "active"
+        assert current_b["bet_score"] == Decimal("90")
+        assert reread.prediction_snapshot_id == snapshot_a
+        assert reread.saved_bet_score == Decimal("80")
+        assert reread.saved_policy_decision == "PICK"
+        response = _saved(reread)
+        assert response.prediction_snapshot_id == snapshot_a
+        assert response.saved_bet_score == Decimal("80")
+        assert active == (reread,)
 
 
 @pytest.mark.integration

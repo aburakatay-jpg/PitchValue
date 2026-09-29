@@ -346,6 +346,11 @@ function isSaved(value: unknown): value is SavedSelection {
   return (
     isObject(value) &&
     typeof value.saved_selection_id === 'string' &&
+    (value.prediction_snapshot_id === null ||
+      (typeof value.prediction_snapshot_id === 'number' &&
+        Number.isSafeInteger(value.prediction_snapshot_id))) &&
+    nullableString(value.saved_bet_score) &&
+    nullableString(value.saved_policy_decision) &&
     typeof value.match_id === 'number' &&
     typeof value.market === 'string' &&
     typeof value.selection === 'string' &&
@@ -496,3 +501,66 @@ export function resendEmailVerification(
   );
 }
 
+
+
+export function registerPushToken(
+  token: string,
+  pushProvider: 'EXPO',
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const options: any = {
+    method: 'POST',
+    token: accessToken,
+    body: { provider: pushProvider, token },
+  };
+  if (signal) {
+    options.signal = signal;
+  }
+  return productRequest(
+    '/api/v1/auth/push/register',
+    options,
+    (data: any): data is void => true,
+  );
+}
+
+export function getFollowedMatches(
+  token: string,
+  signal?: AbortSignal,
+): Promise<number[]> {
+  const options: any = { method: 'GET', token };
+  if (signal) options.signal = signal;
+  return productRequest(
+    '/api/v1/me/follows',
+    options,
+    (data: any): data is number[] => Array.isArray(data) && data.every(item => typeof item === 'number'),
+  );
+}
+
+export function followMatch(
+  token: string,
+  matchId: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  const options: any = { method: 'POST', token };
+  if (signal) options.signal = signal;
+  return productRequest(
+    `/api/v1/me/follows/${encodeURIComponent(matchId)}`,
+    options,
+    isVoid,
+  );
+}
+
+export function unfollowMatch(
+  token: string,
+  matchId: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  const options: any = { method: 'DELETE', token };
+  if (signal) options.signal = signal;
+  return productRequest(
+    `/api/v1/me/follows/${encodeURIComponent(matchId)}`,
+    options,
+    isVoid,
+  );
+}

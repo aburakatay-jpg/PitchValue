@@ -105,12 +105,7 @@ export function MyBetsView({
   useEffect(() => {
     if (accessToken === undefined) return;
     if (accessToken === null) {
-      // Must not call setRecords/setMetrics directly in useEffect body; wrap in an async/timeout or do nothing if cleanup handles it.
-      // But setting state asynchronously avoids the React warning.
-      setTimeout(() => {
-        setRecords([]);
-        setMetrics(null);
-      }, 0);
+      // The unavailable branch never renders retained personal records.
       return;
     }
     const controller = new AbortController();
@@ -230,6 +225,17 @@ function MyBetsSection({
               {t(record.tracking_status)}
               {record.outcome ? ` · ${t(record.outcome)}` : ''}
             </Text>
+            {record.prediction_snapshot_id !== null ? (
+              <Text style={styles.note}>
+                {t('Saved analysis')}
+                {record.saved_policy_decision
+                  ? ` · ${t('At save')}: ${t(record.saved_policy_decision)}`
+                  : ''}
+                {record.saved_bet_score !== null
+                  ? ` · ${t('Bet Score')}: ${record.saved_bet_score}`
+                  : ''}
+              </Text>
+            ) : null}
           </View>
         ))}
       </View>

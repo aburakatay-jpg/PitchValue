@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { createThemedStyleSheet, colors, typography } from '@/theme/tokens';
 import { Text, View } from 'react-native';
@@ -24,7 +24,8 @@ import { mockMatches } from '@/dev/mock-data';
 import { usePublicResource } from '@/hooks/use-public-resource';
 import { config } from '@/lib/config';
 import { useProductSession } from '@/features/session/ProductSessionContext';
-import { saveSelection } from '@/lib/product-api';
+import { getSavedSelections, saveSelection } from '@/lib/product-api';
+import type { SavedSelection } from '@/types/product-services';
 import { getMatchDetail, type PublicApiError } from '@/lib/public-api';
 import type { MatchDetailResponse, PublicPrediction } from '@/types/public-api';
 
@@ -47,6 +48,8 @@ export function MatchDetailView({
   refreshing,
   onSavePrediction,
   saveMessage,
+  personalSelections,
+  personalUnavailable,
 }: {
   data: MatchDetailResponse | null;
   error: PublicApiError | null;
@@ -55,6 +58,8 @@ export function MatchDetailView({
   refreshing: boolean;
   onSavePrediction?: ((prediction: PublicPrediction) => void) | undefined;
   saveMessage?: string | null;
+  personalSelections?: readonly SavedSelection[] | null | undefined;
+  personalUnavailable?: boolean;
 }) {
   const { t } = useLanguage();
 
@@ -101,11 +106,31 @@ export function MatchDetailView({
       ) : null}
       {saveMessage ? (
         <InlineNotice
-          title={saveMessage}
+          title={t(saveMessage)}
           tone={saveMessage === 'Saved to My Bets' ? 'positive' : 'negative'}
         />
       ) : null}
       <MatchHeader detail={data} />
+      {personalSelections != null || personalUnavailable ? (
+        <View style={sharedStyles.card}>
+          <SectionHeader title={t('Saved selection')} />
+          {personalUnavailable ? (
+            <Text style={styles.preview}>
+              {t('Your saved selection is temporarily unavailable')}
+            </Text>
+          ) : personalSelections?.length ? (
+            personalSelections.map((record) => (
+              <Text key={record.saved_selection_id} style={styles.preview}>
+                {t(record.tracking_status)} ·{' '}
+                {t(record.market.replaceAll('_', ' '))} ·{' '}
+                {t(record.selection.replaceAll('_', ' '))}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.preview}>{t('No saved selection')}</Text>
+          )}
+        </View>
+      ) : null}
       <PublicAnalysisSection detail={data} onSave={onSavePrediction} />
       <AllMarkets markets={data.markets} />
       <FinalCheckSection state={data.final_check} />
@@ -127,9 +152,42 @@ function InvalidMatchState() {
   );
 }
 
-function ProductionMatchDetail({ matchId }: { matchId: number }) {
+export function ProductionMatchDetail({ matchId }: { matchId: number }) {
   const session = useProductSession();
+  const personalToken =
+    session.state === 'AUTHENTICATED' ? session.accessToken : null;
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [personalResult, setPersonalResult] = useState<{
+    token: string;
+    matchId: number;
+    records: readonly SavedSelection[];
+  } | null>(null);
+  const [personalUnavailable, setPersonalUnavailable] = useState(false);
+  const [personalRevision, setPersonalRevision] = useState(0);
+  useEffect(() => {
+    if (!personalToken) return;
+    const controller = new AbortController();
+    const token = personalToken;
+    void Promise.all([
+      getSavedSelections(token, 'active', controller.signal),
+      getSavedSelections(token, 'history', controller.signal),
+    ])
+      .then(([active, history]) => {
+        if (controller.signal.aborted) return;
+        setPersonalResult({
+          token,
+          matchId,
+          records: [...active.records, ...history.records].filter(
+            (record) => record.match_id === matchId,
+          ),
+        });
+        setPersonalUnavailable(false);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPersonalUnavailable(true);
+      });
+    return () => controller.abort();
+  }, [matchId, personalToken, personalRevision]);
   const loader = useCallback(
     (signal: AbortSignal) => getMatchDetail(matchId, signal),
     [matchId],
@@ -148,6 +206,7 @@ function ProductionMatchDetail({ matchId }: { matchId: number }) {
         new AbortController().signal,
       );
       setSaveMessage('Saved to My Bets');
+      setPersonalRevision((value) => value + 1);
     } catch {
       setSaveMessage('Unable to save this selection');
     }
@@ -160,6 +219,14 @@ function ProductionMatchDetail({ matchId }: { matchId: number }) {
         session.accessToken ? (prediction) => void save(prediction) : undefined
       }
       saveMessage={saveMessage}
+      personalSelections={
+        personalToken &&
+        personalResult?.token === personalToken &&
+        personalResult.matchId === matchId
+          ? personalResult.records
+          : null
+      }
+      personalUnavailable={personalToken ? personalUnavailable : false}
     />
   );
 }
