@@ -1,9 +1,50 @@
 """External web resources."""
 
+import pathlib
+
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
 router = APIRouter(tags=["web"])
+import pathlib
+
+
+def _get_markdown_html(title: str, filepath: str) -> str:
+    path = pathlib.Path(filepath)
+    content = path.read_text(encoding="utf-8") if path.exists() else "Content not found."
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PitchValue - {title}</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }}
+        pre {{ white-space: pre-wrap; font-family: inherit; }}
+    </style>
+</head>
+<body>
+    <h1>PitchValue</h1>
+    <pre>{content}</pre>
+</body>
+</html>"""
+
+
+@router.get("/privacy", response_class=HTMLResponse)
+def privacy_page() -> str:
+    return _get_markdown_html("Privacy Policy", "PRIVACY_POLICY.md")
+
+
+@router.get("/terms", response_class=HTMLResponse)
+def terms_page() -> str:
+    return _get_markdown_html("Terms of Service", "TERMS_OF_SERVICE.md")
 
 
 @router.get("/account/delete", response_class=HTMLResponse)
