@@ -25,6 +25,8 @@ def db_connection(product_engine: Engine):
     with product_engine.connect() as conn, conn.begin() as trans:
         conn.execute(text("DELETE FROM auth_sessions"))
         conn.execute(text("DELETE FROM auth_email_verifications"))
+        conn.execute(text("DELETE FROM push_tokens"))
+        conn.execute(text("DELETE FROM followed_matches"))
         conn.execute(text("DELETE FROM auth_identities"))
         conn.execute(text("DELETE FROM app_users"))
         yield conn

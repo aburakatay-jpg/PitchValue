@@ -20,6 +20,8 @@ def product_engine() -> Engine:
 def db_connection(product_engine: Engine):
     with product_engine.begin() as conn:
         conn.execute(text("DELETE FROM auth_sessions"))
+        conn.execute(text("DELETE FROM push_tokens"))
+        conn.execute(text("DELETE FROM followed_matches"))
         conn.execute(text("DELETE FROM auth_identities"))
         conn.execute(text("DELETE FROM app_users"))
         yield conn

@@ -75,6 +75,46 @@ describe('product service client', () => {
     );
   });
 
+  it('accepts only an explicit pinned snapshot in saved-selection responses', async () => {
+    const pinned = {
+      saved_selection_id: 'saved-1',
+      prediction_snapshot_id: 101,
+      saved_bet_score: '80',
+      saved_policy_decision: 'PICK',
+      match_id: 321,
+      market: 'match_result',
+      selection: 'home',
+      line: null,
+      saved_decimal_odds: null,
+      stake: null,
+      currency: null,
+      tracking_status: 'ACTIVE',
+      outcome: null,
+      created_at: '2026-09-29T00:00:00Z',
+    };
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(response({ records: [pinned], count: 1 }));
+    await expect(
+      getSavedSelections('token', 'active', signal),
+    ).resolves.toMatchObject({
+      records: [{ prediction_snapshot_id: 101, saved_bet_score: '80' }],
+    });
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        response({
+          records: [{ ...pinned, prediction_snapshot_id: undefined }],
+          count: 1,
+        }),
+      );
+    await expect(
+      getSavedSelections('token', 'active', signal),
+    ).rejects.toMatchObject({
+      kind: 'INVALID_RESPONSE',
+    });
+  });
+
   it('normalizes authorization failure and supports real logout', async () => {
     jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response({}, 401));
     await expect(getCurrentUser('expired', signal)).rejects.toMatchObject({

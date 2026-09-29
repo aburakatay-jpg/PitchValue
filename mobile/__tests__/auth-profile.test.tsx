@@ -674,7 +674,7 @@ describe('Profile foundation', () => {
       darkColors.negative,
     );
     const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
-    alertSpy.mockImplementation((title, msg, buttons) => buttons[1].onPress());
+    alertSpy.mockImplementation((title, msg, buttons: any) => buttons[1].onPress());
     await fireEvent.press(view.getByTestId('profile-sign-out'));
     expect(onSignOut).toHaveBeenCalledTimes(1);
     alertSpy.mockRestore();
