@@ -1,8 +1,7 @@
 # PitchValue Privacy Policy
-
-**Effective Date:** [OWNER_INPUT_REQUIRED: Date]
-**Legal Entity:** [OWNER_INPUT_REQUIRED: Company Name]
-**Contact Email:** [OWNER_INPUT_REQUIRED: Contact Email]
+**Effective Date:** 29 September 2026
+**Legal Entity:** BURAK ATAY
+**Contact Email:** pitchvalue@outlook.com
 
 ## 1. Account Information
 We collect the following personal information when you create an account:
@@ -61,4 +60,4 @@ We rely on the following applicable providers:
 - Third-party transactional email providers
 
 ## 10. User Rights and Contact
-If you wish to exercise your data rights or contact our privacy team, please reach out at: [OWNER_INPUT_REQUIRED: Contact Email]
+If you wish to exercise your data rights or contact our privacy team, please reach out at: pitchvalue@outlook.com

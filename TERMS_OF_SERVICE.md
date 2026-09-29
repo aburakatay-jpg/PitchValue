@@ -1,9 +1,8 @@
 # PitchValue Terms of Service
-
-**Effective Date:** [OWNER_INPUT_REQUIRED: Date]
-**Legal Entity:** [OWNER_INPUT_REQUIRED: Company Name]
-**Jurisdiction:** [OWNER_INPUT_REQUIRED: Governing Jurisdiction]
-**Contact Email:** [OWNER_INPUT_REQUIRED: Legal Contact Email]
+**Effective Date:** 29 September 2026
+**Legal Entity:** BURAK ATAY
+**Jurisdiction:** türkiye
+**Contact Email:** pitchvalue@outlook.com
 
 ## 1. Nature of Service
 PitchValue is a football betting intelligence and decision-support product. It provides informational and analytical services.
@@ -32,10 +31,10 @@ We reserve the right to terminate or suspend your account for violations of thes
 - We do not offer fixed refund policies directly; all refunds must be requested through the respective app store.
 
 ## 8. Intellectual Property
-All analytical models, canonical data, software, and content provided by PitchValue are the intellectual property of [OWNER_INPUT_REQUIRED: Company Name] or its licensors.
+All analytical models, canonical data, software, and content provided by PitchValue are the intellectual property of BURAK ATAY or its licensors.
 
 ## 9. Third-Party Services
 PitchValue may utilize third-party services such as Apple, Google, and Expo. Your use of these services may be subject to additional terms.
 
 ## 10. Limitation of Liability
-To the maximum extent permitted by applicable law, PitchValue and [OWNER_INPUT_REQUIRED: Company Name] shall not be liable for any direct, indirect, incidental, or consequential damages resulting from your use of the service.
+To the maximum extent permitted by applicable law, PitchValue and BURAK ATAY shall not be liable for any direct, indirect, incidental, or consequential damages resulting from your use of the service.
