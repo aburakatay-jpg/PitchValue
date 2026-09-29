@@ -8,6 +8,9 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
+import { PushDisabledNotice } from '@/features/session/PushDisabledNotice';
+import { usePushRegistration } from '@/features/session/usePushRegistration';
+import { useNotificationDeepLink } from '@/features/session/useNotificationDeepLink';
 
 import { BrandedLaunchSplash } from '@/components/BrandedLaunchSplash';
 import { CommerceProvider } from '@/features/entitlement/CommerceContext';
@@ -49,6 +52,8 @@ export default function RootLayout() {
 function RootNavigation() {
   const router = useRouter();
   const session = useProductSession();
+  const { isPushDisabled } = usePushRegistration();
+  useNotificationDeepLink();
   const { t } = useLanguage();
   const { resolvedAppearance, colors: themeColors } = useAppearance();
   const navigationBase =
@@ -115,6 +120,7 @@ function RootNavigation() {
                 }}
               />
             </Stack>
+            {isPushDisabled ? <PushDisabledNotice /> : null}
             <BrandedLaunchSplash ready />
           </View>
         </CommerceProvider>

@@ -63,3 +63,20 @@ def remove_invalid_push_token(
         ),
         {"provider": provider, "token": token},
     )
+
+
+def get_user_expo_push_tokens(
+    connection: Connection,
+    user_id: str,
+) -> list[str]:
+    """Get all EXPO push tokens owned by a user."""
+    rows = connection.execute(
+        text(
+            """
+            SELECT token FROM push_tokens
+            WHERE user_id = :user_id AND provider = 'EXPO'
+            """
+        ),
+        {"user_id": user_id},
+    ).fetchall()
+    return [row.token for row in rows]
