@@ -11,6 +11,7 @@ import {
 } from '@/theme/tokens';
 
 import { InlineNotice, PredictionCardSkeleton } from '@/components/feedback';
+import { LegalModal, LegalTextLink } from '@/components/LegalModal';
 import {
   AppHeader,
   Badge,
@@ -33,6 +34,7 @@ import type {
   PredictionListResponse,
   PublicPrediction,
 } from '@/types/public-api';
+import type { LegalDocumentId } from '@/legal/content';
 
 const featureDetails: Readonly<Record<AssistantFeature, string>> = {
   'Coupon Builder': 'Organize eligible published analyses into 1–4 selections.',
@@ -352,10 +354,25 @@ export function AiView({
   const [activeFeature, setActiveFeature] = useState<AssistantFeature | null>(
     null,
   );
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(
+    null,
+  );
   return (
     <Screen keyboardAware onRefresh={onRefresh} refreshing={refreshing}>
       <AppHeader title={t('PV Engine')} />
       <FeatureCards onSelect={setActiveFeature} />
+      <View style={styles.legalLinks} testID="analysis-legal-links">
+        <LegalTextLink
+          label={t('AI and Algorithmic Analysis')}
+          onPress={() => setLegalDocument('ai')}
+          testID="analysis-legal-ai"
+        />
+        <LegalTextLink
+          label={t('Betting Analysis and Risk Disclaimer')}
+          onPress={() => setLegalDocument('bettingDisclaimer')}
+          testID="analysis-legal-risk"
+        />
+      </View>
       {initialLoading && data === null ? <AssistantSkeleton /> : null}
       {error && data === null ? (
         <UnavailableState
@@ -378,6 +395,10 @@ export function AiView({
       !(error && data === null) ? (
         <FeatureSurface data={data} feature={activeFeature} />
       ) : null}
+      <LegalModal
+        documentId={legalDocument}
+        onClose={() => setLegalDocument(null)}
+      />
     </Screen>
   );
 }
@@ -433,4 +454,10 @@ const styles = createThemedStyleSheet({
     padding: spacing.md,
   },
   riskSelected: { borderColor: colors.controlSelectedAccent },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'center',
+  },
 });

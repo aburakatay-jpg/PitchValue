@@ -1,12 +1,6 @@
 KULLANIM KOŞULLARI
 
-Yürürlük Tarihi: 29 Eylül 2026
-
-Hizmet Sağlayıcı: BURAK ATAY
-
-İletişim: pitchvalue@outlook.com
-
-Uygulanacak Hukuk: Türkiye
+Son Güncelleme: 24 Eylül 2026
 
 Bu Kullanım Koşulları (“Koşullar”), PitchValue uygulamasına ve PitchValue tarafından sunulan ilgili hizmetlere erişiminizi ve bunları kullanımınızı düzenler. PitchValue’a hesap oluşturarak veya hizmeti kullanarak bu Koşulları kabul edersiniz.
 
@@ -144,9 +138,7 @@ Bu Koşulların ciddi veya tekrarlanan şekilde ihlal edilmesi, hizmetin güvenl
 
 Uygun olduğu durumlarda, kısıtlama veya sonlandırma işlemi hakkında kullanıcıya bilgi verilir.
 
-Hesabınızı uygulamada sunulan hesap silme mekanizması üzerinden silebilirsiniz. Hesap silme; hesabınızı, aktif oturumları ve kimlik bilgilerini, My Bets / kaydedilmiş seçimleri, takip edilen maçları ve hesabınıza ait push tokenlarını siler. Asgari ticari işlem, abonelik/entitlement, yasal kabul ve silme denetim kanıtı hukuki veya denetim gereklilikleri için saklanabilir ve silinen hesaptan ayrıştırılabilir.
-
-Aktif abonelik hesap silmeyi engellemez. PitchValue hesabının silinmesi App Store veya Google Play aboneliğini iptal etmez; abonelik ilgili mağazadan ayrıca yönetilmelidir. Aynı e-posta adresi daha sonra kullanılırsa yeni bir hesap oluşturulur.
+Hesabınızı uygulamada sunulan hesap silme mekanizması üzerinden silebilirsiniz. Hesap silmenin kişisel verileriniz üzerindeki etkileri Gizlilik Politikası ve ilgili hesap silme bildiriminde açıklanır.
 
 14. ÜÇÜNCÜ TARAF HİZMETLER
 
@@ -196,11 +188,11 @@ Bu Koşullar, hesabınız veya PitchValue hizmetleri hakkında soru, şikâyet v
 
 E-posta: pitchvalue@outlook.com
 
-PitchValue, BURAK ATAY tarafından işletilir. İletişim ve gizlilik talepleri pitchvalue@outlook.com adresine gönderilebilir.
+Hizmeti işleten tüzel kişinin yasal unvanı ve kayıtlı adresi, hizmetin ticari faaliyete geçmesinden önce bu bölümde ve gerekli diğer yasal alanlarda kullanıcıya sunulacaktır.
 
 21. UYGULANACAK HUKUK VE UYUŞMAZLIKLAR
 
-Bu Koşullar, tüketicinin ikamet ettiği ülkede sahip olduğu ve sözleşmeyle kaldırılamayan zorunlu yasal korumalar saklı kalmak üzere Türkiye hukukuna tabidir.
+Bu Koşullar, tüketicinin ikamet ettiği ülkede sahip olduğu zorunlu yasal korumalar saklı kalmak üzere, PitchValue hizmetini işleten tüzel kişi için belirlenecek uygulanacak hukuka tabi olacaktır.
 
 Tüketicilerin yerel hukuk uyarınca yetkili mahkemelere veya mevcut alternatif uyuşmazlık çözüm yollarına başvurma hakları saklıdır.
 

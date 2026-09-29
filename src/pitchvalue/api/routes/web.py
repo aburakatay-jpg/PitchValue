@@ -101,8 +101,15 @@ def delete_account_page() -> str:
     <div id="deletion-section" class="card hidden">
         <h2>Delete Account</h2>
         <p class="warning">
-            Deleting your account is permanent. It will remove your profile, 
-            preferences, My Bets, and all saved selections.
+            Deleting your account is permanent. It removes the account, active
+            sessions and credentials, My Bets and saved selections, followed
+            matches, and push tokens owned by the account.
+        </p>
+        <p>
+            Minimum commerce, entitlement, legal-acceptance, and deletion-audit
+            evidence may be retained and delinked where required. An active
+            subscription does not prevent account deletion. The same email may
+            later be used to create a new account.
         </p>
         <p>
             <strong>Active Subscription:</strong> Deleting the PitchValue account 
@@ -124,7 +131,11 @@ def delete_account_page() -> str:
 
     <div id="success-section" class="card hidden">
         <h2>Account Deleted</h2>
-        <p>Your PitchValue account has been successfully deleted.</p>
+        <p>
+            Your PitchValue account deletion request was accepted. Account-owned
+            data is deleted as described above; minimum required evidence may be
+            retained and delinked.
+        </p>
         <p>Provider revocation may still be processing. You can safely close this page.</p>
     </div>
 

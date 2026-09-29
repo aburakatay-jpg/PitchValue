@@ -1,15 +1,21 @@
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 
 import { CreateAccountShell } from '@/components/AuthShell';
-import { useLanguage } from '@/features/language/LanguageContext';
+import { LegalModal } from '@/components/LegalModal';
 import { useProductSession } from '@/features/session/ProductSessionContext';
-import { confirmEmailVerification, resendEmailVerification } from '@/lib/product-api';
+import {
+  confirmEmailVerification,
+  resendEmailVerification,
+} from '@/lib/product-api';
+import type { LegalDocumentId } from '@/legal/content';
 
 export default function EmailAuthScreen() {
   const router = useRouter();
   const session = useProductSession();
-  const { t } = useLanguage();
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(
+    null,
+  );
 
   const returnToSignIn = () => {
     if (router.canGoBack()) router.back();
@@ -34,29 +40,29 @@ export default function EmailAuthScreen() {
 
   const handleResend = async () => {
     if (!session.accessToken) throw new Error('Unauthenticated');
-    const result = await resendEmailVerification(session.accessToken, new AbortController().signal);
+    const result = await resendEmailVerification(
+      session.accessToken,
+      new AbortController().signal,
+    );
     return { deliveryState: result.delivery_state };
   };
 
   return (
-    <CreateAccountShell
-      onOpenPrivacy={() =>
-        Alert.alert(
-          t('Privacy Policy'),
-          t('Final legal content is not yet available.'),
-        )
-      }
-      onOpenTerms={() =>
-        Alert.alert(
-          t('Terms of Use'),
-          t('Final legal content is not yet available.'),
-        )
-      }
-      onSignIn={returnToSignIn}
-      onSignUp={handleSignUp}
-      onVerify={handleVerify}
-      unverifiedSession={session.state === 'UNVERIFIED'}
-      onResend={handleResend}
-    />
+    <>
+      <CreateAccountShell
+        onOpenAge={() => setLegalDocument('age')}
+        onOpenPrivacy={() => setLegalDocument('privacy')}
+        onOpenTerms={() => setLegalDocument('terms')}
+        onSignIn={returnToSignIn}
+        onSignUp={handleSignUp}
+        onVerify={handleVerify}
+        unverifiedSession={session.state === 'UNVERIFIED'}
+        onResend={handleResend}
+      />
+      <LegalModal
+        documentId={legalDocument}
+        onClose={() => setLegalDocument(null)}
+      />
+    </>
   );
 }

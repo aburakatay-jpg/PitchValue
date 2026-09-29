@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { Screen, sharedStyles, stackScreenEdges } from '@/components/ui';
+import { LegalModal, LegalTextLink } from '@/components/LegalModal';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
@@ -27,6 +28,7 @@ import {
   createThemedStyleSheet,
 } from '@/theme/tokens';
 import * as SecureStore from 'expo-secure-store';
+import type { LegalDocumentId } from '@/legal/content';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
@@ -45,6 +47,9 @@ export default function DeleteAccountScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [deletionState, setDeletionState] = useState<string | null>(null);
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(
+    null,
+  );
 
   const isGuest = session.state === 'GUEST';
 
@@ -148,9 +153,26 @@ export default function DeleteAccountScreen() {
             </Text>
             <Text style={styles.bodyText}>
               {t(
-                'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.',
+                'Deleting your account removes your account, sessions and credentials, My Bets and saved selections, followed matches, and push tokens owned by your account. Minimum commerce, entitlement, legal-acceptance, and deletion-audit evidence may be retained and delinked when required.',
               )}
             </Text>
+            <Text style={styles.bodyText}>
+              {t(
+                'An active subscription does not block account deletion. The same email may later be used to create a new account.',
+              )}
+            </Text>
+            <View style={styles.legalLinks}>
+              <LegalTextLink
+                label={t('Privacy Policy')}
+                onPress={() => setLegalDocument('privacy')}
+                testID="delete-legal-privacy"
+              />
+              <LegalTextLink
+                label={t('Terms of Use')}
+                onPress={() => setLegalDocument('terms')}
+                testID="delete-legal-terms"
+              />
+            </View>
             <Pressable
               accessibilityRole="button"
               onPress={onNextFromConsequences}
@@ -358,6 +380,10 @@ export default function DeleteAccountScreen() {
           </View>
         )}
       </View>
+      <LegalModal
+        documentId={legalDocument}
+        onClose={() => setLegalDocument(null)}
+      />
     </Screen>
   );
 }
@@ -444,5 +470,11 @@ const styles = createThemedStyleSheet({
     borderRadius: radii.md,
     ...typography.body,
     color: colors.text,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'center',
   },
 });

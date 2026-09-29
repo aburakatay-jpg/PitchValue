@@ -230,6 +230,7 @@ type CreateAccountProps = Readonly<{
   onSignIn: () => void;
   onOpenTerms?: (() => void) | undefined;
   onOpenPrivacy?: (() => void) | undefined;
+  onOpenAge?: (() => void) | undefined;
   unverifiedSession?: boolean;
   onResend?: (() => Promise<{ deliveryState: string }>) | undefined;
 }>;
@@ -240,6 +241,7 @@ export function CreateAccountShell({
   onSignIn,
   onOpenTerms,
   onOpenPrivacy,
+  onOpenAge,
   unverifiedSession,
   onResend,
 }: CreateAccountProps) {
@@ -381,7 +383,21 @@ export function CreateAccountShell({
             label={t('I am 18 years of age or older.')}
             onChange={setAgeAccepted}
             testID="age-acknowledgement"
-          />
+          >
+            <Text style={styles.acknowledgementText}>
+              {t('I am 18 years of age or older.')}
+            </Text>
+            <Text
+              accessibilityRole="link"
+              onPress={(event) => {
+                event.stopPropagation();
+                onOpenAge?.();
+              }}
+              style={styles.inlineLink}
+            >
+              {t('18+ and Age Declaration')}
+            </Text>
+          </AcknowledgementRow>
           <AcknowledgementRow
             checked={termsAccepted}
             label={t('I accept the Terms of Use.')}

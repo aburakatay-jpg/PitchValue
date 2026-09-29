@@ -10,7 +10,9 @@ import {
 } from '@/theme/tokens';
 
 import { Button } from '@/components/ui';
+import { LegalModal, LegalTextLink } from '@/components/LegalModal';
 import { useLanguage } from '@/features/language/LanguageContext';
+import type { LegalDocumentId } from '@/legal/content';
 
 export const onboardingPages = [
   {
@@ -50,6 +52,9 @@ export function AgeConfirmation({
   storageError?: boolean;
 }) {
   const { t } = useLanguage();
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(
+    null,
+  );
   return (
     <FirstLaunchPage>
       <BrandLockup />
@@ -62,19 +67,28 @@ export function AgeConfirmation({
             'PitchValue is a decision-support product, not a sportsbook. Betting can involve financial loss. You are responsible for following the laws that apply where you live.',
           )}
         </Text>
-        <View
-          accessibilityLabel={t('Legal information pending approved content')}
-          style={styles.legal}
-        >
+        <View style={styles.legal}>
           <Text style={styles.legalTitle}>{t('Before continuing')}</Text>
-          <Text style={styles.secondary}>
-            {t('Terms · Privacy · Responsible Gambling')}
-          </Text>
-          <Text style={styles.caption}>
-            {t(
-              'Full legal information and destinations are not yet available.',
-            )}
-          </Text>
+          <LegalTextLink
+            label={t('18+ and Age Declaration')}
+            onPress={() => setLegalDocument('age')}
+            testID="first-launch-legal-age"
+          />
+          <LegalTextLink
+            label={t('Terms of Use')}
+            onPress={() => setLegalDocument('terms')}
+            testID="first-launch-legal-terms"
+          />
+          <LegalTextLink
+            label={t('Privacy Policy')}
+            onPress={() => setLegalDocument('privacy')}
+            testID="first-launch-legal-privacy"
+          />
+          <LegalTextLink
+            label={t('Betting Risk and Responsible Gaming')}
+            onPress={() => setLegalDocument('responsibleGaming')}
+            testID="first-launch-legal-responsible"
+          />
         </View>
         <Button
           accessibilityLabel={t('Confirm I am 18 or older')}
@@ -91,6 +105,10 @@ export function AgeConfirmation({
           {t('Exit')}
         </Button>
       </View>
+      <LegalModal
+        documentId={legalDocument}
+        onClose={() => setLegalDocument(null)}
+      />
     </FirstLaunchPage>
   );
 }

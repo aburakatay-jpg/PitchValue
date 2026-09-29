@@ -20,6 +20,12 @@ const en: Translations = {
   'Responsible Gaming': 'Responsible Gaming',
   '18+ and Age Declaration': '18+ and Age Declaration',
   'Betting Risk and Responsible Gaming': 'Betting Risk and Responsible Gaming',
+  'Betting Analysis and Risk Disclaimer':
+    'Betting Analysis and Risk Disclaimer',
+  'AI and Algorithmic Analysis': 'AI and Algorithmic Analysis',
+  'Subscription Explanation': 'Subscription Explanation',
+  'Sportsbook / Affiliate Policy': 'Sportsbook / Affiliate Policy',
+  'Support and Complaints': 'Support and Complaints',
   'Legal Information': 'Legal Information',
   App: 'App',
   Loading: 'Loading...',
@@ -39,11 +45,12 @@ const en: Translations = {
   'No saved selection': 'No saved selection',
   'Saved to My Bets': 'Saved to My Bets',
   'Unable to save this selection': 'Unable to save this selection',
-  'Your saved selection is temporarily unavailable': 'Your saved selection is temporarily unavailable',
-  'ACTIVE': 'Active',
-  'SETTLED': 'Settled',
-  'REMOVED': 'Removed',
-  'REVIEW_REQUIRED': 'Review required',
+  'Your saved selection is temporarily unavailable':
+    'Your saved selection is temporarily unavailable',
+  ACTIVE: 'Active',
+  SETTLED: 'Settled',
+  REMOVED: 'Removed',
+  REVIEW_REQUIRED: 'Review required',
   'Sign in': 'Sign in',
   'Sign In': 'Sign In',
   'Sign out': 'Sign out',
@@ -51,6 +58,10 @@ const en: Translations = {
   'Delete Account': 'Delete Account',
   'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.':
     'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.',
+  'Deleting your account removes your account, sessions and credentials, My Bets and saved selections, followed matches, and push tokens owned by your account. Minimum commerce, entitlement, legal-acceptance, and deletion-audit evidence may be retained and delinked when required.':
+    'Deleting your account removes your account, sessions and credentials, My Bets and saved selections, followed matches, and push tokens owned by your account. Minimum commerce, entitlement, legal-acceptance, and deletion-audit evidence may be retained and delinked when required.',
+  'An active subscription does not block account deletion. The same email may later be used to create a new account.':
+    'An active subscription does not block account deletion. The same email may later be used to create a new account.',
   Continue: 'Continue',
   Cancel: 'Cancel',
   'Active Subscription': 'Active Subscription',
@@ -178,6 +189,8 @@ const en: Translations = {
   Purchase: 'Purchase',
   'Restore Purchases': 'Restore Purchases',
   'Restore purchases': 'Restore purchases',
+  'Restore Purchases is currently unavailable.':
+    'Restore Purchases is currently unavailable.',
   'Close Premium options': 'Close Premium options',
   Close: 'Close',
   'A trial may be offered after App Store eligibility is verified.':
@@ -385,6 +398,11 @@ const tr: Translations = {
   'Responsible Gaming': 'Sorumlu Oyun',
   '18+ and Age Declaration': '18+ ve Yaş Beyanı',
   'Betting Risk and Responsible Gaming': 'Bahis Riski ve Sorumlu Oyun',
+  'Betting Analysis and Risk Disclaimer': 'Bahis Analizi ve Risk Feragatnamesi',
+  'AI and Algorithmic Analysis': 'AI ve Algoritmik Analiz',
+  'Subscription Explanation': 'Abonelik Açıklaması',
+  'Sportsbook / Affiliate Policy': 'Sportsbook / Affiliate Politikası',
+  'Support and Complaints': 'Destek ve Şikâyet',
   'Legal Information': 'Yasal Bilgiler',
   App: 'Uygulama',
   Loading: 'Yükleniyor...',
@@ -404,11 +422,12 @@ const tr: Translations = {
   'No saved selection': 'Kaydedilen seçim yok',
   'Saved to My Bets': 'Bahislerim bölümüne kaydedildi',
   'Unable to save this selection': 'Bu seçim kaydedilemedi',
-  'Your saved selection is temporarily unavailable': 'Kaydedilen seçiminiz geçici olarak kullanılamıyor',
-  'ACTIVE': 'Aktif',
-  'SETTLED': 'Sonuçlandı',
-  'REMOVED': 'Kaldırıldı',
-  'REVIEW_REQUIRED': 'İnceleme gerekli',
+  'Your saved selection is temporarily unavailable':
+    'Kaydedilen seçiminiz geçici olarak kullanılamıyor',
+  ACTIVE: 'Aktif',
+  SETTLED: 'Sonuçlandı',
+  REMOVED: 'Kaldırıldı',
+  REVIEW_REQUIRED: 'İnceleme gerekli',
   'Sign in': 'Giriş yap',
   'Sign In': 'Giriş Yap',
   'Sign out': 'Çıkış yap',
@@ -416,6 +435,10 @@ const tr: Translations = {
   'Delete Account': 'Hesabı Sil',
   'Deleting your account is permanent. It will remove your profile, preferences, My Bets, and all saved selections from this device.':
     'Hesabınızı silmek kalıcıdır. Profiliniz, tercihleriniz, Bahislerim ve bu cihazdaki tüm kayıtlı seçimler kaldırılır.',
+  'Deleting your account removes your account, sessions and credentials, My Bets and saved selections, followed matches, and push tokens owned by your account. Minimum commerce, entitlement, legal-acceptance, and deletion-audit evidence may be retained and delinked when required.':
+    'Hesap silme; hesabınızı, oturumları ve kimlik bilgilerini, Bahislerim ve kayıtlı seçimleri, takip edilen maçları ve hesabınıza ait push tokenlarını siler. Gerekli olduğunda asgari ticari işlem, abonelik yetkisi, yasal kabul ve silme denetim kanıtı saklanabilir ve hesabınızdan ayrıştırılabilir.',
+  'An active subscription does not block account deletion. The same email may later be used to create a new account.':
+    'Aktif abonelik hesap silmeyi engellemez. Aynı e-posta daha sonra yeni bir hesap oluşturmak için kullanılabilir.',
   Continue: 'Devam Et',
   Cancel: 'İptal',
   'Active Subscription': 'Aktif Abonelik',
@@ -542,6 +565,8 @@ const tr: Translations = {
   Purchase: 'Satın al',
   'Restore Purchases': 'Satın Alımları Geri Yükle',
   'Restore purchases': 'Satın alımları geri yükle',
+  'Restore Purchases is currently unavailable.':
+    'Satın Almaları Geri Yükle şu anda kullanılamıyor.',
   'Close Premium options': 'Premium seçeneklerini kapat',
   Close: 'Kapat',
   'A trial may be offered after App Store eligibility is verified.':

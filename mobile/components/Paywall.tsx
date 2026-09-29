@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 
 import { Button } from '@/components/ui';
+import { LegalModal, LegalTextLink } from '@/components/LegalModal';
 import { useCommerce } from '@/features/entitlement/CommerceContext';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
@@ -18,6 +19,7 @@ import {
   getActiveAppearance,
 } from '@/theme/tokens';
 import type { TrialEligibility } from '@/types/entitlement';
+import type { LegalDocumentId } from '@/legal/content';
 
 const planNames: Readonly<Record<CanonicalPlan, string>> = {
   monthly: 'Monthly',
@@ -99,6 +101,9 @@ export function PaywallShell({
   const commerce = useCommerce();
   const session = useProductSession();
   const [selectedPlan, setSelectedPlan] = useState<CanonicalPlan | null>(null);
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(
+    null,
+  );
   // The default adapter exposes unconfigured placeholders for diagnostics.
   // They are not purchasable store products and must not appear as plans.
   const products = commerce.isConfigured
@@ -191,11 +196,8 @@ export function PaywallShell({
       <Pressable
         accessibilityLabel={t('Restore purchases')}
         accessibilityRole="button"
-        accessibilityState={{
-          disabled: !commerce.isConfigured || commerce.isRestoring,
-        }}
-        disabled={!commerce.isConfigured || commerce.isRestoring}
-        onPress={commerce.restore}
+        accessibilityState={{ disabled: true }}
+        disabled
         style={({ pressed }) => [
           styles.restoreAction,
           pressed && styles.pressed,
@@ -204,6 +206,31 @@ export function PaywallShell({
       >
         <Text style={styles.restoreText}>{t('Restore Purchases')}</Text>
       </Pressable>
+      <Text style={styles.unavailable} testID="paywall-restore-unavailable">
+        {t('Restore Purchases is currently unavailable.')}
+      </Text>
+
+      <View style={styles.legalLinks} testID="paywall-legal-links">
+        <LegalTextLink
+          label={t('Subscription Explanation')}
+          onPress={() => setLegalDocument('subscription')}
+          testID="paywall-legal-subscription"
+        />
+        <LegalTextLink
+          label={t('Terms of Use')}
+          onPress={() => setLegalDocument('terms')}
+          testID="paywall-legal-terms"
+        />
+        <LegalTextLink
+          label={t('Privacy Policy')}
+          onPress={() => setLegalDocument('privacy')}
+          testID="paywall-legal-privacy"
+        />
+      </View>
+      <LegalModal
+        documentId={legalDocument}
+        onClose={() => setLegalDocument(null)}
+      />
     </View>
   );
 }
@@ -329,5 +356,11 @@ const styles = createThemedStyleSheet({
     minHeight: touchTarget,
   },
   restoreText: { color: colors.textSecondary, ...typography.body },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'center',
+  },
   pressed: { opacity: 0.8 },
 });

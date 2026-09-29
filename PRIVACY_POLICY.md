@@ -1,63 +1,42 @@
-# PitchValue Privacy Policy
-**Effective Date:** 29 September 2026
-**Legal Entity:** BURAK ATAY
-**Contact Email:** pitchvalue@outlook.com
+PITCHVALUE GİZLİLİK POLİTİKASI
 
-## 1. Account Information
-We collect the following personal information when you create an account:
-- Email address
-- A unique account identifier
-- Residence/country (where applicable)
-- Age confirmation / legal eligibility evidence (where applicable)
+Yürürlük Tarihi: 29 Eylül 2026
+Veri Sorumlusu / Hizmet Sağlayıcı: BURAK ATAY
+İletişim: pitchvalue@outlook.com
+Ülke: Türkiye
 
-## 2. Product Activity
-When you use PitchValue, we collect information related to:
-- Saved selections / My Bets
-- Followed matches
-- Analysis-related user interactions
+1. HESAP BİLGİLERİ
 
-## 3. Push Notifications
-PitchValue may send you notifications regarding match events. We process:
-- Notification permissions
-- Expo push tokens / device tokens to deliver messages
-- Device tokens associated directly with your account
+Hesap oluşturduğunuzda e-posta adresi, benzersiz hesap kimliği, ülke/ikamet bilgisi ve gerekli olduğunda 18+ yaş uygunluğu ile yasal kabul kanıtı işlenir.
 
-Push notification processing involves the Expo Push Service, Apple Push Notification service (APNs) for iOS, and Firebase Cloud Messaging (FCM) when applicable. Note: FCM Android production activation is currently deferred.
+2. ÜRÜN ETKİLEŞİMLERİ
 
-## 4. Notification Content
-Notification content necessary for delivery may be processed through these notification providers. End-to-end encryption is not guaranteed.
+My Bets / kaydedilmiş seçimler, takip edilen maçlar ve analizle ilgili kullanıcı etkileşimleri uygulama işlevlerini sunmak amacıyla hesabınızla ilişkilendirilebilir.
 
-## 5. Account Deletion
-You may delete your account at any time through our provided public deletion resource. Account deletion will permanently erase:
-- Your primary account profile
-- Active sessions and credentials
-- Your saved selections / My Bets
-- Your followed matches
-- Your owned push tokens
+3. PUSH BİLDİRİMLERİ
 
-## 6. Retained Evidence
-We retain the minimum required information for:
-- Transaction and commerce evidence
-- Subscription and entitlement administration
-- Legal acceptance evidence
-- Minimal deletion audit logs
+Bildirim izni, Expo push tokenı ve cihaz tokenı maç bildirimlerini iletmek amacıyla işlenebilir. Expo push işleme desteği kod düzeyinde mevcuttur. iOS APNs fiziksel aktivasyonu ile Android FCM production aktivasyonu ertelenmiştir; bu sağlayıcıların production kabulünün tamamlandığı iddia edilmez.
 
-Retained evidence may be delinked or pseudonymized from the deleted account. Retention periods are dictated strictly by policy, legal necessity, and technical configurations.
+Bildirim için gerekli içerik Expo, APNs veya FCM üzerinden uygulanabildiği ölçüde işlenebilir. Uçtan uca şifreleme garanti edilmez.
 
-## 7. Canonical Data
-Global football fixtures, predictive model evidence, and related global metadata are canonical data and not considered personal account data, even if an account has viewed or interacted with them.
+4. HESAP SİLME
 
-## 8. Subscription Boundary
-- Deleting your PitchValue account does **NOT** cancel an active App Store or Google Play subscription.
-- Active subscriptions do **NOT** prevent account deletion.
-- You must manage and cancel your subscriptions directly through the applicable platform store controls (Apple App Store or Google Play Store).
+Hesap silme işlemi kullanıcıya ait hesabı, aktif oturumları ve kimlik bilgilerini, My Bets / kaydedilmiş seçimleri, takip edilen maçları ve kullanıcıya ait push tokenlarını siler.
 
-## 9. Service Providers
-We rely on the following applicable providers:
-- Expo
-- Apple / APNs
-- Google / FCM (where applicable)
-- Third-party transactional email providers
+Ticari işlem ve abonelik/entitlement kanıtı, yasal kabul kanıtı ve asgari silme denetim kaydı hukuki, tüketici veya denetim gereklilikleri için saklanabilir. Bu kanıtlar silinen hesaptan ayrıştırılabilir veya takma adlandırılabilir. Bu nedenle tüm verilerin anında ve koşulsuz olarak yok edildiği iddia edilmez.
 
-## 10. User Rights and Contact
-If you wish to exercise your data rights or contact our privacy team, please reach out at: pitchvalue@outlook.com
+Aktif abonelik hesap silmeyi engellemez. PitchValue hesabını silmek App Store veya Google Play aboneliğini iptal etmez. Aynı e-posta daha sonra kullanılırsa yeni bir hesap oluşturulur.
+
+5. KANONİK FUTBOL VERİLERİ
+
+Global fikstürler, tahmin/model kanıtı ve ilişkili global metadata kişisel hesap verisi değildir; ancak bir kullanıcının bunlarla etkileşimi kişisel ürün etkinliği olabilir.
+
+6. HİZMET SAĞLAYICILAR
+
+Uygulanabildiği ölçüde Expo, Apple/APNs, Google/FCM, uygulama mağazaları ve işlemsel e-posta sağlayıcıları kullanılabilir. Apple/Google fiziksel giriş ve sağlayıcı temizleme kabulü, Apple Hide My Email kabulü, APNs fiziksel aktivasyonu ve Android FCM production aktivasyonu ertelenmiş sınırlar olarak açıklanır.
+
+7. HAKLAR VE İLETİŞİM
+
+Kişisel verilerinizle ilgili erişim, düzeltme, silme veya diğer uygulanabilir talepler için pitchvalue@outlook.com adresine başvurabilirsiniz. Türkiye’deki ve uygulanabilir diğer yargı alanlarındaki sözleşmeyle kaldırılamayan veri koruma haklarınız saklıdır.
+
+© 2026 PitchValue

@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
 import {
   Alert,
   Linking,
@@ -19,6 +20,7 @@ import {
   Button,
 } from '@/components/ui';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { LegalModal } from '@/components/LegalModal';
 import { useLanguage } from '@/features/language/LanguageContext';
 import { useEntitlement } from '@/features/entitlement/EntitlementContext';
 import { useProductSession } from '@/features/session/ProductSessionContext';
@@ -35,6 +37,7 @@ import {
   createThemedStyleSheet,
 } from '@/theme/tokens';
 import type { EntitlementState } from '@/types/entitlement';
+import type { LegalDocumentId } from '@/legal/content';
 
 export const profileGroups = [
   'Account',
@@ -43,11 +46,16 @@ export const profileGroups = [
 ] as const;
 
 export const profileLegalDestinations = [
-  '18+ and Age Declaration',
-  'Betting Risk and Responsible Gaming',
-  'Terms of Use',
-  'Privacy Policy',
-  'Legal Information',
+  { id: 'age', label: '18+ and Age Declaration' },
+  { id: 'responsibleGaming', label: 'Betting Risk and Responsible Gaming' },
+  { id: 'bettingDisclaimer', label: 'Betting Analysis and Risk Disclaimer' },
+  { id: 'ai', label: 'AI and Algorithmic Analysis' },
+  { id: 'subscription', label: 'Subscription Explanation' },
+  { id: 'affiliate', label: 'Sportsbook / Affiliate Policy' },
+  { id: 'terms', label: 'Terms of Use' },
+  { id: 'privacy', label: 'Privacy Policy' },
+  { id: 'legal', label: 'Legal Information' },
+  { id: 'support', label: 'Support and Complaints' },
 ] as const;
 
 const CONTACT_EMAIL = 'pitchvalue@outlook.com';
@@ -252,13 +260,14 @@ export function ProfileView({
   const { t } = useLanguage();
   const router = useRouter();
   const { preference, setPreference } = useAppearance();
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(
+    null,
+  );
   const version = Constants.expoConfig?.version ?? t('Unavailable');
   const premiumOpensPaywall =
     entitlement === 'GUEST' ||
     entitlement === 'PREMIUM_INACTIVE' ||
     entitlement === 'PREMIUM_EXPIRED';
-  const showLegalPlaceholder = (destination: string) =>
-    Alert.alert(destination, t('Final legal content is not yet available.'));
   const confirmSignOut = () => {
     if (!onSignOut) return;
     Alert.alert(t('Are you sure you want to sign out?'), undefined, [
@@ -356,9 +365,9 @@ export function ProfileView({
       <ProfileGroup title={t('Responsible Gaming')}>
         {profileLegalDestinations.map((destination) => (
           <LegalRow
-            key={destination}
-            label={t(destination)}
-            onPress={() => showLegalPlaceholder(t(destination))}
+            key={destination.id}
+            label={t(destination.label)}
+            onPress={() => setLegalDocument(destination.id)}
           />
         ))}
       </ProfileGroup>
@@ -422,6 +431,10 @@ export function ProfileView({
           <Text style={styles.copyright}>crtnapp © 2026</Text>
         </View>
       </SafeAreaView>
+      <LegalModal
+        documentId={legalDocument}
+        onClose={() => setLegalDocument(null)}
+      />
     </Screen>
   );
 }
@@ -436,7 +449,9 @@ export default function ProfileScreen() {
     return (
       <Screen safeAreaEdges={stackScreenEdges}>
         <SectionHeader title={t('Account')} />
-        <View style={[sharedStyles.card, { padding: spacing.md, gap: spacing.md }]}>
+        <View
+          style={[sharedStyles.card, { padding: spacing.md, gap: spacing.md }]}
+        >
           <Text style={{ color: colors.text, textAlign: 'center' }}>
             {t('Please verify your email address to access your profile.')}
           </Text>
