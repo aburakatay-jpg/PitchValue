@@ -6,7 +6,6 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
 router = APIRouter(tags=["web"])
-import pathlib
 
 
 def _get_markdown_html(title: str, filepath: str) -> str:
