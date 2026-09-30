@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = '9c7c56a20a35'
-down_revision: str | None = '4633ed520904'
+revision: str = "9c7c56a20a35"
+down_revision: str | None = "4633ed520904"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -48,4 +48,3 @@ def downgrade() -> None:
         DROP TABLE followed_matches;
         """
     )
-

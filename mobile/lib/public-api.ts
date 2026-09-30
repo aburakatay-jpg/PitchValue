@@ -44,20 +44,16 @@ async function request<T>(
   let response: Response;
   const fullUrl = `${config.apiBaseUrl.replace(/\/$/, '')}${path}`;
   if (__DEV__) console.log(`[API] Fetching ${fullUrl}`);
+  const controller = new AbortController();
+  const abortRequest = () => controller.abort();
+  const timeout = setTimeout(abortRequest, 30000);
+  signal.addEventListener('abort', abortRequest, { once: true });
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    signal.addEventListener('abort', () => {
-      clearTimeout(timeout);
-      controller.abort();
-    });
-
     response = await fetch(fullUrl, {
       headers: { Accept: 'application/json' },
       method: 'GET',
       signal: controller.signal,
     });
-    clearTimeout(timeout);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       if (signal.aborted) {
@@ -73,6 +69,9 @@ async function request<T>(
         `[API] ${path} NETWORK FAILURE: ${error instanceof Error ? error.message : 'Unknown'}`,
       );
     throw new PublicApiError('API_UNAVAILABLE');
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener('abort', abortRequest);
   }
   if (!response.ok) {
     if (__DEV__) console.log(`[API] ${path} HTTP ${response.status}`);

@@ -7,6 +7,10 @@ import { LegalModal } from '@/components/LegalModal';
 import { PaywallShell } from '@/components/Paywall';
 import { LEGAL_DOCUMENTS } from '@/legal/content';
 
+jest.mock('expo-symbols', () => ({
+  SymbolView: () => null,
+}));
+
 jest.mock('@/features/appearance/AppearanceContext', () => ({
   appearancePreferences: ['system', 'dark', 'light'],
   useAppearance: () => ({

@@ -18,8 +18,10 @@ def test_privacy_page_accessible(client: TestClient) -> None:
     content = response.text
     assert "PitchValue" in content
     assert "Privacy Policy" in content
-    assert "account deletion" in content.lower()
-    assert "subscription" in content.lower()
+    assert "4. HESAP SİLME" in content
+    assert "push tokenlarını siler" in content
+    assert "silinen hesaptan ayrıştırılabilir veya takma adlandırılabilir" in content
+    assert "App Store veya Google Play aboneliğini iptal etmez" in content
 
 
 def test_terms_page_accessible(client: TestClient) -> None:
@@ -29,5 +31,7 @@ def test_terms_page_accessible(client: TestClient) -> None:
     content = response.text
     assert "PitchValue" in content
     assert "Terms of Service" in content
-    assert "informational" in content.lower()
-    assert "subscription" in content.lower()
+    assert "bilgi ve karar destek hizmetidir" in content
+    assert "bir bahis operatörü, bahis sitesi, casino veya finansal aracı değildir" in content
+    assert "kesin kazanç veya garantili sonuç vaat etmez" in content
+    assert "ABONELİKLER VE ÖDEMELER" in content

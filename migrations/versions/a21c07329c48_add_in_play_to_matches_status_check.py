@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = 'a21c07329c48'
-down_revision: str | None = '754c63cfcf58'
+revision: str = "a21c07329c48"
+down_revision: str | None = "754c63cfcf58"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -22,7 +22,8 @@ def upgrade() -> None:
     op.create_check_constraint(
         "matches_status_check",
         "matches",
-        "status IN ('SCHEDULED', 'IN_PLAY', 'FINISHED', 'AWARDED', 'ABANDONED', 'POSTPONED', 'CANCELLED')",
+        "status IN ('SCHEDULED', 'IN_PLAY', 'FINISHED', 'AWARDED', 'ABANDONED', "
+        "'POSTPONED', 'CANCELLED')",
     )
 
 
@@ -35,4 +36,3 @@ def downgrade() -> None:
         "matches",
         "status IN ('SCHEDULED', 'FINISHED', 'AWARDED', 'ABANDONED', 'POSTPONED', 'CANCELLED')",
     )
-

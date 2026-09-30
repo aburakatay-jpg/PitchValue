@@ -7,8 +7,8 @@ Create Date: 2026-09-25 21:20:34.592894
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "27821b1f6bf0"
 down_revision: str | None = "9d88d704a4b2"
@@ -32,7 +32,8 @@ def upgrade() -> None:
     op.create_check_constraint(
         "provider_revocation_jobs_credential_type_check",
         "provider_revocation_jobs",
-        "credential_type IN ('AUTHORIZATION_CODE', 'ACCESS_TOKEN', 'REFRESH_TOKEN', 'IDENTITY_TOKEN', 'UNKNOWN')",
+        "credential_type IN ('AUTHORIZATION_CODE', 'ACCESS_TOKEN', 'REFRESH_TOKEN', "
+        "'IDENTITY_TOKEN', 'UNKNOWN')",
     )
 
 
