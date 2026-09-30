@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -10,18 +10,20 @@ from pitchvalue.product_services.auth import AccountKind, ProductUser
 
 
 @pytest.fixture
-def mock_connection():
+def mock_connection() -> MagicMock:
     return MagicMock()
 
 
 @pytest.fixture
-def mock_user():
+def mock_user() -> ProductUser:
     return ProductUser(user_id="user_123", account_kind=AccountKind.AUTHENTICATED, email=None)
 
 
-def test_missing_credential_sets_credential_required(mock_connection, mock_user):
+def test_missing_credential_sets_credential_required(
+    mock_connection: MagicMock, mock_user: ProductUser
+) -> None:
     # Setup mock to simulate an external identity (Apple or Google)
-    def execute_mock(stmt, params=None):
+    def execute_mock(stmt: object, params: object | None = None) -> MagicMock:
         sql = str(stmt).upper()
         mock_result = MagicMock()
         if "FROM APP_USERS" in sql:
@@ -43,15 +45,13 @@ def test_missing_credential_sets_credential_required(mock_connection, mock_user)
 
     mock_connection.execute.side_effect = execute_mock
 
-    # Mock UnconfiguredAppleIdentityVerifier
-    import pitchvalue.product_services.account_deletion as ad
-
-    ad.UnconfiguredAppleIdentityVerifier = MagicMock()
-    ad.UnconfiguredAppleIdentityVerifier().verify.return_value.subject = "apple_sub_123"
-
-    initiate_account_deletion(
-        mock_connection, mock_user, password_or_token="fake_id_token", provider_credential=None
-    )
+    with patch(
+        "pitchvalue.product_services.account_deletion.UnconfiguredAppleIdentityVerifier"
+    ) as verifier:
+        verifier().verify.return_value.subject = "apple_sub_123"
+        initiate_account_deletion(
+            mock_connection, mock_user, password_or_token="fake_id_token", provider_credential=None
+        )
 
     # Verify UPDATE for CREDENTIAL_REQUIRED was called
     update_called = False
@@ -63,8 +63,10 @@ def test_missing_credential_sets_credential_required(mock_connection, mock_user)
     assert update_called, "Should set CREDENTIAL_REQUIRED when provider_credential is not provided"
 
 
-def test_invalid_credential_type_rejected(mock_connection, mock_user):
-    def execute_mock(stmt, params=None):
+def test_invalid_credential_type_rejected(
+    mock_connection: MagicMock, mock_user: ProductUser
+) -> None:
+    def execute_mock(stmt: object, params: object | None = None) -> MagicMock:
         sql = str(stmt).upper()
         mock_result = MagicMock()
         if "FROM APP_USERS" in sql:
@@ -86,17 +88,21 @@ def test_invalid_credential_type_rejected(mock_connection, mock_user):
 
     mock_connection.execute.side_effect = execute_mock
 
-    with pytest.raises(DeletionError, match="Invalid provider revocation credential type"):
-        initiate_account_deletion(
-            mock_connection,
-            mock_user,
-            password_or_token="fake_id_token",
-            provider_credential={"type": "IDENTITY_TOKEN", "value": "some_token"},
-        )
+    with patch(
+        "pitchvalue.product_services.account_deletion.UnconfiguredAppleIdentityVerifier"
+    ) as verifier:
+        verifier().verify.return_value.subject = "apple_sub_123"
+        with pytest.raises(DeletionError, match="Invalid provider revocation credential type"):
+            initiate_account_deletion(
+                mock_connection,
+                mock_user,
+                password_or_token="fake_id_token",
+                provider_credential={"type": "IDENTITY_TOKEN", "value": "some_token"},
+            )
 
 
-def test_valid_credential_queued(mock_connection, mock_user):
-    def execute_mock(stmt, params=None):
+def test_valid_credential_queued(mock_connection: MagicMock, mock_user: ProductUser) -> None:
+    def execute_mock(stmt: object, params: object | None = None) -> MagicMock:
         sql = str(stmt).upper()
         mock_result = MagicMock()
         if "FROM APP_USERS" in sql:
@@ -118,18 +124,16 @@ def test_valid_credential_queued(mock_connection, mock_user):
 
     mock_connection.execute.side_effect = execute_mock
 
-    # Mock UnconfiguredGoogleIdentityVerifier
-    import pitchvalue.product_services.account_deletion as ad
-
-    ad.UnconfiguredGoogleIdentityVerifier = MagicMock()
-    ad.UnconfiguredGoogleIdentityVerifier().verify.return_value.subject = "google_sub_123"
-
-    initiate_account_deletion(
-        mock_connection,
-        mock_user,
-        password_or_token="fake_id_token",
-        provider_credential={"type": "ACCESS_TOKEN", "value": "some_access_token"},
-    )
+    with patch(
+        "pitchvalue.product_services.account_deletion.UnconfiguredGoogleIdentityVerifier"
+    ) as verifier:
+        verifier().verify.return_value.subject = "google_sub_123"
+        initiate_account_deletion(
+            mock_connection,
+            mock_user,
+            password_or_token="fake_id_token",
+            provider_credential={"type": "ACCESS_TOKEN", "value": "some_access_token"},
+        )
 
     insert_called = False
     for call in mock_connection.execute.call_args_list:

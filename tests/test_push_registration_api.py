@@ -7,9 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Connection, text
 
-from pitchvalue.api.main import create_app
+from pitchvalue.api.app import create_app
 from pitchvalue.config import load_settings
-from pitchvalue.product_services.auth import ProductUser, _issue_session, _now
+from pitchvalue.product_services.auth import AccountKind, ProductUser, _issue_session, _now
 from pitchvalue.product_services.push_tokens import get_user_expo_push_tokens
 
 
@@ -38,7 +38,7 @@ def db_connection() -> Iterator[Connection]:
 
 
 @pytest.fixture
-def app_client(db_connection):
+def app_client(db_connection: Connection) -> Iterator[TestClient]:
     app = create_app(load_settings())
     # Override get_transaction and get_connection to use db_connection
     from pitchvalue.api.dependencies import get_connection, get_transaction
@@ -51,24 +51,26 @@ def app_client(db_connection):
 
 
 @pytest.fixture
-def auth_headers(db_connection):
+def auth_headers(db_connection: Connection) -> dict[str, str]:
     user = ProductUser(
-        user_id="test_user_pd_1", email="test@test.com", account_kind="AUTHENTICATED"
+        user_id="test_user_pd_1", email="test@test.com", account_kind=AccountKind.AUTHENTICATED
     )
     session = _issue_session(db_connection, user, _now(None))
     return {"Authorization": f"Bearer {session.access_token}"}
 
 
 @pytest.fixture
-def auth_headers_user2(db_connection):
+def auth_headers_user2(db_connection: Connection) -> dict[str, str]:
     user = ProductUser(
-        user_id="test_user_pd_2", email="test2@test.com", account_kind="AUTHENTICATED"
+        user_id="test_user_pd_2", email="test2@test.com", account_kind=AccountKind.AUTHENTICATED
     )
     session = _issue_session(db_connection, user, _now(None))
     return {"Authorization": f"Bearer {session.access_token}"}
 
 
-def test_register_push_token_success(app_client, auth_headers, db_connection):
+def test_register_push_token_success(
+    app_client: TestClient, auth_headers: dict[str, str], db_connection: Connection
+) -> None:
     response = app_client.post(
         "/api/v1/auth/push/register",
         headers=auth_headers,
@@ -81,7 +83,7 @@ def test_register_push_token_success(app_client, auth_headers, db_connection):
     assert "api_token_123" in tokens
 
 
-def test_register_push_token_unauthenticated(app_client):
+def test_register_push_token_unauthenticated(app_client: TestClient) -> None:
     response = app_client.post(
         "/api/v1/auth/push/register",
         json={"provider": "EXPO", "token": "api_token_123"},
@@ -89,7 +91,9 @@ def test_register_push_token_unauthenticated(app_client):
     assert response.status_code == 401
 
 
-def test_register_push_token_invalid_provider(app_client, auth_headers):
+def test_register_push_token_invalid_provider(
+    app_client: TestClient, auth_headers: dict[str, str]
+) -> None:
     response = app_client.post(
         "/api/v1/auth/push/register",
         headers=auth_headers,
@@ -100,8 +104,11 @@ def test_register_push_token_invalid_provider(app_client, auth_headers):
 
 
 def test_register_push_token_transfer_ownership(
-    app_client, auth_headers, auth_headers_user2, db_connection
-):
+    app_client: TestClient,
+    auth_headers: dict[str, str],
+    auth_headers_user2: dict[str, str],
+    db_connection: Connection,
+) -> None:
     # Register to user1
     app_client.post(
         "/api/v1/auth/push/register",

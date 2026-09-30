@@ -12,25 +12,25 @@ from pitchvalue.product_services.provider_revocation import (
 
 
 @pytest.fixture
-def mock_connection():
+def mock_connection() -> MagicMock:
     return MagicMock()
 
 
-def test_apple_missing_config_fails_closed():
+def test_apple_missing_config_fails_closed() -> None:
     with patch.dict("os.environ", clear=True):
         adapter = AppleRevocationAdapter()
         with pytest.raises(ConfigurationError):
             adapter.revoke("ACCESS_TOKEN", "token")
 
 
-def test_google_missing_config_for_auth_code():
+def test_google_missing_config_for_auth_code() -> None:
     adapter = GoogleRevocationAdapter()
     with pytest.raises(ConfigurationError, match="Google server-side exchange is not supported"):
         adapter.revoke("AUTHORIZATION_CODE", "code")
 
 
 @patch("pitchvalue.product_services.provider_revocation.requests.post")
-def test_apple_exchange_success(mock_post):
+def test_apple_exchange_success(mock_post: MagicMock) -> None:
     with patch.dict(
         "os.environ",
         {
@@ -66,7 +66,7 @@ def test_apple_exchange_success(mock_post):
 
 
 @patch("pitchvalue.product_services.provider_revocation.requests.post")
-def test_apple_revoke_refresh_token(mock_post):
+def test_apple_revoke_refresh_token(mock_post: MagicMock) -> None:
     with patch.dict(
         "os.environ",
         {
@@ -91,7 +91,7 @@ def test_apple_revoke_refresh_token(mock_post):
 
 
 @patch("pitchvalue.product_services.provider_revocation.requests.post")
-def test_apple_temporary_failure_retryable(mock_post):
+def test_apple_temporary_failure_retryable(mock_post: MagicMock) -> None:
     with patch.dict(
         "os.environ",
         {
@@ -112,7 +112,7 @@ def test_apple_temporary_failure_retryable(mock_post):
 
 
 @patch("pitchvalue.product_services.provider_revocation.requests.post")
-def test_google_revoke_access_token(mock_post):
+def test_google_revoke_access_token(mock_post: MagicMock) -> None:
     adapter = GoogleRevocationAdapter()
 
     mock_resp_revoke = MagicMock()
@@ -127,7 +127,7 @@ def test_google_revoke_access_token(mock_post):
 
 
 @patch("pitchvalue.product_services.provider_revocation.requests.post")
-def test_google_temporary_failure_retryable(mock_post):
+def test_google_temporary_failure_retryable(mock_post: MagicMock) -> None:
     adapter = GoogleRevocationAdapter()
 
     mock_resp_revoke = MagicMock()
@@ -138,7 +138,7 @@ def test_google_temporary_failure_retryable(mock_post):
         adapter.revoke("ACCESS_TOKEN", "at")
 
 
-def test_job_state_machine_success(mock_connection):
+def test_job_state_machine_success(mock_connection: MagicMock) -> None:
     service = ProviderRevocationService()
 
     # Mock finding a job
@@ -152,7 +152,7 @@ def test_job_state_machine_success(mock_connection):
     mock_result = MagicMock()
     mock_result.mappings.return_value.all.return_value = [job]
 
-    def execute_mock(stmt, params=None):
+    def execute_mock(stmt: object, params: object | None = None) -> MagicMock:
         sql = str(stmt).upper()
         if "SELECT JOB_ID" in sql:
             return mock_result
@@ -182,7 +182,7 @@ def test_job_state_machine_success(mock_connection):
     )
 
 
-def test_job_state_machine_retryable(mock_connection):
+def test_job_state_machine_retryable(mock_connection: MagicMock) -> None:
     service = ProviderRevocationService()
 
     job = {
@@ -207,7 +207,7 @@ def test_job_state_machine_retryable(mock_connection):
     assert any("SET STATUS = 'FAILED_RETRYABLE'" in q for q in updates)
 
 
-def test_google_auth_code_reclassifies_to_credential_required(mock_connection):
+def test_google_auth_code_reclassifies_to_credential_required(mock_connection: MagicMock) -> None:
     service = ProviderRevocationService()
 
     job = {

@@ -1,6 +1,6 @@
 import os
 from collections.abc import Iterator
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy import Connection, Engine, create_engine, text
@@ -8,6 +8,7 @@ from sqlalchemy import Connection, Engine, create_engine, text
 from pitchvalue.config import load_settings
 from pitchvalue.product_services.account_deletion import initiate_account_deletion
 from pitchvalue.product_services.auth import (
+    AccountKind,
     ProductUser,
     VerifiedExternalIdentity,
     _issue_session,
@@ -26,7 +27,7 @@ from pitchvalue.product_services.push_tokens import (
 )
 
 
-def seed_canonical_match(db):
+def seed_canonical_match(db: Connection) -> None:
     db.execute(
         text(
             "INSERT INTO competitions (competition_id, canonical_name, country_code, "
@@ -78,7 +79,7 @@ def db(database_engine: Engine) -> Iterator[Connection]:
         transaction.rollback()
 
 
-def test_followed_matches_lifecycle(db):
+def test_followed_matches_lifecycle(db: Connection) -> None:
     seed_canonical_match(db)
     user_id_1 = "test_user_fm_1"
     user_id_2 = "test_user_fm_2"
@@ -122,7 +123,7 @@ def test_followed_matches_lifecycle(db):
     assert match_id_1 in get_followed_match_ids(db, user_id_1)
 
 
-def test_push_tokens_lifecycle(db):
+def test_push_tokens_lifecycle(db: Connection) -> None:
     seed_canonical_match(db)
     user_id_1 = "test_user_pt_1"
     user_id_2 = "test_user_pt_2"
@@ -153,7 +154,9 @@ def test_push_tokens_lifecycle(db):
     ).scalar()
     assert result == user_id_2
 
-    user_2 = ProductUser(user_id=user_id_2, email="del2@test.com", account_kind="AUTHENTICATED")
+    user_2 = ProductUser(
+        user_id=user_id_2, email="del2@test.com", account_kind=AccountKind.AUTHENTICATED
+    )
     issued = _issue_session(db, user_2, _now(None))
     logout(db, issued.access_token)
 
@@ -179,7 +182,7 @@ def test_push_tokens_lifecycle(db):
 
 
 @patch("pitchvalue.product_services.account_deletion.UnconfiguredGoogleIdentityVerifier")
-def test_account_deletion_cleanup(mock_verifier, db):
+def test_account_deletion_cleanup(mock_verifier: MagicMock, db: Connection) -> None:
     mock_verifier.return_value.verify.return_value = VerifiedExternalIdentity(
         provider="GOOGLE", subject="del1@test.com", email="del1@test.com"
     )
@@ -215,7 +218,7 @@ def test_account_deletion_cleanup(mock_verifier, db):
 
     initiate_account_deletion(
         db,
-        ProductUser(user_id=user_id, email="del1@test.com", account_kind="AUTHENTICATED"),
+        ProductUser(user_id=user_id, email="del1@test.com", account_kind=AccountKind.AUTHENTICATED),
         password_or_token="dummy",
     )
 

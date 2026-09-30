@@ -1,7 +1,9 @@
 import os
+from collections.abc import Iterator
 
 import pytest
 from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.engine import Connection
 
 from pitchvalue.config import load_settings
 from pitchvalue.product_services.auth import (
@@ -20,7 +22,7 @@ def product_engine() -> Engine:
 
 
 @pytest.fixture
-def db_connection(product_engine: Engine):
+def db_connection(product_engine: Engine) -> Iterator[Connection]:
     with product_engine.begin() as conn:
         conn.execute(text("DELETE FROM auth_password_resets"))
         conn.execute(text("DELETE FROM auth_sessions"))
@@ -29,7 +31,7 @@ def db_connection(product_engine: Engine):
         yield conn
 
 
-def test_password_reset_lifecycle(db_connection):
+def test_password_reset_lifecycle(db_connection: Connection) -> None:
     # Setup
     session, _ = register_email(db_connection, "reset@test.com", "OldPassword123!", "US")
     user_id = session.user.user_id
@@ -73,14 +75,14 @@ def test_password_reset_lifecycle(db_connection):
         login_email(db_connection, "reset@test.com", "OldPassword123!")
 
 
-def test_password_reset_invalid_token(db_connection):
+def test_password_reset_invalid_token(db_connection: Connection) -> None:
     register_email(db_connection, "badtoken@test.com", "OldPassword123!", "US")
 
     with pytest.raises(AuthError, match="Invalid or expired reset token"):
         confirm_password_reset(db_connection, "bad_token_value", "NewPassword123!")
 
 
-def test_password_reset_anti_enumeration(db_connection):
+def test_password_reset_anti_enumeration(db_connection: Connection) -> None:
     # Request for non-existent email should return None (not reveal user existence)
     raw_token = request_password_reset(db_connection, "nobody@test.com")
     assert raw_token is None

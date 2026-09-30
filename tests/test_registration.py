@@ -1,7 +1,9 @@
 import os
+from collections.abc import Iterator
 
 import pytest
 from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.engine import Connection
 
 from pitchvalue.config import load_settings
 from pitchvalue.product_services.auth import AuthError, register_email
@@ -13,7 +15,7 @@ def product_engine() -> Engine:
 
 
 @pytest.fixture
-def db_connection(product_engine: Engine):
+def db_connection(product_engine: Engine) -> Iterator[Connection]:
     with product_engine.begin() as conn:
         conn.execute(text("DELETE FROM auth_sessions"))
         conn.execute(text("DELETE FROM push_tokens"))
@@ -23,13 +25,13 @@ def db_connection(product_engine: Engine):
         yield conn
 
 
-def test_country_code_validation_accepts_valid(db_connection):
+def test_country_code_validation_accepts_valid(db_connection: Connection) -> None:
     register_email(db_connection, "tr@example.com", "Password123!", "TR")
     register_email(db_connection, "us@example.com", "Password123!", "US")
     register_email(db_connection, "gb@example.com", "Password123!", "GB")
 
 
-def test_country_code_validation_normalizes_case(db_connection):
+def test_country_code_validation_normalizes_case(db_connection: Connection) -> None:
     # 'tr' normalizes to 'TR', 'us' normalizes to 'US'
     register_email(db_connection, "tr_lower@example.com", "Password123!", "tr")
     register_email(db_connection, "us_lower@example.com", "Password123!", "us")
@@ -52,7 +54,7 @@ def test_country_code_validation_normalizes_case(db_connection):
     assert row2 == "US"
 
 
-def test_country_code_validation_rejects_invalid(db_connection):
+def test_country_code_validation_rejects_invalid(db_connection: Connection) -> None:
     with pytest.raises(AuthError, match="invalid country code"):
         register_email(db_connection, "zz@example.com", "Password123!", "ZZ")
 

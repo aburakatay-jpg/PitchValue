@@ -5,9 +5,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Connection, text
 
-from pitchvalue.api.main import create_app
+from pitchvalue.api.app import create_app
 from pitchvalue.config import load_settings
-from pitchvalue.product_services.auth import ProductUser, _issue_session, _now
+from pitchvalue.product_services.auth import AccountKind, ProductUser, _issue_session, _now
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def db_connection() -> Iterator[Connection]:
 
 
 @pytest.fixture
-def app_client(db_connection):
+def app_client(db_connection: Connection) -> Iterator[TestClient]:
     app = create_app(load_settings())
     from pitchvalue.api.dependencies import get_connection, get_transaction
 
@@ -70,15 +70,17 @@ def app_client(db_connection):
 
 
 @pytest.fixture
-def auth_headers(db_connection):
+def auth_headers(db_connection: Connection) -> dict[str, str]:
     user = ProductUser(
-        user_id="test_user_fa_1", email="test@test.com", account_kind="AUTHENTICATED"
+        user_id="test_user_fa_1", email="test@test.com", account_kind=AccountKind.AUTHENTICATED
     )
     session = _issue_session(db_connection, user, _now(None))
     return {"Authorization": f"Bearer {session.access_token}"}
 
 
-def test_follow_api_lifecycle(app_client, auth_headers, db_connection):
+def test_follow_api_lifecycle(
+    app_client: TestClient, auth_headers: dict[str, str], db_connection: Connection
+) -> None:
     match_id = 99991
 
     # GET empty
@@ -109,7 +111,7 @@ def test_follow_api_lifecycle(app_client, auth_headers, db_connection):
     assert r.json() == []
 
 
-def test_follow_api_unauthenticated(app_client):
+def test_follow_api_unauthenticated(app_client: TestClient) -> None:
     match_id = 99991
     assert app_client.post(f"/api/v1/me/follows/{match_id}").status_code == 401
     assert app_client.delete(f"/api/v1/me/follows/{match_id}").status_code == 401

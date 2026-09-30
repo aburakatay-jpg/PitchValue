@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy import Connection
 
-from pitchvalue.product_services import settlement_operator
+import pitchvalue.product_services.settlement_operator as settlement_operator
 from pitchvalue.product_services.settlement import SettlementError, SettlementOutcome
 
 

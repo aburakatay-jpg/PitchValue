@@ -40,7 +40,7 @@ def db_connection() -> Iterator[Connection]:
         yield conn
 
 
-def test_recipient_selection(db_connection):
+def test_recipient_selection(db_connection: Connection) -> None:
     """Test get_user_expo_push_tokens properly selects EXPO tokens for a user."""
     user1 = "test_user_pd_1"
     user2 = "test_user_pd_2"
@@ -72,12 +72,12 @@ def test_recipient_selection(db_connection):
 
 
 @pytest.fixture
-def mock_httpx_post():
+def mock_httpx_post() -> Iterator[MagicMock]:
     with patch("httpx.Client.post") as mock_post:
         yield mock_post
 
 
-def test_delivery_single_token(db_connection, mock_httpx_post):
+def test_delivery_single_token(db_connection: Connection, mock_httpx_post: MagicMock) -> None:
     user = "test_user_pd_1"
     register_push_token(db_connection, user, "EXPO", "expo_token_test")
 
@@ -107,7 +107,9 @@ def test_delivery_single_token(db_connection, mock_httpx_post):
     ]
 
 
-def test_delivery_permanent_invalid_token_is_deleted(db_connection, mock_httpx_post):
+def test_delivery_permanent_invalid_token_is_deleted(
+    db_connection: Connection, mock_httpx_post: MagicMock
+) -> None:
     user = "test_user_pd_1"
     register_push_token(db_connection, user, "EXPO", "expo_bad_token")
 
@@ -124,7 +126,9 @@ def test_delivery_permanent_invalid_token_is_deleted(db_connection, mock_httpx_p
     assert get_user_expo_push_tokens(db_connection, user) == []
 
 
-def test_delivery_transient_failure_preserves_token(db_connection, mock_httpx_post):
+def test_delivery_transient_failure_preserves_token(
+    db_connection: Connection, mock_httpx_post: MagicMock
+) -> None:
     user = "test_user_pd_1"
     register_push_token(db_connection, user, "EXPO", "expo_temp_fail_token")
 
@@ -139,7 +143,9 @@ def test_delivery_transient_failure_preserves_token(db_connection, mock_httpx_po
     assert get_user_expo_push_tokens(db_connection, user) == ["expo_temp_fail_token"]
 
 
-def test_delivery_timeout_preserves_token(db_connection, mock_httpx_post):
+def test_delivery_timeout_preserves_token(
+    db_connection: Connection, mock_httpx_post: MagicMock
+) -> None:
     user = "test_user_pd_1"
     register_push_token(db_connection, user, "EXPO", "expo_timeout_token")
 
@@ -151,7 +157,9 @@ def test_delivery_timeout_preserves_token(db_connection, mock_httpx_post):
     assert get_user_expo_push_tokens(db_connection, user) == ["expo_timeout_token"]
 
 
-def test_delivery_malformed_response_preserves_token(db_connection, mock_httpx_post):
+def test_delivery_malformed_response_preserves_token(
+    db_connection: Connection, mock_httpx_post: MagicMock
+) -> None:
     user = "test_user_pd_1"
     register_push_token(db_connection, user, "EXPO", "expo_malformed_token")
 
@@ -166,7 +174,9 @@ def test_delivery_malformed_response_preserves_token(db_connection, mock_httpx_p
     assert get_user_expo_push_tokens(db_connection, user) == ["expo_malformed_token"]
 
 
-def test_delivery_batch_partial_failure(db_connection, mock_httpx_post):
+def test_delivery_batch_partial_failure(
+    db_connection: Connection, mock_httpx_post: MagicMock
+) -> None:
     user = "test_user_pd_1"
     register_push_token(db_connection, user, "EXPO", "token_good")
     register_push_token(db_connection, user, "EXPO", "token_bad")

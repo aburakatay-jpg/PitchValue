@@ -9,6 +9,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -29,7 +30,8 @@ from pitchvalue.prediction.repository import (
     predictions_for_match,
 )
 from test_prediction_api import _clean_fixture_data
-from test_prediction_repository import GENERATED, _request
+from test_prediction_persistence import GENERATED
+from test_prediction_repository import _request
 
 D = Decimal
 
@@ -76,6 +78,11 @@ class BrokenDatabase:
 
     @contextmanager
     def connect(self) -> Iterator[Connection]:
+        raise RuntimeError(self.secret)
+        yield  # pragma: no cover
+
+    @contextmanager
+    def transaction(self) -> Iterator[Connection]:
         raise RuntimeError(self.secret)
         yield  # pragma: no cover
 
@@ -418,7 +425,7 @@ def test_concurrent_reads_are_deterministic_and_do_not_mutate_state(
 
     def read_once() -> dict[str, object]:
         with _app_client(settings) as client:
-            return client.get(url).json()
+            return cast(dict[str, object], client.get(url).json())
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         payloads = list(executor.map(lambda _: read_once(), range(8)))

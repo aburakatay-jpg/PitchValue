@@ -12,10 +12,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Connection, create_engine, text
 
+from pitchvalue.api.app import create_app
 from pitchvalue.api.dependencies import get_connection, get_transaction
-from pitchvalue.api.main import create_app
 from pitchvalue.prediction.repository import persist_match_prediction
-from pitchvalue.product_services import account_deletion, provider_revocation
+from pitchvalue.product_services import provider_revocation
 from pitchvalue.product_services.account_deletion import initiate_account_deletion
 from pitchvalue.product_services.auth import (
     AccountKind,
@@ -232,8 +232,7 @@ def test_provider_retry_failure_does_not_restore_local_account(
     user = ProductUser(user_id, AccountKind.AUTHENTICATED, None)
     session = _issue_session(db, user, now)
     monkeypatch.setattr(
-        account_deletion.UnconfiguredGoogleIdentityVerifier,
-        "verify",
+        "pitchvalue.product_services.account_deletion.UnconfiguredGoogleIdentityVerifier.verify",
         lambda self, token: VerifiedExternalIdentity("GOOGLE", provider_subject, None),
     )
     assert (
@@ -264,7 +263,7 @@ def test_provider_retry_failure_does_not_restore_local_account(
         raise provider_revocation.RetryableError("simulated provider outage")
 
     monkeypatch.setattr(provider_revocation.GoogleRevocationAdapter, "revoke", retryable_failure)
-    provider_revocation.ProviderRevocationService()._process_job(db, job, now)
+    provider_revocation.ProviderRevocationService()._process_job(db, dict(job), now)
     assert (
         db.execute(
             text("SELECT status FROM provider_revocation_jobs WHERE job_id=:job_id"),

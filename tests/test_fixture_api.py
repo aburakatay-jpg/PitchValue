@@ -17,7 +17,8 @@ from pitchvalue.api.fixtures import market_availability, today_fixtures
 from pitchvalue.config import load_settings
 from pitchvalue.prediction.repository import persist_match_prediction
 from test_prediction_api import _clean_fixture_data
-from test_prediction_repository import GENERATED, _request
+from test_prediction_persistence import GENERATED
+from test_prediction_repository import _request
 
 
 @pytest.fixture(scope="session")

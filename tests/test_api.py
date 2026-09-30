@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
+from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import Mock
 
 import pytest
 from fastapi import Query
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine
+from sqlalchemy import Connection, Engine
 
 from pitchvalue.api.app import create_app
 from pitchvalue.api.database import DatabaseResource
@@ -29,6 +30,12 @@ class FakeDatabase:
         self.checks += 1
         if self.failure is not None:
             raise self.failure
+
+    def connect(self) -> AbstractContextManager[Connection]:
+        return nullcontext(Mock(spec=Connection))
+
+    def transaction(self) -> AbstractContextManager[Connection]:
+        return nullcontext(Mock(spec=Connection))
 
     def dispose(self) -> None:
         self.disposed = True

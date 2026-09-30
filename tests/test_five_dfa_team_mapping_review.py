@@ -214,8 +214,9 @@ def test_review_resolves_supported_scope_and_marks_serie_a_unsupported(db: Conne
         ).scalar_one()
         == 9
     )
-    statuses = dict(
-        db.execute(
+    statuses: dict[str, str] = {
+        str(row[0]): str(row[1])
+        for row in db.execute(
             text(
                 """SELECT provider_entity_id,mapping_status FROM source_entity_references
                 WHERE provider_id=:provider AND entity_type='TEAM'
@@ -226,7 +227,7 @@ def test_review_resolves_supported_scope_and_marks_serie_a_unsupported(db: Conne
                 "ids": [item.provider_team_id for item in REVIEWED_TEAM_MAPPINGS],
             },
         ).all()
-    )
+    }
     assert Counter(statuses.values()) == {"RESOLVED": 27, "UNSUPPORTED": 19}
 
 

@@ -5,7 +5,9 @@ from pitchvalue.product_services.entitlements import Entitlement, EntitlementSta
 
 @patch("pitchvalue.product_services.account_deletion.initiate_account_deletion")
 @patch("pitchvalue.product_services.entitlements.resolve_entitlement")
-def test_subscription_boundary_active_apple(mock_resolve, mock_initiate):
+def test_subscription_boundary_active_apple(
+    mock_resolve: MagicMock, mock_initiate: MagicMock
+) -> None:
     # Simulate an active Apple subscription
     mock_resolve.return_value = Entitlement(
         state=EntitlementState.PREMIUM_ACTIVE,
@@ -34,7 +36,7 @@ def test_subscription_boundary_active_apple(mock_resolve, mock_initiate):
 
 @patch("pitchvalue.product_services.account_deletion.initiate_account_deletion")
 @patch("pitchvalue.product_services.entitlements.resolve_entitlement")
-def test_subscription_boundary_none(mock_resolve, mock_initiate):
+def test_subscription_boundary_none(mock_resolve: MagicMock, mock_initiate: MagicMock) -> None:
     # Simulate no subscription
     mock_resolve.return_value = Entitlement(
         state=EntitlementState.PREMIUM_INACTIVE,

@@ -69,7 +69,7 @@ def _fixture(engine: Engine, *, kickoff: datetime, finished: bool = False) -> in
         return match_id
 
 
-def _mark_fresh(engine, match_id: int, fresh_at) -> None:
+def _mark_fresh(engine: Engine, match_id: int, fresh_at: datetime) -> None:
     with engine.begin() as connection:
         connection.execute(
             text(
@@ -174,6 +174,7 @@ def test_today_live_transition_and_score_persistence(
             .mappings()
             .first()
         )
+        assert row is not None
         comp_name = str(row["comp_name"])
         home_name = str(row["home_name"])
         away_name = str(row["away_name"])
@@ -262,6 +263,7 @@ def test_today_live_transition_and_score_persistence(
                 .mappings()
                 .first()
             )
+            assert row is not None
             assert row["status"] == "IN_PLAY"
             assert row["home_score"] == 2
             assert row["away_score"] == 1

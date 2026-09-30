@@ -150,7 +150,10 @@ def test_timeout_connection_and_server_failures_retry_with_bounded_backoff() -> 
         calls = 0
         sleeps: list[float] = []
 
-        def handler(request: httpx.Request, first=first) -> httpx.Response:
+        def handler(
+            request: httpx.Request,
+            first: BaseException | httpx.Response = first,
+        ) -> httpx.Response:
             nonlocal calls
             calls += 1
             if calls == 1:
@@ -178,9 +181,9 @@ def test_auth_permanent_error_and_long_retry_after_are_not_retried() -> None:
 
         def handler(
             request: httpx.Request,
-            status=status,
-            code=code,
-            headers=headers,
+            status: int = status,
+            code: str = code,
+            headers: dict[str, str] = headers,
         ) -> httpx.Response:
             nonlocal calls
             calls += 1

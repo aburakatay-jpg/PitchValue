@@ -4,14 +4,14 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add the backend dir so we can import it
+# Runtime script import; the adjacent .pyi supplies its test-facing type contract.
 sys.path.append(str(Path(__file__).parent.parent / "backend"))
 
 import generate_fixture_visibility_report
 
 
 class TestTelegramSummary(unittest.TestCase):
-    def test_telegram_summary_includes_drive_success(self):
+    def test_telegram_summary_includes_drive_success(self) -> None:
         with (
             patch("generate_fixture_visibility_report.create_database") as mock_create_database,
             patch("generate_fixture_visibility_report.load_settings"),
@@ -60,7 +60,7 @@ class TestTelegramSummary(unittest.TestCase):
             self.assertIn("Google Drive: ✅ SUCCESS", summary)
             self.assertNotIn("Google Drive: ❌ FAILED", summary)
 
-    def test_telegram_summary_includes_drive_failure(self):
+    def test_telegram_summary_includes_drive_failure(self) -> None:
         with (
             patch("generate_fixture_visibility_report.create_database") as mock_create_database,
             patch("generate_fixture_visibility_report.load_settings"),

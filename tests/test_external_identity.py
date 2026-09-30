@@ -1,7 +1,9 @@
 import os
+from collections.abc import Iterator
 
 import pytest
 from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.engine import Connection
 
 from pitchvalue.config import load_settings
 from pitchvalue.product_services.auth import (
@@ -17,7 +19,7 @@ def product_engine() -> Engine:
 
 
 @pytest.fixture
-def db_connection(product_engine: Engine):
+def db_connection(product_engine: Engine) -> Iterator[Connection]:
     with product_engine.begin() as conn:
         conn.execute(text("DELETE FROM auth_sessions"))
         conn.execute(text("DELETE FROM push_tokens"))
@@ -27,7 +29,7 @@ def db_connection(product_engine: Engine):
         yield conn
 
 
-def test_external_identity_new_user(db_connection):
+def test_external_identity_new_user(db_connection: Connection) -> None:
     session = authenticate_external(db_connection, "APPLE", "apple_subject_123", "test@apple.com")
     assert session.user.account_kind == AccountKind.AUTHENTICATED
     assert session.user.email == "test@apple.com"
@@ -45,7 +47,7 @@ def test_external_identity_new_user(db_connection):
     assert row["provider_subject"] == "apple_subject_123"
 
 
-def test_external_identity_existing_user(db_connection):
+def test_external_identity_existing_user(db_connection: Connection) -> None:
     session1 = authenticate_external(
         db_connection, "GOOGLE", "google_subject_123", "test@google.com"
     )
@@ -56,7 +58,7 @@ def test_external_identity_existing_user(db_connection):
     assert session1.user.user_id == session2.user.user_id
 
 
-def test_external_identity_email_collision(db_connection):
+def test_external_identity_email_collision(db_connection: Connection) -> None:
     # Register email identity
     from pitchvalue.product_services.auth import register_email
 

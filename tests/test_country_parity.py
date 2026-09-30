@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 
-def test_country_parity():
+def test_country_parity() -> None:
     backend_path = Path("src/pitchvalue/data/countries.json")
     mobile_path = Path("mobile/lib/countries.json")
 
