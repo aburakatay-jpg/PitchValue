@@ -21,3 +21,13 @@ The workflow uses one non-cancelling concurrency group, so scheduled/manual over
 of terminating an active refresh. The command stores its deterministic logical identity, attempt,
 scheduled time, local date horizon, fixture counts, source, result, and started/completed evidence in
 the existing operational tables. No schema migration is required.
+
+Before any provider request, the command acquires the existing semantic advisory lock for the
+scheduled logical run and checks all prior attempts. A prior `SUCCEEDED` or
+`PARTIAL_WITH_QUARANTINES` attempt is an accepted terminal completion under the existing scheduled
+refresh contract, so a repeat returns `ALREADY_COMPLETED` with
+`provider_request_performed=false` and does not create new run/event evidence. A prior `FAILED`
+attempt permits one controlled invocation using the existing next-attempt allocation and provider
+retry policy. A prior `RUNNING` or `SCHEDULED` attempt is refused. The advisory lock remains held
+through preflight, fixture fetch, and persistence, preventing two same-identity processes from both
+passing preflight and consuming provider requests.
