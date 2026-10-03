@@ -1,0 +1,54 @@
+name: Scheduled Fixture Refresh
+
+on:
+  workflow_dispatch:
+    inputs:
+      scheduled_for:
+        description: "Configured Tue/Fri 08:00 UTC timestamp (ISO-8601)"
+        required: true
+        type: string
+  schedule:
+    - cron: "0 8 * * 2,5"
+
+concurrency:
+  group: fixture-refresh-production
+  cancel-in-progress: false
+
+jobs:
+  refresh-fixtures:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install project requirements
+        run: pip install .
+
+      - name: Resolve configured scheduled timestamp
+        id: schedule
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_SCHEDULED_FOR: ${{ inputs.scheduled_for }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            scheduled_for="$REQUESTED_SCHEDULED_FOR"
+          else
+            run_date="$(date -u +%Y-%m-%d)"
+            scheduled_for="${run_date}T08:00:00Z"
+          fi
+          printf 'scheduled_for=%s\n' "$scheduled_for" >> "$GITHUB_OUTPUT"
+
+      - name: Run bounded scheduled fixture refresh
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FIVEDFA_API_KEY: ${{ secrets.FIVEDFA_API_KEY }}
+        run: >-
+          python -m pitchvalue.operations.scheduled_refresh
+          --scheduled-for "${{ steps.schedule.outputs.scheduled_for }}"
