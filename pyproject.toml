@@ -21,6 +21,7 @@ dependencies = [
 pitchvalue-ingest = "pitchvalue.ingestion.football_data_uk.cli:main"
 pitchvalue-api = "pitchvalue.api.cli:main"
 pitchvalue-refresh-stale = "pitchvalue.operations.refresh_stale:main"
+pitchvalue-scheduled-refresh = "pitchvalue.operations.scheduled_refresh:main"
 
 [project.optional-dependencies]
 dev = [
